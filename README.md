@@ -36,3 +36,4 @@ A Wallpaper ***cannot*** be applied without preloading. The config is ***not*** 
 - socket communication (hyprctl)
 - switching wps
 - allow setting only for selected monitors
+- jpeg support
