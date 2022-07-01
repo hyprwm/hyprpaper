@@ -43,3 +43,8 @@ release:
 debug:
 	mkdir -p build && cmake --no-warn-unused-cli -DCMAKE_BUILD_TYPE:STRING=Debug -H./ -B./build -G Ninja
 	cmake --build ./build --config Debug --target all -j 10
+
+all:
+    make clear
+    make protocols
+	make release
