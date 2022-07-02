@@ -6,6 +6,8 @@
 #include "helpers/Monitor.hpp"
 #include "events/Events.hpp"
 #include "helpers/PoolBuffer.hpp"
+#include "ipc/Socket.hpp"
+#include <mutex>
 
 class CHyprpaper {
 public:
@@ -18,11 +20,13 @@ public:
     // init the utility
     CHyprpaper();
     void        init();
+    void        tick();
 
     std::unordered_map<std::string, CWallpaperTarget> m_mWallpaperTargets;
     std::unordered_map<std::string, std::string> m_mMonitorActiveWallpapers;
     std::unordered_map<SMonitor*, CWallpaperTarget*> m_mMonitorActiveWallpaperTargets;
-    std::vector<SMonitor> m_vMonitors;
+    std::vector<std::unique_ptr<SPoolBuffer>> m_mBuffers;
+    std::vector<std::unique_ptr<SMonitor>> m_vMonitors;
 
     void        preloadAllWallpapersFromConfig();
     void        recheckAllMonitors();
@@ -33,6 +37,14 @@ public:
     void        destroyBuffer(SPoolBuffer*);
     int         createPoolFile(size_t, std::string&);
     bool        setCloexec(const int&);
+    void        clearWallpaperFromMonitor(const std::string&);
+    SMonitor*   getMonitorFromName(const std::string&);
+    bool        isPreloaded(const std::string&);
+    void        recheckMonitor(SMonitor*);
+
+private:
+    std::mutex  m_mtTickMutex;
+    bool        m_bShouldExit = false;
 };
 
 inline std::unique_ptr<CHyprpaper> g_pHyprpaper;

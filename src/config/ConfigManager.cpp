@@ -116,11 +116,12 @@ void CConfigManager::handleWallpaper(const std::string& COMMAND, const std::stri
         return;
     }
 
-    if (std::find(m_dRequestedPreloads.begin(), m_dRequestedPreloads.end(), WALLPAPER) == m_dRequestedPreloads.end()) {
+    if (std::find(m_dRequestedPreloads.begin(), m_dRequestedPreloads.end(), WALLPAPER) == m_dRequestedPreloads.end() && !g_pHyprpaper->isPreloaded(WALLPAPER)) {
         parseError = "wallpaper failed (not preloaded)";
         return;
     }
 
+    g_pHyprpaper->clearWallpaperFromMonitor(MONITOR);
     g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR] = WALLPAPER;
 }
 

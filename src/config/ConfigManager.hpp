@@ -1,6 +1,8 @@
 #pragma once
 #include "../defines.hpp"
 
+class CIPCSocket;
+
 class CConfigManager {
 public:
     // gets all the data from the config
@@ -17,6 +19,8 @@ private:
 
     void handleWallpaper(const std::string&, const std::string&);
     void handlePreload(const std::string&, const std::string&);
+
+    friend class CIPCSocket;
 };
 
 inline std::unique_ptr<CConfigManager> g_pConfigManager;

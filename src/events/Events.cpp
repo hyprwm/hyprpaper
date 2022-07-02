@@ -26,7 +26,7 @@ void Events::scale(void *data, wl_output *wl_output, int32_t scale) {
 void Events::name(void *data, wl_output *wl_output, const char *name) {
     const auto PMONITOR = (SMonitor*)data;
 
-    PMONITOR->name = std::string(name);
+    PMONITOR->name = name;
 }
 
 void Events::description(void *data, wl_output *wl_output, const char *description) {
@@ -40,6 +40,7 @@ void Events::ls_configure(void *data, zwlr_layer_surface_v1 *surface, uint32_t s
     PMONITOR->wantsReload = true;
     PMONITOR->configureSerial = serial;
     PMONITOR->wantsACK = true;
+    PMONITOR->initialized = true;
 
     Debug::log(LOG, "configure for %s", PMONITOR->name.c_str());
 }
@@ -50,8 +51,9 @@ void Events::handleGlobal(void *data, struct wl_registry *registry, uint32_t nam
     } else if (strcmp(interface, wl_shm_interface.name) == 0) {
         g_pHyprpaper->m_sSHM = (wl_shm *)wl_registry_bind(registry, name, &wl_shm_interface, 1);
     } else if (strcmp(interface, wl_output_interface.name) == 0) {
-        const auto PMONITOR = &g_pHyprpaper->m_vMonitors.emplace_back();
+        const auto PMONITOR = g_pHyprpaper->m_vMonitors.emplace_back(std::make_unique<SMonitor>()).get();
         PMONITOR->wayland_name = name;
+        PMONITOR->name = "";
         PMONITOR->output = (wl_output *)wl_registry_bind(registry, name, &wl_output_interface, 4);
         wl_output_add_listener(PMONITOR->output, &Events::outputListener, PMONITOR);
     } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {

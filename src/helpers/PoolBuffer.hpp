@@ -3,9 +3,9 @@
 #include "../defines.hpp"
 
 struct SPoolBuffer {
-    wl_buffer* buffer;
-    cairo_surface_t *surface;
-    cairo_t *cairo;
-    void* data;
-    size_t size;
+    wl_buffer* buffer = nullptr;
+    cairo_surface_t* surface = nullptr;
+    cairo_t* cairo = nullptr;
+    void* data = nullptr;
+    size_t size = 0;
 };

@@ -4,6 +4,7 @@ CHyprpaper::CHyprpaper() { }
 
 void CHyprpaper::init() {
     g_pConfigManager = std::make_unique<CConfigManager>();
+    g_pIPCSocket = std::make_unique<CIPCSocket>();
 
     m_sDisplay = (wl_display *)wl_display_connect(NULL);
 
@@ -15,37 +16,114 @@ void CHyprpaper::init() {
 
     preloadAllWallpapersFromConfig();
 
+    g_pIPCSocket->initialize();
+
     // run
     wl_registry *registry = wl_display_get_registry(m_sDisplay);
     wl_registry_add_listener(registry, &Events::registryListener, nullptr);
 
-    while (wl_display_dispatch(m_sDisplay) != -1) {
-        recheckAllMonitors();
+    std::thread([&]() { // we dispatch wl events cuz we have to
+        while (wl_display_dispatch(m_sDisplay) != -1) {
+            tick();
+        }
+
+        m_bShouldExit = true;
+    }).detach();
+
+    while (1) { // we also tick every 1ms for socket and other shit's updates
+        tick();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+        if (m_bShouldExit)
+            break;
     }
 }
 
+void CHyprpaper::tick() {
+    m_mtTickMutex.lock();
+
+    recheckAllMonitors();
+    preloadAllWallpapersFromConfig();
+    g_pIPCSocket->mainThreadParseRequest();
+
+    m_mtTickMutex.unlock();
+}
+
+bool CHyprpaper::isPreloaded(const std::string& path) {
+    for (auto&[pt, wt] : m_mWallpaperTargets) {
+        if (pt == path)
+            return true;
+    }
+
+    return false;
+}
+
 void CHyprpaper::preloadAllWallpapersFromConfig() {
+    if (g_pConfigManager->m_dRequestedPreloads.empty())
+        return;
+
     for (auto& wp : g_pConfigManager->m_dRequestedPreloads) {
         m_mWallpaperTargets[wp] = CWallpaperTarget();
         m_mWallpaperTargets[wp].create(wp);
     }
+
+    g_pConfigManager->m_dRequestedPreloads.clear();
 }
 
 void CHyprpaper::recheckAllMonitors() {
     for (auto& m : m_vMonitors) {
-        ensureMonitorHasActiveWallpaper(&m);
+        recheckMonitor(m.get());
+    }
+}
 
-        if (m.wantsACK) {
-            m.wantsACK = false;
-            zwlr_layer_surface_v1_ack_configure(m.pLayerSurface, m.configureSerial);
-        }
+void CHyprpaper::recheckMonitor(SMonitor* pMonitor) {
+    ensureMonitorHasActiveWallpaper(pMonitor);
 
-        if (m.wantsReload) {
-            m.wantsReload = false;
-            renderWallpaperForMonitor(&m);
-        }
+    if (pMonitor->wantsACK) {
+        pMonitor->wantsACK = false;
+        zwlr_layer_surface_v1_ack_configure(pMonitor->pLayerSurface, pMonitor->configureSerial);
+    }
+
+    if (pMonitor->wantsReload) {
+        pMonitor->wantsReload = false;
+        renderWallpaperForMonitor(pMonitor);
+    }
+}
+
+SMonitor* CHyprpaper::getMonitorFromName(const std::string& monname) {
+    for (auto& m : m_vMonitors) {
+        if (m->name == monname)
+            return m.get();
+    }
+
+    return nullptr;
+}
+
+void CHyprpaper::clearWallpaperFromMonitor(const std::string& monname) {
+
+    const auto PMONITOR = getMonitorFromName(monname);
+
+    if (!PMONITOR)
+        return;
+
+    auto it = m_mMonitorActiveWallpaperTargets.find(PMONITOR);
+
+    if (it != m_mMonitorActiveWallpaperTargets.end())
+        m_mMonitorActiveWallpaperTargets.erase(it);
+    
+    if (PMONITOR->pSurface) {
+        wl_surface_destroy(PMONITOR->pSurface);
+        zwlr_layer_surface_v1_destroy(PMONITOR->pLayerSurface);
+        PMONITOR->pSurface = nullptr;
+        PMONITOR->pLayerSurface = nullptr;
+
+        PMONITOR->wantsACK = false;
+        PMONITOR->wantsReload = false;
+        PMONITOR->initialized = false;
+        PMONITOR->readyForLS = true;
+
+        wl_display_flush(m_sDisplay);
     }
 }
 
@@ -82,8 +160,11 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
         return;
     }
 
-    // create it for thy
-    createLSForMonitor(pMonitor);
+    // create it for thy if it doesnt have
+    if (!pMonitor->pLayerSurface)
+        createLSForMonitor(pMonitor);
+    else    
+        pMonitor->wantsReload = true;
 }
 
 void CHyprpaper::createLSForMonitor(SMonitor* pMonitor) {
@@ -120,6 +201,8 @@ void CHyprpaper::createLSForMonitor(SMonitor* pMonitor) {
     wl_surface_commit(pMonitor->pSurface);
 
     wl_region_destroy(PINPUTREGION);
+
+    wl_display_flush(m_sDisplay);
 }
 
 bool CHyprpaper::setCloexec(const int& FD) {
@@ -195,13 +278,18 @@ void CHyprpaper::destroyBuffer(SPoolBuffer* pBuffer) {
     cairo_destroy(pBuffer->cairo);
     cairo_surface_destroy(pBuffer->surface);
     munmap(pBuffer->data, pBuffer->size);
+
+    pBuffer->buffer = nullptr;
 }
 
 void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
-    SPoolBuffer buffer;
-    createBuffer(&buffer, pMonitor->size.x * pMonitor->scale, pMonitor->size.y * pMonitor->scale, WL_SHM_FORMAT_ARGB8888);
+    auto *const PBUFFER = &pMonitor->buffer;
 
-    const auto PCAIRO = buffer.cairo;
+    if (!PBUFFER->buffer) {
+        createBuffer(PBUFFER, pMonitor->size.x * pMonitor->scale, pMonitor->size.y * pMonitor->scale, WL_SHM_FORMAT_ARGB8888);
+    }
+
+    const auto PCAIRO = PBUFFER->cairo;
     cairo_save(PCAIRO);
     cairo_set_operator(PCAIRO, CAIRO_OPERATOR_CLEAR);
     cairo_paint(PCAIRO);
@@ -239,11 +327,10 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     cairo_paint(PCAIRO);
     cairo_restore(PCAIRO);
 
+    wl_surface_attach(pMonitor->pSurface, PBUFFER->buffer, 0, 0);
     wl_surface_set_buffer_scale(pMonitor->pSurface, pMonitor->scale);
-    wl_surface_attach(pMonitor->pSurface, buffer.buffer, 0, 0);
-    wl_surface_damage_buffer(pMonitor->pSurface, 0, 0, INT32_MAX, INT32_MAX);
+    wl_surface_damage_buffer(pMonitor->pSurface, 0, 0, pMonitor->size.x, pMonitor->size.y);
     wl_surface_commit(pMonitor->pSurface);
 
-    // we will not reuse the buffer, so destroy it immediately
-    destroyBuffer(&buffer);
+    destroyBuffer(PBUFFER);
 }
