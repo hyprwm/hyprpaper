@@ -85,7 +85,7 @@ void CHyprpaper::recheckMonitor(SMonitor* pMonitor) {
 
     if (pMonitor->wantsACK) {
         pMonitor->wantsACK = false;
-        zwlr_layer_surface_v1_ack_configure(pMonitor->pLayerSurface, pMonitor->configureSerial);
+        zwlr_layer_surface_v1_ack_configure(pMonitor->pCurrentLayerSurface->pLayerSurface, pMonitor->configureSerial);
     }
 
     if (pMonitor->wantsReload) {
@@ -138,18 +138,16 @@ void CHyprpaper::clearWallpaperFromMonitor(const std::string& monname) {
     if (it != m_mMonitorActiveWallpaperTargets.end())
         m_mMonitorActiveWallpaperTargets.erase(it);
     
-    if (PMONITOR->pSurface) {
-        wl_surface_destroy(PMONITOR->pSurface);
-        zwlr_layer_surface_v1_destroy(PMONITOR->pLayerSurface);
-        PMONITOR->pSurface = nullptr;
-        PMONITOR->pLayerSurface = nullptr;
+    if (PMONITOR->pCurrentLayerSurface) {
+        
+        PMONITOR->pCurrentLayerSurface = nullptr;
 
         PMONITOR->wantsACK = false;
         PMONITOR->wantsReload = false;
         PMONITOR->initialized = false;
         PMONITOR->readyForLS = true;
 
-        wl_display_flush(m_sDisplay);
+        
     }
 }
 
@@ -187,48 +185,14 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
     }
 
     // create it for thy if it doesnt have
-    if (!pMonitor->pLayerSurface)
+    if (!pMonitor->pCurrentLayerSurface)
         createLSForMonitor(pMonitor);
     else    
         pMonitor->wantsReload = true;
 }
 
 void CHyprpaper::createLSForMonitor(SMonitor* pMonitor) {
-    pMonitor->pSurface = wl_compositor_create_surface(m_sCompositor);
-    
-    if (!pMonitor->pSurface) {
-        Debug::log(CRIT, "The compositor did not allow hyprpaper a surface!");
-        exit(1);
-        return;
-    }
-
-    const auto PINPUTREGION = wl_compositor_create_region(m_sCompositor);
-
-    if (!PINPUTREGION) {
-        Debug::log(CRIT, "The compositor did not allow hyprpaper a region!");
-        exit(1);
-        return;
-    }
-
-    wl_surface_set_input_region(pMonitor->pSurface, PINPUTREGION);
-
-    pMonitor->pLayerSurface = zwlr_layer_shell_v1_get_layer_surface(g_pHyprpaper->m_sLayerShell, pMonitor->pSurface, pMonitor->output, ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND, "hyprpaper");
-
-    if (!pMonitor->pLayerSurface) {
-        Debug::log(CRIT, "The compositor did not allow hyprpaper a layersurface!");
-        exit(1);
-        return;
-    }
-
-    zwlr_layer_surface_v1_set_size(pMonitor->pLayerSurface, 0, 0);
-    zwlr_layer_surface_v1_set_anchor(pMonitor->pLayerSurface, ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT);
-    zwlr_layer_surface_v1_set_exclusive_zone(pMonitor->pLayerSurface, -1);
-    zwlr_layer_surface_v1_add_listener(pMonitor->pLayerSurface, &Events::layersurfaceListener, pMonitor);
-    wl_surface_commit(pMonitor->pSurface);
-
-    wl_region_destroy(PINPUTREGION);
-
-    wl_display_flush(m_sDisplay);
+    pMonitor->pCurrentLayerSurface = pMonitor->layerSurfaces.emplace_back(std::make_unique<CLayerSurface>(pMonitor)).get();
 }
 
 bool CHyprpaper::setCloexec(const int& FD) {
@@ -354,8 +318,18 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     cairo_paint(PCAIRO);
     cairo_restore(PCAIRO);
 
-    wl_surface_attach(pMonitor->pSurface, PBUFFER->buffer, 0, 0);
-    wl_surface_set_buffer_scale(pMonitor->pSurface, pMonitor->scale);
-    wl_surface_damage_buffer(pMonitor->pSurface, 0, 0, pMonitor->size.x, pMonitor->size.y);
-    wl_surface_commit(pMonitor->pSurface);
+    wl_surface_attach(pMonitor->pCurrentLayerSurface->pSurface, PBUFFER->buffer, 0, 0);
+    wl_surface_set_buffer_scale(pMonitor->pCurrentLayerSurface->pSurface, pMonitor->scale);
+    wl_surface_damage_buffer(pMonitor->pCurrentLayerSurface->pSurface, 0, 0, pMonitor->size.x, pMonitor->size.y);
+    wl_surface_commit(pMonitor->pCurrentLayerSurface->pSurface);
+
+    // check if we dont need to remove a wallpaper
+    if (pMonitor->layerSurfaces.size() > 1) {
+        for (auto it = pMonitor->layerSurfaces.begin(); it != pMonitor->layerSurfaces.end(); it++) {
+            if (pMonitor->pCurrentLayerSurface != it->get()) {
+                pMonitor->layerSurfaces.erase(it);
+                break;
+            }
+        }
+    }
 }

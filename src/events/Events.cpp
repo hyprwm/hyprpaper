@@ -34,15 +34,15 @@ void Events::description(void *data, wl_output *wl_output, const char *descripti
 }
 
 void Events::ls_configure(void *data, zwlr_layer_surface_v1 *surface, uint32_t serial, uint32_t width, uint32_t height) {
-    const auto PMONITOR = (SMonitor *)data;
+    const auto PLAYERSURFACE = (CLayerSurface*)data;
 
-    PMONITOR->size = Vector2D(width, height);
-    PMONITOR->wantsReload = true;
-    PMONITOR->configureSerial = serial;
-    PMONITOR->wantsACK = true;
-    PMONITOR->initialized = true;
+    PLAYERSURFACE->m_pMonitor->size = Vector2D(width, height);
+    PLAYERSURFACE->m_pMonitor->wantsReload = true;
+    PLAYERSURFACE->m_pMonitor->configureSerial = serial;
+    PLAYERSURFACE->m_pMonitor->wantsACK = true;
+    PLAYERSURFACE->m_pMonitor->initialized = true;
 
-    Debug::log(LOG, "configure for %s", PMONITOR->name.c_str());
+    Debug::log(LOG, "configure for %s", PLAYERSURFACE->m_pMonitor->name.c_str());
 }
 
 void Events::handleGlobal(void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t version) {

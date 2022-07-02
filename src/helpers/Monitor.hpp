@@ -2,6 +2,7 @@
 
 #include "../defines.hpp"
 #include "PoolBuffer.hpp"
+#include "../render/LayerSurface.hpp"
 
 struct SMonitor {
     std::string name = "";
@@ -13,12 +14,13 @@ struct SMonitor {
     bool readyForLS = false;
     bool hasATarget = true;
 
-    zwlr_layer_surface_v1* pLayerSurface = nullptr;
-    wl_surface* pSurface = nullptr;
     uint32_t configureSerial = 0;
     SPoolBuffer buffer;
 
     bool wantsReload = false;
     bool wantsACK = false;
     bool initialized = false;
+
+    std::vector<std::unique_ptr<CLayerSurface>> layerSurfaces;
+    CLayerSurface* pCurrentLayerSurface = nullptr;
 };
