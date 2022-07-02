@@ -43,8 +43,11 @@ void CHyprpaper::init() {
 void CHyprpaper::tick() {
     m_mtTickMutex.lock();
 
-    recheckAllMonitors();
     preloadAllWallpapersFromConfig();
+    ensurePoolBuffersPresent();
+
+    recheckAllMonitors();
+   
     g_pIPCSocket->mainThreadParseRequest();
 
     m_mtTickMutex.unlock();
@@ -98,6 +101,29 @@ SMonitor* CHyprpaper::getMonitorFromName(const std::string& monname) {
     }
 
     return nullptr;
+}
+
+void CHyprpaper::ensurePoolBuffersPresent() {
+    for (auto&[file, wt] : m_mWallpaperTargets) {
+        for (auto& m : m_vMonitors) {
+
+            if (m->size == Vector2D())
+                continue;
+
+            auto it = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
+                return el->pTarget == &wt && el->pixelSize == m->size;
+            });
+
+            if (it == m_vBuffers.end()) {
+                // create
+                const auto PBUFFER = m_vBuffers.emplace_back(std::make_unique<SPoolBuffer>()).get();
+
+                createBuffer(PBUFFER, m->size.x * m->scale, m->size.y * m->scale, WL_SHM_FORMAT_ARGB8888);
+
+                PBUFFER->pTarget = &wt;
+            }
+        }
+    }
 }
 
 void CHyprpaper::clearWallpaperFromMonitor(const std::string& monname) {
@@ -271,6 +297,7 @@ void CHyprpaper::createBuffer(SPoolBuffer* pBuffer, int32_t w, int32_t h, uint32
     pBuffer->data = DATA;
     pBuffer->surface = cairo_image_surface_create_for_data((unsigned char*)DATA, CAIRO_FORMAT_ARGB32, w, h, STRIDE);
     pBuffer->cairo = cairo_create(pBuffer->surface);
+    pBuffer->pixelSize = Vector2D(w, h);
 }
 
 void CHyprpaper::destroyBuffer(SPoolBuffer* pBuffer) {
@@ -282,27 +309,27 @@ void CHyprpaper::destroyBuffer(SPoolBuffer* pBuffer) {
     pBuffer->buffer = nullptr;
 }
 
+SPoolBuffer* CHyprpaper::getPoolBuffer(SMonitor* pMonitor, CWallpaperTarget* pWallpaperTarget) {
+    return std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
+        return el->pTarget == pWallpaperTarget && el->pixelSize == pMonitor->size;
+    })->get();
+}
+
 void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
-    auto *const PBUFFER = &pMonitor->buffer;
-
-    if (!PBUFFER->buffer) {
-        createBuffer(PBUFFER, pMonitor->size.x * pMonitor->scale, pMonitor->size.y * pMonitor->scale, WL_SHM_FORMAT_ARGB8888);
-    }
-
-    const auto PCAIRO = PBUFFER->cairo;
-    cairo_save(PCAIRO);
-    cairo_set_operator(PCAIRO, CAIRO_OPERATOR_CLEAR);
-    cairo_paint(PCAIRO);
-    cairo_restore(PCAIRO);
-
-    // render
-    // get wp
     const auto PWALLPAPERTARGET = m_mMonitorActiveWallpaperTargets[pMonitor];
 
     if (!PWALLPAPERTARGET) {
         Debug::log(CRIT, "wallpaper target null in render??");
         exit(1);
     }
+
+    auto *const PBUFFER = getPoolBuffer(pMonitor, PWALLPAPERTARGET);
+
+    const auto PCAIRO = PBUFFER->cairo;
+    cairo_save(PCAIRO);
+    cairo_set_operator(PCAIRO, CAIRO_OPERATOR_CLEAR);
+    cairo_paint(PCAIRO);
+    cairo_restore(PCAIRO);
 
     // get scale
     // we always do cover
@@ -331,6 +358,4 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     wl_surface_set_buffer_scale(pMonitor->pSurface, pMonitor->scale);
     wl_surface_damage_buffer(pMonitor->pSurface, 0, 0, pMonitor->size.x, pMonitor->size.y);
     wl_surface_commit(pMonitor->pSurface);
-
-    destroyBuffer(PBUFFER);
 }

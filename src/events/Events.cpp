@@ -51,11 +51,15 @@ void Events::handleGlobal(void *data, struct wl_registry *registry, uint32_t nam
     } else if (strcmp(interface, wl_shm_interface.name) == 0) {
         g_pHyprpaper->m_sSHM = (wl_shm *)wl_registry_bind(registry, name, &wl_shm_interface, 1);
     } else if (strcmp(interface, wl_output_interface.name) == 0) {
+        g_pHyprpaper->m_mtTickMutex.lock();
+
         const auto PMONITOR = g_pHyprpaper->m_vMonitors.emplace_back(std::make_unique<SMonitor>()).get();
         PMONITOR->wayland_name = name;
         PMONITOR->name = "";
         PMONITOR->output = (wl_output *)wl_registry_bind(registry, name, &wl_output_interface, 4);
         wl_output_add_listener(PMONITOR->output, &Events::outputListener, PMONITOR);
+
+        g_pHyprpaper->m_mtTickMutex.unlock();
     } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
         g_pHyprpaper->m_sLayerShell = (zwlr_layer_shell_v1 *)wl_registry_bind(registry, name, &zwlr_layer_shell_v1_interface, 1);
     }

@@ -25,7 +25,7 @@ public:
     std::unordered_map<std::string, CWallpaperTarget> m_mWallpaperTargets;
     std::unordered_map<std::string, std::string> m_mMonitorActiveWallpapers;
     std::unordered_map<SMonitor*, CWallpaperTarget*> m_mMonitorActiveWallpaperTargets;
-    std::vector<std::unique_ptr<SPoolBuffer>> m_mBuffers;
+    std::vector<std::unique_ptr<SPoolBuffer>> m_vBuffers;
     std::vector<std::unique_ptr<SMonitor>> m_vMonitors;
 
     void        preloadAllWallpapersFromConfig();
@@ -41,9 +41,11 @@ public:
     SMonitor*   getMonitorFromName(const std::string&);
     bool        isPreloaded(const std::string&);
     void        recheckMonitor(SMonitor*);
+    void        ensurePoolBuffersPresent();
+    SPoolBuffer* getPoolBuffer(SMonitor*, CWallpaperTarget*);
 
-private:
     std::mutex  m_mtTickMutex;
+private:
     bool        m_bShouldExit = false;
 };
 
