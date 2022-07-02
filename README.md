@@ -30,7 +30,7 @@ Preload will tell Hyprland to load a particular image. Wallpaper will apply the 
 A Wallpaper ***cannot*** be applied without preloading. The config is ***not*** reloaded dynamically.
 
 # IPC
-You can use `hyprctl hyprpaper` to issue a keyword, for example
+You can use `hyprctl hyprpaper` (if on Hyprland) to issue a keyword, for example
 ```
 hyprctl hyprpaper wallpaper DP-1,~/Pictures/myepicpng.png
 ```
