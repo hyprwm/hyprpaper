@@ -10,6 +10,7 @@ struct SMonitor {
     int scale;
 
     bool readyForLS = false;
+    bool hasATarget = true;
 
     zwlr_layer_surface_v1* pLayerSurface = nullptr;
     wl_surface* pSurface = nullptr;

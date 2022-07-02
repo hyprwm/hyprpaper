@@ -3,6 +3,8 @@
 void CWallpaperTarget::create(const std::string& path) {
     m_szPath = path;
 
+    const auto BEGINLOAD = std::chrono::system_clock::now();
+
     cairo_surface_t* CAIROSURFACE = nullptr;
     if (path.find(".png") == path.length() - 4) {
         CAIROSURFACE = cairo_image_surface_create_from_png(path.c_str());
@@ -22,6 +24,10 @@ void CWallpaperTarget::create(const std::string& path) {
     }
 
     m_vSize = { cairo_image_surface_get_width(CAIROSURFACE), cairo_image_surface_get_height(CAIROSURFACE) };
+
+    const auto MS = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - BEGINLOAD).count() / 1000.f;
+
+    Debug::log(LOG, "Preloaded target %s in %.2fms -> Pixel size: [%i, %i]", path.c_str(), MS, (int)m_vSize.x, (int)m_vSize.y);
 
     m_pCairoSurface = CAIROSURFACE;
 }

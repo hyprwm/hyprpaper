@@ -50,7 +50,7 @@ void CHyprpaper::recheckAllMonitors() {
 }
 
 void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
-    if (!pMonitor->readyForLS)
+    if (!pMonitor->readyForLS || !pMonitor->hasATarget)
         return;
 
     auto it = m_mMonitorActiveWallpaperTargets.find(pMonitor);
@@ -62,9 +62,6 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
 
     if (it->second) 
         return; // has
-
-    // create it for thy
-    createLSForMonitor(pMonitor);
 
     // get the target
     for (auto&[mon, path1] : m_mMonitorActiveWallpapers) {
@@ -80,10 +77,13 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
     }
 
     if (!it->second) {
-        Debug::log(CRIT, "No target for monitor %s!!", pMonitor->name.c_str());
-        exit(1);
+        pMonitor->hasATarget = false;
+        Debug::log(WARN, "Monitor %s does not have a target! A wallpaper will not be created.", pMonitor->name.c_str());
         return;
     }
+
+    // create it for thy
+    createLSForMonitor(pMonitor);
 }
 
 void CHyprpaper::createLSForMonitor(SMonitor* pMonitor) {
