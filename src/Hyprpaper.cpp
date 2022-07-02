@@ -216,9 +216,25 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         exit(1);
     }
 
-    Debug::log(LOG, "Scale: %i", pMonitor->scale);
-    cairo_scale(PCAIRO, pMonitor->scale, pMonitor->scale);
-    cairo_set_source_surface(PCAIRO, PWALLPAPERTARGET->m_pCairoSurface, 0, 0);
+    // get scale
+    // we always do cover
+    float scale;
+    Vector2D origin;
+    if (pMonitor->size.x / pMonitor->size.y > PWALLPAPERTARGET->m_vSize.x / PWALLPAPERTARGET->m_vSize.y) {
+        scale = pMonitor->size.x / PWALLPAPERTARGET->m_vSize.x;
+
+        origin.y = - (PWALLPAPERTARGET->m_vSize.y * scale - pMonitor->size.y) / 2.f / scale;
+
+    } else {
+        scale = pMonitor->size.y / PWALLPAPERTARGET->m_vSize.y;
+
+        origin.x = - (PWALLPAPERTARGET->m_vSize.x * scale - pMonitor->size.x) / 2.f / scale;
+    }
+
+    Debug::log(LOG, "Image data for %s: %s at [%.2f, %.2f], scale: %.2f (original image size: [%i, %i])", pMonitor->name.c_str(), PWALLPAPERTARGET->m_szPath.c_str(), origin.x, origin.y, scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);
+
+    cairo_scale(PCAIRO, scale, scale);
+    cairo_set_source_surface(PCAIRO, PWALLPAPERTARGET->m_pCairoSurface, origin.x, origin.y);
 
     cairo_paint(PCAIRO);
     cairo_restore(PCAIRO);

@@ -21,5 +21,7 @@ void CWallpaperTarget::create(const std::string& path) {
         exit(1);
     }
 
+    m_vSize = { cairo_image_surface_get_width(CAIROSURFACE), cairo_image_surface_get_height(CAIROSURFACE) };
+
     m_pCairoSurface = CAIROSURFACE;
 }
