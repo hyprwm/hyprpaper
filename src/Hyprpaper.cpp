@@ -104,6 +104,8 @@ SMonitor* CHyprpaper::getMonitorFromName(const std::string& monname) {
 }
 
 void CHyprpaper::ensurePoolBuffersPresent() {
+    bool anyNewBuffers = false;
+
     for (auto&[file, wt] : m_mWallpaperTargets) {
         for (auto& m : m_vMonitors) {
 
@@ -121,8 +123,22 @@ void CHyprpaper::ensurePoolBuffersPresent() {
                 createBuffer(PBUFFER, m->size.x * m->scale, m->size.y * m->scale, WL_SHM_FORMAT_ARGB8888);
 
                 PBUFFER->pTarget = &wt;
+
+                Debug::log(LOG, "Buffer created, Shared Memory usage: %.1fMB", PBUFFER->size / 1000000.f);
+
+                anyNewBuffers = true;
             }
         }
+    }
+
+    if (anyNewBuffers) {
+        uint64_t bytesUsed = 0;
+
+        for (auto& bf : m_vBuffers) {
+            bytesUsed += bf->size;
+        }
+
+        Debug::log(LOG, "Total SM usage for all buffers: %.1fMB", bytesUsed / 1000000.f);
     }
 }
 
