@@ -45,6 +45,6 @@ debug:
 	cmake --build ./build --config Debug --target all -j 10
 
 all:
-    make clear
-    make protocols
+	make clear
+	make protocols
 	make release
