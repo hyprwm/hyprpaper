@@ -8,7 +8,7 @@ Hyprpaper is a blazing fast wallpaper utility for Hyprland with the ability to d
 git clone https://github.com/hyprwm/hyprpaper
 make all
 ```
-*the output binary will be in `./build/`*
+*the output binary will be in `./build/`, copy it to your PATH, e.g. `/usr/bin`*
 
 # Usage
 
@@ -25,7 +25,7 @@ wallpaper = monitor,/path/to/image.png
 # .. more monitors
 ```
 
-Preload will tell Hyprland to load a particular image. Wallpaper will apply the wallpaper to the selected output (`monitor` is the monitor's name, easily can be retrieved with `hyprctl monitors`)
+Preload will tell Hyprland to load a particular image (supported formats: png, jpg, jpeg). Wallpaper will apply the wallpaper to the selected output (`monitor` is the monitor's name, easily can be retrieved with `hyprctl monitors`)
 
 A Wallpaper ***cannot*** be applied without preloading. The config is ***not*** reloaded dynamically.
 
