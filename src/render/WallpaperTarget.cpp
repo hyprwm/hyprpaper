@@ -9,9 +9,8 @@ void CWallpaperTarget::create(const std::string& path) {
     if (path.find(".png") == path.length() - 4) {
         CAIROSURFACE = cairo_image_surface_create_from_png(path.c_str());
     } else if (path.find(".jpg") == path.length() - 4 || path.find(".jpeg") == path.length() - 5) {
-        Debug::log(ERR, ".jpg images are not yet supported! :(");
-        exit(1);
-        return;
+        CAIROSURFACE = JPEG::createSurfaceFromJPEG(path);
+        m_bHasAlpha = false;
     } else {
         Debug::log(CRIT, "unrecognized image %s", path.c_str());
         exit(1);
