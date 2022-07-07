@@ -67,6 +67,20 @@ void CHyprpaper::preloadAllWallpapersFromConfig() {
         return;
 
     for (auto& wp : g_pConfigManager->m_dRequestedPreloads) {
+
+        // check if it doesnt exist
+        bool exists = false;
+        for (auto&[ewp, cls] : m_mWallpaperTargets) {
+            if (ewp == wp) {
+                Debug::log(LOG, "Ignoring request to preload %s as it already is preloaded!", ewp.c_str());
+                exists = true;
+                break;
+            }
+        }
+
+        if (exists)
+            continue;
+
         m_mWallpaperTargets[wp] = CWallpaperTarget();
         m_mWallpaperTargets[wp].create(wp);
     }
