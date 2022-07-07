@@ -100,6 +100,8 @@ void CIPCSocket::mainThreadParseRequest() {
 
     // parse
     if (copy.find("wallpaper") == 0 || copy.find("preload") == 0) {
+        g_pConfigManager->parseError = ""; // reset parse error
+
         g_pConfigManager->parseKeyword(copy.substr(0, copy.find_first_of(' ')), copy.substr(copy.find_first_of(' ') + 1));
 
         if (g_pConfigManager->parseError != "") {
