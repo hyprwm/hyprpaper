@@ -6,6 +6,7 @@ Hyprpaper is a blazing fast wallpaper utility for Hyprland with the ability to d
 
 ```
 git clone https://github.com/hyprwm/hyprpaper
+cd hyprpaper
 make all
 ```
 *the output binary will be in `./build/`, copy it to your PATH, e.g. `/usr/bin`*
