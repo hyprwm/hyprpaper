@@ -127,7 +127,7 @@ void CHyprpaper::ensurePoolBuffersPresent() {
                 continue;
 
             auto it = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
-                return el->pTarget == &wt && el->pixelSize == m->size;
+                return el->pTarget == &wt && el->pixelSize == m->size * m->scale;
             });
 
             if (it == m_vBuffers.end()) {
@@ -305,7 +305,7 @@ void CHyprpaper::destroyBuffer(SPoolBuffer* pBuffer) {
 
 SPoolBuffer* CHyprpaper::getPoolBuffer(SMonitor* pMonitor, CWallpaperTarget* pWallpaperTarget) {
     return std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
-        return el->pTarget == pWallpaperTarget && el->pixelSize == pMonitor->size;
+        return el->pTarget == pWallpaperTarget && el->pixelSize == pMonitor->size * pMonitor->scale;
     })->get();
 }
 
