@@ -342,14 +342,14 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     float scale;
     Vector2D origin;
     if (pMonitor->size.x / pMonitor->size.y > PWALLPAPERTARGET->m_vSize.x / PWALLPAPERTARGET->m_vSize.y) {
-        scale = pMonitor->size.x / PWALLPAPERTARGET->m_vSize.x;
+        scale = pMonitor->size.x * pMonitor->scale / PWALLPAPERTARGET->m_vSize.x;
 
-        origin.y = - (PWALLPAPERTARGET->m_vSize.y * scale - pMonitor->size.y) / 2.f / scale;
+        origin.y = - (PWALLPAPERTARGET->m_vSize.y * scale - pMonitor->size.y * pMonitor->scale) / 2.f / scale;
 
     } else {
-        scale = pMonitor->size.y / PWALLPAPERTARGET->m_vSize.y;
+        scale = pMonitor->size.y * pMonitor->scale / PWALLPAPERTARGET->m_vSize.y;
 
-        origin.x = - (PWALLPAPERTARGET->m_vSize.x * scale - pMonitor->size.x) / 2.f / scale;
+        origin.x = - (PWALLPAPERTARGET->m_vSize.x * scale - pMonitor->size.x * pMonitor->scale) / 2.f / scale;
     }
 
     Debug::log(LOG, "Image data for %s: %s at [%.2f, %.2f], scale: %.2f (original image size: [%i, %i])", pMonitor->name.c_str(), PWALLPAPERTARGET->m_szPath.c_str(), origin.x, origin.y, scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);
