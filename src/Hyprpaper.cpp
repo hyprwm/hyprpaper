@@ -317,7 +317,19 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         exit(1);
     }
 
-    auto *const PBUFFER = getPoolBuffer(pMonitor, PWALLPAPERTARGET);
+    auto* PBUFFER = getPoolBuffer(pMonitor, PWALLPAPERTARGET);
+
+    if (!PBUFFER) {
+        Debug::log(LOG, "Pool buffer missing for available target??");
+        ensurePoolBuffersPresent();
+
+        PBUFFER = getPoolBuffer(pMonitor, PWALLPAPERTARGET);
+
+        if (!PBUFFER) {
+            Debug::log(LOG, "Pool buffer failed #2. Ignoring WP.");
+            return;
+        }
+    }
 
     const auto PCAIRO = PBUFFER->cairo;
     cairo_save(PCAIRO);
