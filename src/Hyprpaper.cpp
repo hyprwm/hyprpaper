@@ -125,7 +125,8 @@ void CHyprpaper::removeOldHyprpaperImages() {
             // unlink it
 
             memoryFreed += entry.file_size();
-            std::filesystem::remove(FILENAME);
+            if (!std::filesystem::remove(entry.path()))
+                Debug::log(LOG, "Couldn't remove %s", entry.path().string().c_str());
             cleaned++;
         }
     }
