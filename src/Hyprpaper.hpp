@@ -28,6 +28,7 @@ public:
     std::vector<std::unique_ptr<SPoolBuffer>> m_vBuffers;
     std::vector<std::unique_ptr<SMonitor>> m_vMonitors;
 
+    void        removeOldHyprpaperImages();
     void        preloadAllWallpapersFromConfig();
     void        recheckAllMonitors();
     void        ensureMonitorHasActiveWallpaper(SMonitor*);

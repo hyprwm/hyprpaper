@@ -3,6 +3,9 @@
 CHyprpaper::CHyprpaper() { }
 
 void CHyprpaper::init() {
+
+    removeOldHyprpaperImages();
+
     g_pConfigManager = std::make_unique<CConfigManager>();
     g_pIPCSocket = std::make_unique<CIPCSocket>();
 
@@ -105,6 +108,30 @@ void CHyprpaper::recheckMonitor(SMonitor* pMonitor) {
     if (pMonitor->wantsReload) {
         pMonitor->wantsReload = false;
         renderWallpaperForMonitor(pMonitor);
+    }
+}
+
+void CHyprpaper::removeOldHyprpaperImages() {
+    int cleaned = 0;
+    uint64_t memoryFreed = 0;
+
+    for (const auto& entry : std::filesystem::directory_iterator(std::string(getenv("XDG_RUNTIME_DIR")))) {
+        if (entry.is_directory())
+            continue;
+
+        const auto FILENAME = entry.path().filename().string();
+
+        if (FILENAME.contains(".hyprpaper_")) {
+            // unlink it
+
+            memoryFreed += entry.file_size();
+            std::filesystem::remove(FILENAME);
+            cleaned++;
+        }
+    }
+
+    if (cleaned != 0) {
+        Debug::log(LOG, "Cleaned old hyprpaper preloads (%i), removing %.1fMB", cleaned, ((float)memoryFreed) / 1000000.f);
     }
 }
 
