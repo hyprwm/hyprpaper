@@ -4,7 +4,7 @@ Hyprpaper is a blazing fast wallpaper utility for Hyprland with the ability to d
 
 # Installation
 
-### [AUR](https://aur.archlinux.org/packages/hyprpaper-git): `yay -S hyprpaper-git`
+[AUR](https://aur.archlinux.org/packages/hyprpaper-git): `yay -S hyprpaper-git`
 
 ### Manual:
 ```
