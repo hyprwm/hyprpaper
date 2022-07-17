@@ -39,4 +39,11 @@ You can use `hyprctl hyprpaper` (if on Hyprland) to issue a keyword, for example
 hyprctl hyprpaper wallpaper DP-1,~/Pictures/myepicpng.png
 ```
 
+## Unloading
+If you use a lot of wallpapers, consider unloading those that you no longer need. This will mean you need to load them again if you wish to use them for a second time, but will free the memory used by the preloaded bitmap. (Usually 8 - 20MB, depending on the resolution)
+
+You can issue a `hyprctl hyprpaper unload [PATH]` to do that.
+
+<br/>
+
 For other compositors, the socket works like socket1 of Hyprland, and is located in `/tmp/hypr/.hyprpaper.sock` (this path only when Hyprland is not running!)
