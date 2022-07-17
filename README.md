@@ -33,6 +33,16 @@ Preload will tell Hyprland to load a particular image (supported formats: png, j
 
 A Wallpaper ***cannot*** be applied without preloading. The config is ***not*** reloaded dynamically.
 
+## Important note to the inner workings
+Preload does exactly what it says. It loads the entire wallpaper into memory. This can result in around 8 - 20MB of mem usage. It is not recommended to preload every wallpaper you have, as it will be a) taking a couple seconds at the beginning to load and b) take 100s of MBs of disk and RAM usage.
+
+Preload is meant only for situations in which you want a wallpaper to switch INSTANTLY when you issue a wallpaper keyword (e.g. wallpaper per workspace)
+
+In any and all cases when you don't mind waiting 300ms for the wallpaper to change, consider making a script that:
+ - preloads the new wallpaper
+ - sets the new wallpaper
+ - unloads the old wallpaper (to free memory)
+
 # IPC
 You can use `hyprctl hyprpaper` (if on Hyprland) to issue a keyword, for example
 ```
