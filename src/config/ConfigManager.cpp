@@ -93,6 +93,8 @@ void CConfigManager::parseKeyword(const std::string& COMMAND, const std::string&
         handleWallpaper(COMMAND, VALUE);
     else if (COMMAND == "preload")
         handlePreload(COMMAND, VALUE);
+    else if (COMMAND == "unload")
+        handleUnload(COMMAND, VALUE);
     else
         parseError = "unknown keyword " + COMMAND;
 }
@@ -139,4 +141,15 @@ void CConfigManager::handlePreload(const std::string& COMMAND, const std::string
     }
 
     m_dRequestedPreloads.emplace_back(WALLPAPER);
+}
+
+void CConfigManager::handleUnload(const std::string& COMMAND, const std::string& VALUE) {
+    auto WALLPAPER = VALUE;
+
+    if (WALLPAPER[0] == '~') {
+        static const char* const ENVHOME = getenv("HOME");
+        WALLPAPER = std::string(ENVHOME) + WALLPAPER.substr(1);
+    }
+
+    g_pHyprpaper->unloadWallpaper(WALLPAPER);
 }

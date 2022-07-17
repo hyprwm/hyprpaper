@@ -65,6 +65,46 @@ bool CHyprpaper::isPreloaded(const std::string& path) {
     return false;
 }
 
+void CHyprpaper::unloadWallpaper(const std::string& path) {
+    bool found = false;
+
+    for (auto& [ewp, cls] : m_mWallpaperTargets) {
+        if (ewp == path) {
+            // found
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        Debug::log(LOG, "Cannot unload a target that was not loaded!");
+        return;
+    }
+
+    // clean buffers
+    for (auto it = m_vBuffers.begin(); it != m_vBuffers.end(); it++) {
+
+        if (it->get()->pTarget->m_szPath != path)
+            continue;
+
+
+        const auto PRELOADPATH = it->get()->name;
+
+        Debug::log(LOG, "Unloading target %s, preload path %s", path.c_str(), PRELOADPATH.c_str());
+
+        std::filesystem::remove(PRELOADPATH);
+
+        destroyBuffer(it->get());
+
+        it = m_vBuffers.erase(it);
+
+        if (it == m_vBuffers.end())
+            break;
+    }
+
+    m_mWallpaperTargets.erase(path); // will free the cairo surface
+}
+
 void CHyprpaper::preloadAllWallpapersFromConfig() {
     if (g_pConfigManager->m_dRequestedPreloads.empty())
         return;
@@ -320,6 +360,7 @@ void CHyprpaper::createBuffer(SPoolBuffer* pBuffer, int32_t w, int32_t h, uint32
     pBuffer->surface = cairo_image_surface_create_for_data((unsigned char*)DATA, CAIRO_FORMAT_ARGB32, w, h, STRIDE);
     pBuffer->cairo = cairo_create(pBuffer->surface);
     pBuffer->pixelSize = Vector2D(w, h);
+    pBuffer->name = name;
 }
 
 void CHyprpaper::destroyBuffer(SPoolBuffer* pBuffer) {

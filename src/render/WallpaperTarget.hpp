@@ -5,6 +5,8 @@
 
 class CWallpaperTarget {
 public:
+
+    ~CWallpaperTarget();
     
     void        create(const std::string& path);
     void        render();

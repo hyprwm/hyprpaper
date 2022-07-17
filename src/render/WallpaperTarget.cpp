@@ -1,5 +1,9 @@
 #include "WallpaperTarget.hpp"
 
+CWallpaperTarget::~CWallpaperTarget() {
+    cairo_surface_destroy(m_pCairoSurface);
+}
+
 void CWallpaperTarget::create(const std::string& path) {
     m_szPath = path;
 

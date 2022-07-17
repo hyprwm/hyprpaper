@@ -99,7 +99,7 @@ void CIPCSocket::mainThreadParseRequest() {
     Debug::log(LOG, "Received a request: %s", copy.c_str());
 
     // parse
-    if (copy.find("wallpaper") == 0 || copy.find("preload") == 0) {
+    if (copy.find("wallpaper") == 0 || copy.find("preload") == 0 || copy.find("unload") == 0) {
         g_pConfigManager->parseError = ""; // reset parse error
 
         g_pConfigManager->parseKeyword(copy.substr(0, copy.find_first_of(' ')), copy.substr(copy.find_first_of(' ') + 1));
