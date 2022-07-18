@@ -82,10 +82,12 @@ void CHyprpaper::unloadWallpaper(const std::string& path) {
     }
 
     // clean buffers
-    for (auto it = m_vBuffers.begin(); it != m_vBuffers.end(); it++) {
+    for (auto it = m_vBuffers.begin(); it != m_vBuffers.end();) {
 
-        if (it->get()->target != path)
+        if (it->get()->target != path) {
+            it++;
             continue;
+        }
 
         const auto PRELOADPATH = it->get()->name;
 
@@ -96,9 +98,6 @@ void CHyprpaper::unloadWallpaper(const std::string& path) {
         destroyBuffer(it->get());
 
         it = m_vBuffers.erase(it);
-
-        if (it == m_vBuffers.end())
-            break;
     }
 
     m_mWallpaperTargets.erase(path); // will free the cairo surface
