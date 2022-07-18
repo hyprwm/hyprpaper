@@ -84,7 +84,7 @@ void CHyprpaper::unloadWallpaper(const std::string& path) {
     // clean buffers
     for (auto it = m_vBuffers.begin(); it != m_vBuffers.end(); it++) {
 
-        if (it->get()->pTarget->m_szPath != path)
+        if (it->get()->target != path)
             continue;
 
 
@@ -195,7 +195,7 @@ void CHyprpaper::ensurePoolBuffersPresent() {
                 continue;
 
             auto it = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
-                return el->pTarget == &wt && el->pixelSize == m->size * m->scale;
+                return el->target == wt.m_szPath && el->pixelSize == m->size * m->scale;
             });
 
             if (it == m_vBuffers.end()) {
@@ -204,7 +204,7 @@ void CHyprpaper::ensurePoolBuffersPresent() {
 
                 createBuffer(PBUFFER, m->size.x * m->scale, m->size.y * m->scale, WL_SHM_FORMAT_ARGB8888);
 
-                PBUFFER->pTarget = &wt;
+                PBUFFER->target = wt.m_szPath;
 
                 Debug::log(LOG, "Buffer created, Shared Memory usage: %.1fMB", PBUFFER->size / 1000000.f);
 
@@ -374,7 +374,7 @@ void CHyprpaper::destroyBuffer(SPoolBuffer* pBuffer) {
 
 SPoolBuffer* CHyprpaper::getPoolBuffer(SMonitor* pMonitor, CWallpaperTarget* pWallpaperTarget) {
     return std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
-        return el->pTarget == pWallpaperTarget && el->pixelSize == pMonitor->size * pMonitor->scale;
+        return el->target == pWallpaperTarget->m_szPath && el->pixelSize == pMonitor->size * pMonitor->scale;
     })->get();
 }
 
