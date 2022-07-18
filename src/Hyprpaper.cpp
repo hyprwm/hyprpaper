@@ -87,7 +87,6 @@ void CHyprpaper::unloadWallpaper(const std::string& path) {
         if (it->get()->target != path)
             continue;
 
-
         const auto PRELOADPATH = it->get()->name;
 
         Debug::log(LOG, "Unloading target %s, preload path %s", path.c_str(), PRELOADPATH.c_str());
@@ -206,7 +205,7 @@ void CHyprpaper::ensurePoolBuffersPresent() {
 
                 PBUFFER->target = wt.m_szPath;
 
-                Debug::log(LOG, "Buffer created, Shared Memory usage: %.1fMB", PBUFFER->size / 1000000.f);
+                Debug::log(LOG, "Buffer created for target %s, Shared Memory usage: %.1fMB", wt.m_szPath.c_str(), PBUFFER->size / 1000000.f);
 
                 anyNewBuffers = true;
             }
