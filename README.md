@@ -49,6 +49,13 @@ You can use `hyprctl hyprpaper` (if on Hyprland) to issue a keyword, for example
 hyprctl hyprpaper wallpaper DP-1,~/Pictures/myepicpng.png
 ```
 
+# Battery life
+Since the IPC has to tick every now and then, and poll in the background, battery life might be a tiny bit worse with IPC on. If you want to fully disable it, use
+```
+ipc = off
+```
+in the config.
+
 ## Unloading
 If you use a lot of wallpapers, consider unloading those that you no longer need. This will mean you need to load them again if you wish to use them for a second time, but will free the memory used by the preloaded bitmap. (Usually 8 - 20MB, depending on the resolution)
 
