@@ -19,41 +19,49 @@ void CHyprpaper::init() {
 
     preloadAllWallpapersFromConfig();
 
-    g_pIPCSocket->initialize();
+    if (m_bIPCEnabled)
+        g_pIPCSocket->initialize();
 
     // run
     wl_registry *registry = wl_display_get_registry(m_sDisplay);
     wl_registry_add_listener(registry, &Events::registryListener, nullptr);
 
-    std::thread([&]() { // we dispatch wl events cuz we have to
+    if (m_bIPCEnabled) {
+        std::thread([&]() {  // we dispatch wl events cuz we have to
+            while (wl_display_dispatch(m_sDisplay) != -1) {
+                tick();
+            }
+
+            m_bShouldExit = true;
+        }).detach();
+
+        while (1) {  // we also tick every 1ms for socket and other shit's updates
+            tick();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+            if (m_bShouldExit)
+                break;
+        }
+    } else {
         while (wl_display_dispatch(m_sDisplay) != -1) {
             tick();
         }
-
-        m_bShouldExit = true;
-    }).detach();
-
-    while (1) { // we also tick every 1ms for socket and other shit's updates
-        tick();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-
-        if (m_bShouldExit)
-            break;
     }
 }
 
 void CHyprpaper::tick() {
-    m_mtTickMutex.lock();
+    std::lock_guard<std::mutex> lg(m_mtTickMutex);
+
+    bool reload = g_pIPCSocket->mainThreadParseRequest();
+
+    if (!reload)
+        return;
 
     preloadAllWallpapersFromConfig();
     ensurePoolBuffersPresent();
 
     recheckAllMonitors();
-   
-    g_pIPCSocket->mainThreadParseRequest();
-
-    m_mtTickMutex.unlock();
 }
 
 bool CHyprpaper::isPreloaded(const std::string& path) {

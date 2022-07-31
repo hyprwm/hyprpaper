@@ -95,6 +95,8 @@ void CConfigManager::parseKeyword(const std::string& COMMAND, const std::string&
         handlePreload(COMMAND, VALUE);
     else if (COMMAND == "unload")
         handleUnload(COMMAND, VALUE);
+    else if (COMMAND == "ipc")
+        g_pHyprpaper->m_bIPCEnabled = VALUE == "1" || VALUE == "yes" || VALUE == "on" || VALUE == "true";
     else
         parseError = "unknown keyword " + COMMAND;
 }

@@ -28,6 +28,8 @@ public:
     std::vector<std::unique_ptr<SPoolBuffer>> m_vBuffers;
     std::vector<std::unique_ptr<SMonitor>> m_vMonitors;
 
+    bool        m_bIPCEnabled = true;
+
     void        removeOldHyprpaperImages();
     void        preloadAllWallpapersFromConfig();
     void        recheckAllMonitors();
@@ -48,6 +50,7 @@ public:
 
     std::mutex  m_mtTickMutex;
 private:
+    
     bool        m_bShouldExit = false;
 };
 

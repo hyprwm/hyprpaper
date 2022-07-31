@@ -84,17 +84,17 @@ void CIPCSocket::initialize() {
     }).detach();
 }
 
-void CIPCSocket::mainThreadParseRequest() {
+bool CIPCSocket::mainThreadParseRequest() {
     
     if (!m_bRequestReady)
-        return;
+        return false;
 
     std::string copy = m_szRequest;
 
     // now we can work on the copy
 
     if (copy == "")
-        return;
+        return false;
 
     Debug::log(LOG, "Received a request: %s", copy.c_str());
 
@@ -108,17 +108,19 @@ void CIPCSocket::mainThreadParseRequest() {
             m_szReply = g_pConfigManager->parseError;
             m_bReplyReady = true;
             m_bRequestReady = false;
-            return;
+            return false;
         }
     }
     else {
         m_szReply = "invalid command";
         m_bReplyReady = true;
         m_bRequestReady = false;
-        return;
+        return false;
     }
 
     m_szReply = "ok";
     m_bReplyReady = true;
     m_bRequestReady = false;
+
+    return true;
 }

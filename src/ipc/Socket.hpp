@@ -7,7 +7,7 @@ class CIPCSocket {
 public:
     void        initialize();
 
-    void        mainThreadParseRequest();
+    bool        mainThreadParseRequest();
 
 private:
 
