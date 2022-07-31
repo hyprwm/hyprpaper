@@ -20,7 +20,7 @@ public:
     // init the utility
     CHyprpaper();
     void        init();
-    void        tick();
+    void        tick(bool force);
 
     std::unordered_map<std::string, CWallpaperTarget> m_mWallpaperTargets;
     std::unordered_map<std::string, std::string> m_mMonitorActiveWallpapers;

@@ -29,14 +29,14 @@ void CHyprpaper::init() {
     if (m_bIPCEnabled) {
         std::thread([&]() {  // we dispatch wl events cuz we have to
             while (wl_display_dispatch(m_sDisplay) != -1) {
-                tick();
+                tick(true);
             }
 
             m_bShouldExit = true;
         }).detach();
 
         while (1) {  // we also tick every 1ms for socket and other shit's updates
-            tick();
+            tick(false);
 
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
@@ -45,17 +45,17 @@ void CHyprpaper::init() {
         }
     } else {
         while (wl_display_dispatch(m_sDisplay) != -1) {
-            tick();
+            tick(true);
         }
     }
 }
 
-void CHyprpaper::tick() {
+void CHyprpaper::tick(bool force) {
     std::lock_guard<std::mutex> lg(m_mtTickMutex);
 
     bool reload = g_pIPCSocket->mainThreadParseRequest();
 
-    if (!reload)
+    if (!reload && !force)
         return;
 
     preloadAllWallpapersFromConfig();
