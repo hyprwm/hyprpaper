@@ -31,6 +31,12 @@ wallpaper = monitor,/path/to/image.png
 
 Preload will tell Hyprland to load a particular image (supported formats: png, jpg, jpeg). Wallpaper will apply the wallpaper to the selected output (`monitor` is the monitor's name, easily can be retrieved with `hyprctl monitors`)
 
+You may add `contain:` before the file path in `wallpaper=` to set the mode to contain instead of cover:
+
+```
+wallpaper = monitor,contain:/path/to/image.jpg
+```
+
 A Wallpaper ***cannot*** be applied without preloading. The config is ***not*** reloaded dynamically.
 
 ## Important note to the inner workings
