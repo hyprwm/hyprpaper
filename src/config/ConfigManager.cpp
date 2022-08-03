@@ -110,9 +110,16 @@ void CConfigManager::handleWallpaper(const std::string& COMMAND, const std::stri
     auto MONITOR = VALUE.substr(0, VALUE.find_first_of(','));
     auto WALLPAPER = VALUE.substr(VALUE.find_first_of(',') + 1);
 
+    bool contain = false;
+
     if (WALLPAPER[0] == '~') {
         static const char* const ENVHOME = getenv("HOME");
         WALLPAPER = std::string(ENVHOME) + WALLPAPER.substr(1);
+    }
+
+    if (WALLPAPER.find("contain:") == 0) {
+        WALLPAPER = WALLPAPER.substr(8);
+        contain = true;
     }
 
     if (!std::filesystem::exists(WALLPAPER)) {
@@ -127,6 +134,7 @@ void CConfigManager::handleWallpaper(const std::string& COMMAND, const std::stri
 
     g_pHyprpaper->clearWallpaperFromMonitor(MONITOR);
     g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR] = WALLPAPER;
+    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
 }
 
 void CConfigManager::handlePreload(const std::string& COMMAND, const std::string& VALUE) {

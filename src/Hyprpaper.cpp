@@ -250,8 +250,6 @@ void CHyprpaper::clearWallpaperFromMonitor(const std::string& monname) {
         PMONITOR->wantsReload = false;
         PMONITOR->initialized = false;
         PMONITOR->readyForLS = true;
-
-        
     }
 }
 
@@ -386,6 +384,7 @@ SPoolBuffer* CHyprpaper::getPoolBuffer(SMonitor* pMonitor, CWallpaperTarget* pWa
 
 void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     const auto PWALLPAPERTARGET = m_mMonitorActiveWallpaperTargets[pMonitor];
+    const auto CONTAIN = m_mMonitorWallpaperRenderData[pMonitor->name].contain;
 
     if (!PWALLPAPERTARGET) {
         Debug::log(CRIT, "wallpaper target null in render??");
@@ -412,19 +411,41 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     cairo_paint(PCAIRO);
     cairo_restore(PCAIRO);
 
+    if (CONTAIN) {
+        cairo_set_source_rgb(PCAIRO, 0, 0, 0);
+        cairo_rectangle(PCAIRO, 0, 0, pMonitor->size.x * pMonitor->scale, pMonitor->size.y * pMonitor->scale);
+
+        cairo_fill(PCAIRO);
+
+        cairo_surface_flush(PBUFFER->surface);
+    }
+
     // get scale
     // we always do cover
     float scale;
     Vector2D origin;
-    if (pMonitor->size.x / pMonitor->size.y > PWALLPAPERTARGET->m_vSize.x / PWALLPAPERTARGET->m_vSize.y) {
-        scale = pMonitor->size.x * pMonitor->scale / PWALLPAPERTARGET->m_vSize.x;
 
-        origin.y = - (PWALLPAPERTARGET->m_vSize.y * scale - pMonitor->size.y * pMonitor->scale) / 2.f / scale;
+    if (!CONTAIN) {
+        if (pMonitor->size.x / pMonitor->size.y > PWALLPAPERTARGET->m_vSize.x / PWALLPAPERTARGET->m_vSize.y) {
+            scale = pMonitor->size.x * pMonitor->scale / PWALLPAPERTARGET->m_vSize.x;
 
+            origin.y = -(PWALLPAPERTARGET->m_vSize.y * scale - pMonitor->size.y * pMonitor->scale) / 2.f / scale;
+
+        } else {
+            scale = pMonitor->size.y * pMonitor->scale / PWALLPAPERTARGET->m_vSize.y;
+
+            origin.x = -(PWALLPAPERTARGET->m_vSize.x * scale - pMonitor->size.x * pMonitor->scale) / 2.f / scale;
+        }
     } else {
-        scale = pMonitor->size.y * pMonitor->scale / PWALLPAPERTARGET->m_vSize.y;
+        if (pMonitor->size.x / pMonitor->size.y > PWALLPAPERTARGET->m_vSize.x / PWALLPAPERTARGET->m_vSize.y) {
+            scale = (pMonitor->size.y * pMonitor->scale) / PWALLPAPERTARGET->m_vSize.y;
 
-        origin.x = - (PWALLPAPERTARGET->m_vSize.x * scale - pMonitor->size.x * pMonitor->scale) / 2.f / scale;
+            origin.x = (pMonitor->size.x * pMonitor->scale - PWALLPAPERTARGET->m_vSize.x * scale);
+        } else {
+            scale = (pMonitor->size.x * pMonitor->scale) / PWALLPAPERTARGET->m_vSize.x;
+
+            origin.y = (pMonitor->size.y * pMonitor->scale - PWALLPAPERTARGET->m_vSize.y * scale);
+        }
     }
 
     Debug::log(LOG, "Image data for %s: %s at [%.2f, %.2f], scale: %.2f (original image size: [%i, %i])", pMonitor->name.c_str(), PWALLPAPERTARGET->m_szPath.c_str(), origin.x, origin.y, scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);

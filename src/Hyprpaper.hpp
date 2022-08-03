@@ -9,6 +9,10 @@
 #include "ipc/Socket.hpp"
 #include <mutex>
 
+struct SWallpaperRenderData {
+    bool contain = false;
+};
+
 class CHyprpaper {
 public:
     // important
@@ -24,6 +28,7 @@ public:
 
     std::unordered_map<std::string, CWallpaperTarget> m_mWallpaperTargets;
     std::unordered_map<std::string, std::string> m_mMonitorActiveWallpapers;
+    std::unordered_map<std::string, SWallpaperRenderData> m_mMonitorWallpaperRenderData;
     std::unordered_map<SMonitor*, CWallpaperTarget*> m_mMonitorActiveWallpaperTargets;
     std::vector<std::unique_ptr<SPoolBuffer>> m_vBuffers;
     std::vector<std::unique_ptr<SMonitor>> m_vMonitors;
