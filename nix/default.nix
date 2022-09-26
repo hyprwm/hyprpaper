@@ -13,7 +13,7 @@
   libthai,
   pango,
   pcre,
-  utillinux,
+  utillinux ? util-linux,
   wayland,
   wayland-protocols,
   wayland-scanner,
