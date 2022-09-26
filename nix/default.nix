@@ -13,7 +13,7 @@
   libthai,
   pango,
   pcre,
-  utillinux,
+  util-linux,
   wayland,
   wayland-protocols,
   wayland-scanner,
@@ -46,7 +46,7 @@ stdenv.mkDerivation {
     wayland-protocols
     wayland-scanner
     libXdmcp
-    utillinux
+    util-linux
   ];
 
   configurePhase = ''
