@@ -4,8 +4,14 @@
 CConfigManager::CConfigManager() {
     // init the entire thing
 
-    const char* const ENVHOME = getenv("HOME");
-    const std::string CONFIGPATH = ENVHOME + (std::string) "/.config/hypr/hyprpaper.conf";
+    std::string CONFIGPATH;
+    if (g_pHyprpaper->explicitConfigPath == "") {
+        const char *const ENVHOME = getenv("HOME");
+        CONFIGPATH = ENVHOME + (std::string) "/.config/hypr/hyprpaper.conf";
+    }
+    else {
+        CONFIGPATH = g_pHyprpaper->explicitConfigPath;
+    }
 
     std::ifstream ifs;
     ifs.open(CONFIGPATH);
