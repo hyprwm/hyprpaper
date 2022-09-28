@@ -21,7 +21,7 @@ int main(int argc, char** argv, char** envp) {
 
     // starts
     g_pHyprpaper = std::make_unique<CHyprpaper>();
-    g_pHyprpaper->explicitConfigPath = configPath;
+    g_pHyprpaper->m_szExplicitConfigPath = configPath;
     g_pHyprpaper->init();
 
     return 0;

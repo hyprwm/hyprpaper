@@ -34,7 +34,7 @@ public:
     std::vector<std::unique_ptr<SMonitor>> m_vMonitors;
 
     bool        m_bIPCEnabled = true;
-    std::string explicitConfigPath;
+    std::string m_szExplicitConfigPath;
 
     void        removeOldHyprpaperImages();
     void        preloadAllWallpapersFromConfig();
