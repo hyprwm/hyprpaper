@@ -4,11 +4,17 @@
 CConfigManager::CConfigManager() {
     // init the entire thing
 
-    const char* const ENVHOME = getenv("HOME");
-    const std::string CONFIGPATH = ENVHOME + (std::string) "/.config/hypr/hyprpaper.conf";
+    std::string configPath;
+    if (g_pHyprpaper->m_szExplicitConfigPath == "") {
+        const char *const ENVHOME = getenv("HOME");
+        configPath = ENVHOME + (std::string) "/.config/hypr/hyprpaper.conf";
+    }
+    else {
+        configPath = g_pHyprpaper->m_szExplicitConfigPath;
+    }
 
     std::ifstream ifs;
-    ifs.open(CONFIGPATH);
+    ifs.open(configPath);
 
     if (!ifs.good()) {
         Debug::log(CRIT, "Hyprpaper was not provided a config!");
