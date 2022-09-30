@@ -4,12 +4,12 @@
 #include <deque>
 #include <iostream>
 #include <fstream>
-#include <string.h>
+#include <cstring>
 #include <string>
 
 #include <pthread.h>
 #include <cmath>
-#include <math.h>
+#include <cmath>
 
 #define class _class
 #define namespace _namespace
@@ -27,13 +27,13 @@ extern "C" {
 
 #include <GLES3/gl32.h>
 #include <GLES3/gl3ext.h>
-#include <assert.h>
+#include <cassert>
 #include <cairo.h>
 #include <cairo/cairo.h>
 #include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <wayland-client.h>

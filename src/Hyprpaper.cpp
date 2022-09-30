@@ -1,6 +1,6 @@
 #include "Hyprpaper.hpp"
 
-CHyprpaper::CHyprpaper() { }
+CHyprpaper::CHyprpaper() = default;
 
 void CHyprpaper::init() {
 
@@ -9,12 +9,11 @@ void CHyprpaper::init() {
     g_pConfigManager = std::make_unique<CConfigManager>();
     g_pIPCSocket = std::make_unique<CIPCSocket>();
 
-    m_sDisplay = (wl_display *)wl_display_connect(NULL);
+    m_sDisplay = (wl_display *)wl_display_connect(nullptr);
 
     if (!m_sDisplay) {
         Debug::log(CRIT, "No wayland compositor running!");
         exit(1);
-        return;
     }
 
     preloadAllWallpapersFromConfig();
@@ -35,7 +34,7 @@ void CHyprpaper::init() {
             m_bShouldExit = true;
         }).detach();
 
-        while (1) {  // we also tick every 1ms for socket and other shit's updates
+        while (true) {  // we also tick every 1ms for socket and other shit's updates
             tick(false);
 
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -352,7 +351,7 @@ void CHyprpaper::createBuffer(SPoolBuffer* pBuffer, int32_t w, int32_t h, uint32
         exit(1);
     }
 
-    const auto DATA = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, FD, 0);
+    const auto DATA = mmap(nullptr, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, FD, 0);
     const auto POOL = wl_shm_create_pool(g_pHyprpaper->m_sSHM, FD, SIZE);
     pBuffer->buffer = wl_shm_pool_create_buffer(POOL, 0, w, h, STRIDE, format);
     wl_shm_pool_destroy(POOL);

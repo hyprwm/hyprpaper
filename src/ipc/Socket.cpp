@@ -2,15 +2,15 @@
 #include "../Hyprpaper.hpp"
 
 #include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include <errno.h>
+#include <cerrno>
 
 void CIPCSocket::initialize() {
      std::thread([&]() {
@@ -40,7 +40,7 @@ void CIPCSocket::initialize() {
         // 10 max queued.
         listen(SOCKET, 10);
 
-        sockaddr_in clientAddress;
+        sockaddr_in clientAddress = {};
         socklen_t clientSize = sizeof(clientAddress);
 
         char readBuffer[1024] = {0};
@@ -104,7 +104,7 @@ bool CIPCSocket::mainThreadParseRequest() {
 
         g_pConfigManager->parseKeyword(copy.substr(0, copy.find_first_of(' ')), copy.substr(copy.find_first_of(' ') + 1));
 
-        if (g_pConfigManager->parseError != "") {
+        if (!g_pConfigManager->parseError.empty()) {
             m_szReply = g_pConfigManager->parseError;
             m_bReplyReady = true;
             m_bRequestReady = false;

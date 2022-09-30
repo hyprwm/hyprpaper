@@ -22,7 +22,7 @@ cairo_surface_t* JPEG::createSurfaceFromJPEG(const std::string& path) {
 
     void* imageRawData;
 
-    struct stat fileInfo;
+    struct stat fileInfo = {};
 
     const auto FD = open(path.c_str(), O_RDONLY);
 
@@ -36,8 +36,8 @@ cairo_surface_t* JPEG::createSurfaceFromJPEG(const std::string& path) {
 
     // now the JPEG is in the memory
 
-    jpeg_decompress_struct decompressStruct;
-    jpeg_error_mgr errorManager;
+    jpeg_decompress_struct decompressStruct = {};
+    jpeg_error_mgr errorManager = {};
 
     decompressStruct.err = jpeg_std_error(&errorManager);
     jpeg_create_decompress(&decompressStruct);

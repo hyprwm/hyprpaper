@@ -26,4 +26,4 @@ namespace Events {
     inline const zwlr_layer_surface_v1_listener layersurfaceListener = { .configure = ls_configure };
 
     inline const struct wl_registry_listener registryListener = { .global = handleGlobal, .global_remove = handleGlobalRemove };
-};
+}

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <math.h>
+#include <cmath>
 
 class Vector2D {
    public:
@@ -35,5 +35,5 @@ class Vector2D {
         return a.x != x || a.y != y;
     }
 
-    Vector2D floor();
+    Vector2D floor() const;
 };

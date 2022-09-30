@@ -14,4 +14,4 @@ enum LogLevel {
 
 namespace Debug {
     void log(LogLevel level, const char* fmt, ...);
-};
+}
