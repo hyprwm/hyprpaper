@@ -18,7 +18,6 @@ void CWallpaperTarget::create(const std::string& path) {
     } else {
         Debug::log(CRIT, "unrecognized image %s", path.c_str());
         exit(1);
-        return;
     }
 
     if (cairo_surface_status(CAIROSURFACE) != CAIRO_STATUS_SUCCESS) {

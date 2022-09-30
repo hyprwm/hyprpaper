@@ -1,0 +1,6 @@
+---
+Checks: '-*,clang-diagnostic-*,bugprone-*,cert-*,misc-*,modernize-*,performance-*,readability-*,hicpp-exception-baseclass,hicpp-avoid-goto,-clang-diagnostic-address-of-packed-member,-cert-dcl16-c,-cert-dcl21-cpp,-cert-err58-cpp,-misc-unused-parameters,-misc-non-private-member-variables-in-classes,-modernize-avoid-c-arrays,-modernize-concat-nested-namespaces,-modernize-raw-string-literal,-modernize-use-default-member-init,-modernize-use-nodiscard,-modernize-use-override,-modernize-use-trailing-return-type,-readability-else-after-return,-readability-identifier-naming,-readability-implicit-bool-cast,-readability-implicit-bool-conversion,-readability-magic-numbers,-readability-named-parameter,-readability-qualified-auto,-readability-redundant-access-specifiers,-readability-redundant-member-init,-readability-uppercase-literal-suffix'
+WarningsAsErrors: '*'
+HeaderFilterRegex: ''
+FormatStyle: none
+...

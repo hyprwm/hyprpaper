@@ -5,7 +5,7 @@ CConfigManager::CConfigManager() {
     // init the entire thing
 
     std::string configPath;
-    if (g_pHyprpaper->m_szExplicitConfigPath == "") {
+    if (g_pHyprpaper->m_szExplicitConfigPath.empty()) {
         const char *const ENVHOME = getenv("HOME");
         configPath = ENVHOME + (std::string) "/.config/hypr/hyprpaper.conf";
     }
@@ -19,7 +19,6 @@ CConfigManager::CConfigManager() {
     if (!ifs.good()) {
         Debug::log(CRIT, "Hyprpaper was not provided a config!");
         exit(1);
-        return; //jic
     }
 
     std::string line = "";
@@ -36,7 +35,7 @@ CConfigManager::CConfigManager() {
                 parseError += "Config error at line " + std::to_string(linenum) + ": Line parsing error.";
             }
 
-            if (parseError != "" && parseError.find("Config error at line") != 0) {
+            if (!parseError.empty() && parseError.find("Config error at line") != 0) {
                 parseError = "Config error at line " + std::to_string(linenum) + ": " + parseError;
             }
 
@@ -46,7 +45,7 @@ CConfigManager::CConfigManager() {
         ifs.close();
     }
 
-    if (parseError != "") {
+    if (!parseError.empty()) {
         Debug::log(CRIT, "Exiting because of config parse errors!\n%s", parseError.c_str());
         exit(1);
         return;

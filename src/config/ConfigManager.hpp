@@ -11,7 +11,7 @@ public:
     std::deque<std::string> m_dRequestedPreloads;
 
 private:
-    std::string parseError = "";
+    std::string parseError;
 
     void parseLine(std::string&);
     std::string removeBeginEndSpacesTabs(std::string in);

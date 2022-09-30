@@ -10,7 +10,6 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
     if (!pSurface) {
         Debug::log(CRIT, "The compositor did not allow hyprpaper a surface!");
         exit(1);
-        return;
     }
 
     const auto PINPUTREGION = wl_compositor_create_region(g_pHyprpaper->m_sCompositor);
@@ -18,7 +17,6 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
     if (!PINPUTREGION) {
         Debug::log(CRIT, "The compositor did not allow hyprpaper a region!");
         exit(1);
-        return;
     }
 
     wl_surface_set_input_region(pSurface, PINPUTREGION);
@@ -28,7 +26,6 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
     if (!pLayerSurface) {
         Debug::log(CRIT, "The compositor did not allow hyprpaper a layersurface!");
         exit(1);
-        return;
     }
 
     zwlr_layer_surface_v1_set_size(pLayerSurface, 0, 0);

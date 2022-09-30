@@ -6,7 +6,7 @@ Vector2D::Vector2D(double xx, double yy) {
 }
 
 Vector2D::Vector2D() { x = 0; y = 0; }
-Vector2D::~Vector2D() {}
+Vector2D::~Vector2D() = default;
 
 double Vector2D::normalize() {
     // get max abs
@@ -18,6 +18,6 @@ double Vector2D::normalize() {
     return max;
 }
 
-Vector2D Vector2D::floor() {
-    return Vector2D((int)x, (int)y);
+Vector2D Vector2D::floor() const {
+    return {static_cast<int>(x), static_cast<int>(y)};
 }

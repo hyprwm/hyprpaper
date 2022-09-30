@@ -9,7 +9,6 @@ public:
     ~CWallpaperTarget();
     
     void        create(const std::string& path);
-    void        render();
 
     std::string m_szPath;
 
