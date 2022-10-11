@@ -2,14 +2,15 @@
 #include "../Hyprpaper.hpp"
 
 CConfigManager::CConfigManager() {
-    // init the entire thing
+    // Initialize the configuration
+    // Read file from default location
+    // or from an explicit location given by user
 
     std::string configPath;
     if (g_pHyprpaper->m_szExplicitConfigPath.empty()) {
-        const char *const ENVHOME = getenv("HOME");
-        configPath = ENVHOME + (std::string) "/.config/hypr/hyprpaper.conf";
-    }
-    else {
+        const char* const ENVHOME = getenv("HOME");
+        configPath = ENVHOME + std::string("/.config/hypr/hyprpaper.conf");
+    } else {
         configPath = g_pHyprpaper->m_szExplicitConfigPath;
     }
 
@@ -17,7 +18,11 @@ CConfigManager::CConfigManager() {
     ifs.open(configPath);
 
     if (!ifs.good()) {
-        Debug::log(CRIT, "Hyprpaper was not provided a config!");
+        if (g_pHyprpaper->m_szExplicitConfigPath.empty()) {
+            Debug::log(CRIT, "No config file provided. Default config file `/.config/hypr/hyprpaper.conf` couldn't be opened.");
+        } else {
+            Debug::log(CRIT, "No config file provided. Specified file `%s` couldn't be opened.", configPath);
+        }
         exit(1);
     }
 
@@ -25,18 +30,15 @@ CConfigManager::CConfigManager() {
     int linenum = 1;
     if (ifs.is_open()) {
         while (std::getline(ifs, line)) {
-            // Read line by line.
-            try {
-                parseLine(line);
-            } catch (...) {
-                Debug::log(ERR, "Error reading line from config. Line:");
-                Debug::log(NONE, "%s", line.c_str());
+            // Read line by line
+            // The cause of the error is
+            // written in this->parseError
+            parseLine(line);
 
-                parseError += "Config error at line " + std::to_string(linenum) + ": Line parsing error.";
-            }
-
-            if (!parseError.empty() && parseError.find("Config error at line") != 0) {
+            if (!parseError.empty()) {
+                // If an error there is, user may want the precise line where it occured
                 parseError = "Config error at line " + std::to_string(linenum) + ": " + parseError;
+                break;
             }
 
             ++linenum;
@@ -65,16 +67,16 @@ std::string CConfigManager::removeBeginEndSpacesTabs(std::string str) {
 }
 
 void CConfigManager::parseLine(std::string& line) {
-    // first check if its not a comment
+    // First check if it's not a comment
     const auto COMMENTSTART = line.find_first_of('#');
     if (COMMENTSTART == 0)
         return;
 
-    // now, cut the comment off
+    // Remove comment from string
     if (COMMENTSTART != std::string::npos)
         line = line.substr(0, COMMENTSTART);
 
-    // remove shit at the beginning
+    // Strip line
     while (line[0] == ' ' || line[0] == '\t') {
         line = line.substr(1);
     }
@@ -88,7 +90,6 @@ void CConfigManager::parseLine(std::string& line) {
 
     const auto COMMAND = removeBeginEndSpacesTabs(line.substr(0, EQUALSPLACE));
     const auto VALUE = removeBeginEndSpacesTabs(line.substr(EQUALSPLACE + 1));
-    //
 
     parseKeyword(COMMAND, VALUE);
 }
