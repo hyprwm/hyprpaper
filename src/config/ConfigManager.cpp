@@ -31,9 +31,14 @@ CConfigManager::CConfigManager() {
     if (ifs.is_open()) {
         while (std::getline(ifs, line)) {
             // Read line by line
-            // The cause of the error is
-            // written in this->parseError
-            parseLine(line);
+            try {
+                parseLine(line);
+            } catch (...) {
+                Debug::log(ERR, "Error reading line from config. Line:");
+                Debug::log(NONE, "%s", line.c_str());
+
+                parseError += "Config error at line " + std::to_string(linenum) + ": Line parsing error.";
+            }
 
             if (!parseError.empty()) {
                 // If an error there is, user may want the precise line where it occured
@@ -67,12 +72,12 @@ std::string CConfigManager::removeBeginEndSpacesTabs(std::string str) {
 }
 
 void CConfigManager::parseLine(std::string& line) {
-    // First check if it's not a comment
+    // first check if its not a comment
     const auto COMMENTSTART = line.find_first_of('#');
     if (COMMENTSTART == 0)
         return;
 
-    // Remove comment from string
+    // now, cut the comment off
     if (COMMENTSTART != std::string::npos)
         line = line.substr(0, COMMENTSTART);
 
