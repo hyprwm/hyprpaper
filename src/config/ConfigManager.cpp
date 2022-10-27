@@ -41,7 +41,6 @@ CConfigManager::CConfigManager() {
             }
 
             if (!parseError.empty()) {
-                // If an error there is, user may want the precise line where it occured
                 parseError = "Config error at line " + std::to_string(linenum) + ": " + parseError;
                 break;
             }
