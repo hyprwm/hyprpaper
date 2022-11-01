@@ -122,14 +122,14 @@ void CConfigManager::handleWallpaper(const std::string& COMMAND, const std::stri
 
     bool contain = false;
 
-    if (WALLPAPER[0] == '~') {
-        static const char* const ENVHOME = getenv("HOME");
-        WALLPAPER = std::string(ENVHOME) + WALLPAPER.substr(1);
-    }
-
     if (WALLPAPER.find("contain:") == 0) {
         WALLPAPER = WALLPAPER.substr(8);
         contain = true;
+    }
+
+    if (WALLPAPER[0] == '~') {
+        static const char* const ENVHOME = getenv("HOME");
+        WALLPAPER = std::string(ENVHOME) + WALLPAPER.substr(1);
     }
 
     if (!std::filesystem::exists(WALLPAPER)) {
