@@ -25,28 +25,10 @@ void CHyprpaper::init() {
     wl_registry *registry = wl_display_get_registry(m_sDisplay);
     wl_registry_add_listener(registry, &Events::registryListener, nullptr);
 
-    if (m_bIPCEnabled) {
-        std::thread([&]() {  // we dispatch wl events cuz we have to
-            while (wl_display_dispatch(m_sDisplay) != -1) {
-                tick(true);
-            }
-
-            m_bShouldExit = true;
-        }).detach();
-
-        while (true) {  // we also tick every 1ms for socket and other shit's updates
-            tick(false);
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-
-            if (m_bShouldExit)
-                break;
-        }
-    } else {
-        while (wl_display_dispatch(m_sDisplay) != -1) {
-            tick(true);
-        }
+    while (wl_display_dispatch(m_sDisplay) != -1) {
+        tick(true);
     }
+
 }
 
 void CHyprpaper::tick(bool force) {

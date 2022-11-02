@@ -65,6 +65,8 @@ void CIPCSocket::initialize() {
             m_szRequest = request;
             m_bRequestReady = true;
 
+            g_pHyprpaper->tick(true);
+
             while (1) {
                 if (m_bReplyReady)
                     break;
