@@ -262,6 +262,21 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
     }
 
     if (!it->second) {
+        // try to find a wildcard
+        for (auto&[mon, path1] : m_mMonitorActiveWallpapers) {
+            if (mon.empty()) {
+                for (auto&[path2, target] : m_mWallpaperTargets) {
+                    if (path1 == path2) {
+                        it->second = &target;
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    if (!it->second) {
         pMonitor->hasATarget = false;
         Debug::log(WARN, "Monitor %s does not have a target! A wallpaper will not be created.", pMonitor->name.c_str());
         return;
