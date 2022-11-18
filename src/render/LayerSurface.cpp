@@ -40,8 +40,8 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
 }
 
 CLayerSurface::~CLayerSurface() {
-    wl_surface_destroy(pSurface);
     zwlr_layer_surface_v1_destroy(pLayerSurface);
+    wl_surface_destroy(pSurface);
 
     wl_display_flush(g_pHyprpaper->m_sDisplay);
 }
