@@ -19,6 +19,7 @@ extern "C" {
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 #include "xdg-shell-protocol.h"
 #include <wayland-client.h>
+#include <wayland-cursor.h>
 }
 
 #undef class

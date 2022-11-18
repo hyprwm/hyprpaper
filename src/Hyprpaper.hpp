@@ -53,8 +53,11 @@ public:
     void        ensurePoolBuffersPresent();
     SPoolBuffer* getPoolBuffer(SMonitor*, CWallpaperTarget*);
     void        unloadWallpaper(const std::string&);
+    void        createSeat(wl_seat*);
 
     std::mutex  m_mtTickMutex;
+
+    SMonitor*   m_pLastMonitor = nullptr;
 private:
     
     bool        m_bShouldExit = false;

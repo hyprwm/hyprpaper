@@ -124,12 +124,23 @@ void CHyprpaper::recheckAllMonitors() {
     }
 }
 
+void CHyprpaper::createSeat(wl_seat* pSeat) {
+    wl_seat_add_listener(pSeat, &Events::seatListener, pSeat);
+}
+
 void CHyprpaper::recheckMonitor(SMonitor* pMonitor) {
     ensureMonitorHasActiveWallpaper(pMonitor);
 
     if (pMonitor->wantsACK) {
         pMonitor->wantsACK = false;
         zwlr_layer_surface_v1_ack_configure(pMonitor->pCurrentLayerSurface->pLayerSurface, pMonitor->configureSerial);
+
+        int XCURSOR_SIZE = 24;
+        if (getenv("XCURSOR_SIZE")) {
+            XCURSOR_SIZE = std::stoi(getenv("XCURSOR_SIZE"));
+        }
+
+        pMonitor->pCurrentLayerSurface->pCursorImg = wl_cursor_theme_get_cursor(wl_cursor_theme_load(getenv("XCURSOR_THEME"), XCURSOR_SIZE * pMonitor->scale, m_sSHM), "left_ptr")->images[0];
     }
 
     if (pMonitor->wantsReload) {

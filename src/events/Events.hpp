@@ -21,9 +21,25 @@ namespace Events {
 
     void handleGlobalRemove(void *data, struct wl_registry *registry, uint32_t name);
 
+    void handleCapabilities(void *data, wl_seat *wl_seat, uint32_t capabilities);
+
+    void handlePointerMotion(void *data, struct wl_pointer *wl_pointer, uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y);
+
+    void handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state);
+
+    void handlePointerAxis(void *data, wl_pointer *wl_pointer, uint32_t time, uint32_t axis, wl_fixed_t value);
+
+    void handlePointerEnter(void *data, struct wl_pointer *wl_pointer, uint32_t serial, struct wl_surface *surface, wl_fixed_t surface_x, wl_fixed_t surface_y);
+
+    void handlePointerLeave(void *data, struct wl_pointer *wl_pointer, uint32_t serial, struct wl_surface *surface);
+
     inline const wl_output_listener outputListener = {.geometry = geometry, .mode = mode, .done = done, .scale = scale, .name = name, .description = description};
 
     inline const zwlr_layer_surface_v1_listener layersurfaceListener = { .configure = ls_configure };
 
     inline const struct wl_registry_listener registryListener = { .global = handleGlobal, .global_remove = handleGlobalRemove };
+
+    inline const wl_pointer_listener pointerListener = { .enter = handlePointerEnter, .leave = handlePointerLeave, .motion = handlePointerMotion, .button = handlePointerButton, .axis = handlePointerAxis };
+
+    inline const wl_seat_listener seatListener = { .capabilities = handleCapabilities };
 }

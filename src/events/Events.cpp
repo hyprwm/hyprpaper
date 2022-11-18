@@ -33,6 +33,47 @@ void Events::description(void *data, wl_output *wl_output, const char *descripti
     // i do not care
 }
 
+void Events::handleCapabilities(void *data, wl_seat *wl_seat, uint32_t capabilities) {
+    if (capabilities & WL_SEAT_CAPABILITY_POINTER) {
+        wl_pointer_add_listener(wl_seat_get_pointer(wl_seat), &pointerListener, wl_seat);
+    }
+}
+
+void Events::handlePointerLeave(void *data, struct wl_pointer *wl_pointer, uint32_t serial, struct wl_surface *surface) {
+    // ignored
+    wl_surface_commit(surface);
+
+    g_pHyprpaper->m_pLastMonitor = nullptr;
+}
+
+void Events::handlePointerAxis(void *data, wl_pointer *wl_pointer, uint32_t time, uint32_t axis, wl_fixed_t value) {
+    // ignored
+}
+
+void Events::handlePointerMotion(void *data, struct wl_pointer *wl_pointer, uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+    // ignored
+    if (g_pHyprpaper->m_pLastMonitor) {
+        wl_surface_commit(g_pHyprpaper->m_pLastMonitor->pCurrentLayerSurface->pSurface);
+    }
+}
+
+void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) {
+    // ignored
+}
+
+void Events::handlePointerEnter(void *data, struct wl_pointer *wl_pointer, uint32_t serial, struct wl_surface *surface, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+    for (auto& mon : g_pHyprpaper->m_vMonitors) {
+        if (mon->pCurrentLayerSurface->pSurface == surface) {
+            g_pHyprpaper->m_pLastMonitor = mon.get();
+
+            wl_surface_set_buffer_scale(mon->pCurrentLayerSurface->pCursorSurface, mon->scale);
+            wl_surface_attach(mon->pCurrentLayerSurface->pCursorSurface, wl_cursor_image_get_buffer(mon->pCurrentLayerSurface->pCursorImg), 0, 0);
+            wl_pointer_set_cursor(wl_pointer, serial, mon->pCurrentLayerSurface->pCursorSurface, mon->pCurrentLayerSurface->pCursorImg->hotspot_x / mon->scale, mon->pCurrentLayerSurface->pCursorImg->hotspot_y / mon->scale);
+            wl_surface_commit(mon->pCurrentLayerSurface->pCursorSurface);
+        }
+    }
+}
+
 void Events::ls_configure(void *data, zwlr_layer_surface_v1 *surface, uint32_t serial, uint32_t width, uint32_t height) {
     const auto PLAYERSURFACE = (CLayerSurface*)data;
 
@@ -60,6 +101,8 @@ void Events::handleGlobal(void *data, struct wl_registry *registry, uint32_t nam
         wl_output_add_listener(PMONITOR->output, &Events::outputListener, PMONITOR);
 
         g_pHyprpaper->m_mtTickMutex.unlock();
+    } else if (strcmp(interface, wl_seat_interface.name) == 0) {
+        g_pHyprpaper->createSeat((wl_seat*)wl_registry_bind(registry, name, &wl_seat_interface, 1));
     } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
         g_pHyprpaper->m_sLayerShell = (zwlr_layer_shell_v1 *)wl_registry_bind(registry, name, &zwlr_layer_shell_v1_interface, 1);
     }

@@ -67,6 +67,7 @@ target_link_libraries(hyprpaper
         ${CMAKE_THREAD_LIBS_INIT}
         ${CMAKE_SOURCE_DIR}/wlr-layer-shell-unstable-v1-protocol.o
         ${CMAKE_SOURCE_DIR}/xdg-shell-protocol.o
+        wayland-cursor
 )
 
 IF(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES DEBUG)

@@ -6,6 +6,7 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
     m_pMonitor = pMonitor;
 
     pSurface = wl_compositor_create_surface(g_pHyprpaper->m_sCompositor);
+    pCursorSurface = wl_compositor_create_surface(g_pHyprpaper->m_sCompositor);
 
     if (!pSurface) {
         Debug::log(CRIT, "The compositor did not allow hyprpaper a surface!");
