@@ -67,6 +67,8 @@ If you use a lot of wallpapers, consider unloading those that you no longer need
 
 You can issue a `hyprctl hyprpaper unload [PATH]` to do that.
 
+You can also issue a `hyprctl hyprpaper unload all` to unload all inactive wallpapers.
+
 <br/>
 
 For other compositors, the socket works like socket1 of Hyprland, and is located in `/tmp/hypr/.hyprpaper.sock` (this path only when Hyprland is not running!)

@@ -112,6 +112,11 @@ void CConfigManager::parseKeyword(const std::string& COMMAND, const std::string&
 }
 
 void CConfigManager::handleWallpaper(const std::string& COMMAND, const std::string& VALUE) {
+    if (VALUE == "all") {
+        handleUnloadAll(COMMAND, VALUE);
+        return;
+    }
+
     if (VALUE.find_first_of(',') == std::string::npos) {
         parseError = "wallpaper failed (syntax)";
         return;
@@ -172,4 +177,22 @@ void CConfigManager::handleUnload(const std::string& COMMAND, const std::string&
     }
 
     g_pHyprpaper->unloadWallpaper(WALLPAPER);
+}
+
+void CConfigManager::handleUnloadAll(const std::string& COMMAND, const std::string& VALUE) {
+    for (auto&[name, target] : g_pHyprpaper->m_mWallpaperTargets) {
+
+        bool exists = false;
+        for (auto&[mon, target2] : g_pHyprpaper->m_mMonitorActiveWallpaperTargets) {
+            if (&target == target2) {
+                exists = true;
+                break;
+            }
+        }
+
+        if (exists)
+            continue;
+
+        g_pHyprpaper->unloadWallpaper(name);
+    }
 }

@@ -20,6 +20,7 @@ private:
     void handleWallpaper(const std::string&, const std::string&);
     void handlePreload(const std::string&, const std::string&);
     void handleUnload(const std::string&, const std::string&);
+    void handleUnloadAll(const std::string&, const std::string&);
 
     friend class CIPCSocket;
 };
