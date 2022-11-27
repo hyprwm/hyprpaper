@@ -112,11 +112,6 @@ void CConfigManager::parseKeyword(const std::string& COMMAND, const std::string&
 }
 
 void CConfigManager::handleWallpaper(const std::string& COMMAND, const std::string& VALUE) {
-    if (VALUE == "all") {
-        handleUnloadAll(COMMAND, VALUE);
-        return;
-    }
-
     if (VALUE.find_first_of(',') == std::string::npos) {
         parseError = "wallpaper failed (syntax)";
         return;
@@ -170,6 +165,11 @@ void CConfigManager::handlePreload(const std::string& COMMAND, const std::string
 
 void CConfigManager::handleUnload(const std::string& COMMAND, const std::string& VALUE) {
     auto WALLPAPER = VALUE;
+
+    if (VALUE == "all") {
+        handleUnloadAll(COMMAND, VALUE);
+        return;
+    }
 
     if (WALLPAPER[0] == '~') {
         static const char* const ENVHOME = getenv("HOME");
