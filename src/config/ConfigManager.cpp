@@ -180,6 +180,8 @@ void CConfigManager::handleUnload(const std::string& COMMAND, const std::string&
 }
 
 void CConfigManager::handleUnloadAll(const std::string& COMMAND, const std::string& VALUE) {
+    std::vector<std::string> toUnload;
+
     for (auto&[name, target] : g_pHyprpaper->m_mWallpaperTargets) {
 
         bool exists = false;
@@ -193,6 +195,9 @@ void CConfigManager::handleUnloadAll(const std::string& COMMAND, const std::stri
         if (exists)
             continue;
 
-        g_pHyprpaper->unloadWallpaper(name);
+        toUnload.emplace_back(name);
     }
+
+    for (auto& tu : toUnload)
+        g_pHyprpaper->unloadWallpaper(tu);
 }
