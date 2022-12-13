@@ -348,7 +348,7 @@ int CHyprpaper::createPoolFile(size_t size, std::string& name) {
 }
 
 void CHyprpaper::createBuffer(SPoolBuffer* pBuffer, int32_t w, int32_t h, uint32_t format) {
-    const uint STRIDE = w * 4;
+    const size_t STRIDE = w * 4;
     const size_t SIZE = STRIDE * h;
 
     std::string name;
