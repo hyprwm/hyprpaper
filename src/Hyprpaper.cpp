@@ -136,10 +136,12 @@ void CHyprpaper::recheckMonitor(SMonitor* pMonitor) {
         zwlr_layer_surface_v1_ack_configure(pMonitor->pCurrentLayerSurface->pLayerSurface, pMonitor->configureSerial);
 
         int XCURSOR_SIZE = 24;
-        if (getenv("XCURSOR_SIZE") != NULL) {
-            char *endptr;
-            XCURSOR_SIZE = strtol(getenv("XCURSOR_SIZE"), &endptr, 10);
-            if (*endptr || XCURSOR_SIZE <= 0) {
+        if (const auto CURSORSIZENV = getenv("XCURSOR_SIZE"); CURSORSIZENV) {
+            try {
+                if (XCURSOR_SIZE = std::stoi(CURSORSIZENV); XCURSOR_SIZE <= 0) {
+                    throw std::exception();
+                }
+            } catch (...) {
                 Debug::log(WARN, "XCURSOR_SIZE environment variable is set incorrectly");
                 XCURSOR_SIZE = 24;
             }
