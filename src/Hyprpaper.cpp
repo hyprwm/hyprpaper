@@ -136,8 +136,15 @@ void CHyprpaper::recheckMonitor(SMonitor* pMonitor) {
         zwlr_layer_surface_v1_ack_configure(pMonitor->pCurrentLayerSurface->pLayerSurface, pMonitor->configureSerial);
 
         int XCURSOR_SIZE = 24;
-        if (getenv("XCURSOR_SIZE")) {
-            XCURSOR_SIZE = std::stoi(getenv("XCURSOR_SIZE"));
+        if (const auto CURSORSIZENV = getenv("XCURSOR_SIZE"); CURSORSIZENV) {
+            try {
+                if (XCURSOR_SIZE = std::stoi(CURSORSIZENV); XCURSOR_SIZE <= 0) {
+                    throw std::exception();
+                }
+            } catch (...) {
+                Debug::log(WARN, "XCURSOR_SIZE environment variable is set incorrectly");
+                XCURSOR_SIZE = 24;
+            }
         }
 
         pMonitor->pCurrentLayerSurface->pCursorImg = wl_cursor_theme_get_cursor(wl_cursor_theme_load(getenv("XCURSOR_THEME"), XCURSOR_SIZE * pMonitor->scale, m_sSHM), "left_ptr")->images[0];
@@ -233,9 +240,9 @@ void CHyprpaper::clearWallpaperFromMonitor(const std::string& monname) {
 
     if (it != m_mMonitorActiveWallpaperTargets.end())
         m_mMonitorActiveWallpaperTargets.erase(it);
-    
+
     if (PMONITOR->pCurrentLayerSurface) {
-        
+
         PMONITOR->pCurrentLayerSurface = nullptr;
 
         PMONITOR->wantsACK = false;
@@ -256,7 +263,7 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
         it = m_mMonitorActiveWallpaperTargets.find(pMonitor);
     }
 
-    if (it->second) 
+    if (it->second)
         return; // has
 
     // get the target
@@ -296,7 +303,7 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
     // create it for thy if it doesnt have
     if (!pMonitor->pCurrentLayerSurface)
         createLSForMonitor(pMonitor);
-    else    
+    else
         pMonitor->wantsReload = true;
 }
 
