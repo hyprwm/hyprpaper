@@ -9,7 +9,7 @@ void CHyprpaper::init() {
     g_pConfigManager = std::make_unique<CConfigManager>();
     g_pIPCSocket = std::make_unique<CIPCSocket>();
 
-    m_sDisplay = (wl_display *)wl_display_connect(nullptr);
+    m_sDisplay = (wl_display*)wl_display_connect(nullptr);
 
     if (!m_sDisplay) {
         Debug::log(CRIT, "No wayland compositor running!");
@@ -22,13 +22,12 @@ void CHyprpaper::init() {
         g_pIPCSocket->initialize();
 
     // run
-    wl_registry *registry = wl_display_get_registry(m_sDisplay);
+    wl_registry* registry = wl_display_get_registry(m_sDisplay);
     wl_registry_add_listener(registry, &Events::registryListener, nullptr);
 
     while (wl_display_dispatch(m_sDisplay) != -1) {
         tick(true);
     }
-
 }
 
 void CHyprpaper::tick(bool force) {
@@ -46,7 +45,7 @@ void CHyprpaper::tick(bool force) {
 }
 
 bool CHyprpaper::isPreloaded(const std::string& path) {
-    for (auto&[pt, wt] : m_mWallpaperTargets) {
+    for (auto& [pt, wt] : m_mWallpaperTargets) {
         if (pt == path)
             return true;
     }
@@ -100,7 +99,7 @@ void CHyprpaper::preloadAllWallpapersFromConfig() {
 
         // check if it doesnt exist
         bool exists = false;
-        for (auto&[ewp, cls] : m_mWallpaperTargets) {
+        for (auto& [ewp, cls] : m_mWallpaperTargets) {
             if (ewp == wp) {
                 Debug::log(LOG, "Ignoring request to preload %s as it already is preloaded!", ewp.c_str());
                 exists = true;
@@ -135,19 +134,20 @@ void CHyprpaper::recheckMonitor(SMonitor* pMonitor) {
         pMonitor->wantsACK = false;
         zwlr_layer_surface_v1_ack_configure(pMonitor->pCurrentLayerSurface->pLayerSurface, pMonitor->configureSerial);
 
-        int XCURSOR_SIZE = 24;
-        if (const auto CURSORSIZENV = getenv("XCURSOR_SIZE"); CURSORSIZENV) {
-            try {
-                if (XCURSOR_SIZE = std::stoi(CURSORSIZENV); XCURSOR_SIZE <= 0) {
-                    throw std::exception();
+        if (!pMonitor->pCurrentLayerSurface->pCursorImg) {
+            int XCURSOR_SIZE = 24;
+            if (const auto CURSORSIZENV = getenv("XCURSOR_SIZE"); CURSORSIZENV) {
+                try {
+                    if (XCURSOR_SIZE = std::stoi(CURSORSIZENV); XCURSOR_SIZE <= 0) {
+                        throw std::exception();
+                    }
+                } catch (...) {
+                    Debug::log(WARN, "XCURSOR_SIZE environment variable is set incorrectly");
+                    XCURSOR_SIZE = 24;
                 }
-            } catch (...) {
-                Debug::log(WARN, "XCURSOR_SIZE environment variable is set incorrectly");
-                XCURSOR_SIZE = 24;
             }
+            pMonitor->pCurrentLayerSurface->pCursorImg = wl_cursor_theme_get_cursor(wl_cursor_theme_load(getenv("XCURSOR_THEME"), XCURSOR_SIZE * pMonitor->scale, m_sSHM), "left_ptr")->images[0];
         }
-
-        pMonitor->pCurrentLayerSurface->pCursorImg = wl_cursor_theme_get_cursor(wl_cursor_theme_load(getenv("XCURSOR_THEME"), XCURSOR_SIZE * pMonitor->scale, m_sSHM), "left_ptr")->images[0];
     }
 
     if (pMonitor->wantsReload) {
@@ -193,7 +193,7 @@ SMonitor* CHyprpaper::getMonitorFromName(const std::string& monname) {
 void CHyprpaper::ensurePoolBuffersPresent() {
     bool anyNewBuffers = false;
 
-    for (auto&[file, wt] : m_mWallpaperTargets) {
+    for (auto& [file, wt] : m_mWallpaperTargets) {
         for (auto& m : m_vMonitors) {
 
             if (m->size == Vector2D())
@@ -267,9 +267,9 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
         return; // has
 
     // get the target
-    for (auto&[mon, path1] : m_mMonitorActiveWallpapers) {
+    for (auto& [mon, path1] : m_mMonitorActiveWallpapers) {
         if (mon == pMonitor->name) {
-            for (auto&[path2, target] : m_mWallpaperTargets) {
+            for (auto& [path2, target] : m_mWallpaperTargets) {
                 if (path1 == path2) {
                     it->second = &target;
                     break;
@@ -281,9 +281,9 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
 
     if (!it->second) {
         // try to find a wildcard
-        for (auto&[mon, path1] : m_mMonitorActiveWallpapers) {
+        for (auto& [mon, path1] : m_mMonitorActiveWallpapers) {
             if (mon.empty()) {
-                for (auto&[path2, target] : m_mWallpaperTargets) {
+                for (auto& [path2, target] : m_mWallpaperTargets) {
                     if (path1 == path2) {
                         it->second = &target;
                         break;
