@@ -118,7 +118,7 @@ void CConfigManager::handleWallpaper(const std::string& COMMAND, const std::stri
     }
 
     auto MONITOR = VALUE.substr(0, VALUE.find_first_of(','));
-    auto WALLPAPER = VALUE.substr(VALUE.find_first_of(',') + 1);
+    auto WALLPAPER = trim_copy(VALUE.substr(VALUE.find_first_of(',') + 1));
 
     bool contain = false;
 
@@ -200,4 +200,43 @@ void CConfigManager::handleUnloadAll(const std::string& COMMAND, const std::stri
 
     for (auto& tu : toUnload)
         g_pHyprpaper->unloadWallpaper(tu);
+}
+
+
+// trim from start (in place)
+void CConfigManager::ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }));
+}
+
+// trim from end (in place)
+void CConfigManager::rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+}
+
+// trim from both ends (in place)
+void CConfigManager::trim(std::string &s) {
+    rtrim(s);
+    ltrim(s);
+}
+
+// trim from start (copying)
+std::string CConfigManager::ltrim_copy(std::string s) {
+    ltrim(s);
+    return s;
+}
+
+// trim from end (copying)
+std::string CConfigManager::rtrim_copy(std::string s) {
+    rtrim(s);
+    return s;
+}
+
+// trim from both ends (copying)
+std::string CConfigManager::trim_copy(std::string s) {
+    trim(s);
+    return s;
 }

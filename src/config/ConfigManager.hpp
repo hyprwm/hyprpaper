@@ -21,6 +21,12 @@ private:
     void handlePreload(const std::string&, const std::string&);
     void handleUnload(const std::string&, const std::string&);
     void handleUnloadAll(const std::string&, const std::string&);
+    std::string trim_copy(std::string s);
+    void trim(std::string &s);
+    std::string ltrim_copy(std::string s);
+    void ltrim(std::string &s);
+    std::string rtrim_copy(std::string s);
+    void rtrim(std::string &s);
 
     friend class CIPCSocket;
 };
