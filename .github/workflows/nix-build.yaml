@@ -1,0 +1,25 @@
+name: Build Hyprpaper (Nix)
+
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  nix:
+    name: "Build"
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clone repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Install nix
+      uses: cachix/install-nix-action@v18
+      with:
+        install_url: https://nixos.org/nix/install
+        extra_nix_config: |
+          auto-optimise-store = true
+          experimental-features = nix-command flakes
+    - uses: cachix/cachix-action@v12
+      with:
+        name: hyprland
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+    - name: Build Hyprpaper with default settings
+      run: nix build --print-build-logs
