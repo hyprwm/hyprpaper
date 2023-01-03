@@ -21,6 +21,7 @@ private:
     void handlePreload(const std::string&, const std::string&);
     void handleUnload(const std::string&, const std::string&);
     void handleUnloadAll(const std::string&, const std::string&);
+    std::string trimPath(std::string path);
 
     friend class CIPCSocket;
 };

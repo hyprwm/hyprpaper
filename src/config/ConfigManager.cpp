@@ -118,7 +118,7 @@ void CConfigManager::handleWallpaper(const std::string& COMMAND, const std::stri
     }
 
     auto MONITOR = VALUE.substr(0, VALUE.find_first_of(','));
-    auto WALLPAPER = VALUE.substr(VALUE.find_first_of(',') + 1);
+    auto WALLPAPER = trimPath(VALUE.substr(VALUE.find_first_of(',') + 1));
 
     bool contain = false;
 
@@ -200,4 +200,12 @@ void CConfigManager::handleUnloadAll(const std::string& COMMAND, const std::stri
 
     for (auto& tu : toUnload)
         g_pHyprpaper->unloadWallpaper(tu);
+}
+
+// trim from both ends
+std::string CConfigManager::trimPath(std::string path) {
+    //trims whitespaces, tabs and new line feeds
+    size_t pathStartIndex = path.find_first_not_of(" \t\r\n");
+    size_t pathEndIndex = path.find_last_not_of(" \t\r\n");
+    return path.substr(pathStartIndex, pathEndIndex - pathStartIndex + 1);
 }
