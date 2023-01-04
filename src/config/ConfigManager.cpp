@@ -21,7 +21,7 @@ CConfigManager::CConfigManager() {
         if (g_pHyprpaper->m_szExplicitConfigPath.empty()) {
             Debug::log(CRIT, "No config file provided. Default config file `~/.config/hypr/hyprpaper.conf` couldn't be opened.");
         } else {
-            Debug::log(CRIT, "No config file provided. Specified file `%s` couldn't be opened.", configPath);
+            Debug::log(CRIT, "No config file provided. Specified file `%s` couldn't be opened.", configPath.c_str());
         }
         exit(1);
     }
