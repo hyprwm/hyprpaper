@@ -199,7 +199,7 @@ void CHyprpaper::ensurePoolBuffersPresent() {
             if (m->size == Vector2D())
                 continue;
 
-            auto it = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
+            auto it = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [wt = wt, &m](const std::unique_ptr<SPoolBuffer>& el) {
                 return el->target == wt.m_szPath && el->pixelSize == m->size * m->scale;
             });
 
