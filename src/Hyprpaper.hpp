@@ -37,6 +37,7 @@ public:
 
     bool        m_bIPCEnabled = true;
     std::string m_szExplicitConfigPath;
+    bool        m_bNoFractionalScale = false;
 
     void        removeOldHyprpaperImages();
     void        preloadAllWallpapersFromConfig();

@@ -121,7 +121,7 @@ void Events::handleGlobal(void *data, struct wl_registry *registry, uint32_t nam
         g_pHyprpaper->createSeat((wl_seat*)wl_registry_bind(registry, name, &wl_seat_interface, 1));
     } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
         g_pHyprpaper->m_sLayerShell = (zwlr_layer_shell_v1*)wl_registry_bind(registry, name, &zwlr_layer_shell_v1_interface, 1);
-    } else if (strcmp(interface, wp_fractional_scale_manager_v1_interface.name) == 0) {
+    } else if (strcmp(interface, wp_fractional_scale_manager_v1_interface.name) == 0 && !g_pHyprpaper->m_bNoFractionalScale) {
         g_pHyprpaper->m_sFractionalScale = (wp_fractional_scale_manager_v1*)wl_registry_bind(registry, name, &wp_fractional_scale_manager_v1_interface, 1);
     } else if (strcmp(interface, wp_viewporter_interface.name) == 0) {
         g_pHyprpaper->m_sViewporter = (wp_viewporter*)wl_registry_bind(registry, name, &wp_viewporter_interface, 1);
