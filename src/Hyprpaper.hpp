@@ -16,10 +16,12 @@ struct SWallpaperRenderData {
 class CHyprpaper {
 public:
     // important
-    wl_display* m_sDisplay;
-    wl_compositor* m_sCompositor;
-    wl_shm* m_sSHM;
-    zwlr_layer_shell_v1* m_sLayerShell;
+    wl_display* m_sDisplay; // assured
+    wl_compositor* m_sCompositor; // assured
+    wl_shm* m_sSHM; // assured
+    zwlr_layer_shell_v1* m_sLayerShell = nullptr; // expected
+    wp_fractional_scale_manager_v1* m_sFractionalScale = nullptr; // will remain null if not bound
+    wp_viewporter* m_sViewporter = nullptr; // expected
 
     // init the utility
     CHyprpaper();

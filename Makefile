@@ -30,7 +30,27 @@ xdg-shell-protocol.c:
 
 xdg-shell-protocol.o: xdg-shell-protocol.h
 
-protocols: wlr-layer-shell-unstable-v1-protocol.o xdg-shell-protocol.o
+fractional-scale-v1-protocol.h:
+	$(WAYLAND_SCANNER) client-header \
+		$(WAYLAND_PROTOCOLS)/staging/fractional-scale/fractional-scale-v1.xml $@
+
+fractional-scale-v1-protocol.c:
+	$(WAYLAND_SCANNER) private-code \
+		$(WAYLAND_PROTOCOLS)/staging/fractional-scale/fractional-scale-v1.xml $@
+
+fractional-scale-v1-protocol.o: fractional-scale-v1-protocol.h
+
+viewporter-protocol.h:
+	$(WAYLAND_SCANNER) client-header \
+		$(WAYLAND_PROTOCOLS)/stable/viewporter/viewporter.xml $@
+
+viewporter-protocol.c:
+	$(WAYLAND_SCANNER) private-code \
+		$(WAYLAND_PROTOCOLS)/stable/viewporter/viewporter.xml $@
+
+viewporter-protocol.o: viewporter-protocol.h
+
+protocols: wlr-layer-shell-unstable-v1-protocol.o xdg-shell-protocol.o fractional-scale-v1-protocol.o viewporter-protocol.o
 
 clear:
 	rm -rf build

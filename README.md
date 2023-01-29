@@ -2,6 +2,13 @@
 
 Hyprpaper is a blazing fast wallpaper utility for Hyprland with the ability to dynamically change wallpapers through sockets. It will work on all wlroots-based compositors, though.
 
+# Features
+ - Per-output wallpapers
+ - fill or contain modes
+ - fractional scaling support
+ - IPC for blazing fast wallpaper switches
+ - preloading targets into memory
+
 # Installation
 
 [AUR](https://aur.archlinux.org/packages/hyprpaper-git): `yay -S hyprpaper-git`

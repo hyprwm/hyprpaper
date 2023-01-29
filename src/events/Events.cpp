@@ -120,7 +120,11 @@ void Events::handleGlobal(void *data, struct wl_registry *registry, uint32_t nam
     } else if (strcmp(interface, wl_seat_interface.name) == 0) {
         g_pHyprpaper->createSeat((wl_seat*)wl_registry_bind(registry, name, &wl_seat_interface, 1));
     } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
-        g_pHyprpaper->m_sLayerShell = (zwlr_layer_shell_v1 *)wl_registry_bind(registry, name, &zwlr_layer_shell_v1_interface, 1);
+        g_pHyprpaper->m_sLayerShell = (zwlr_layer_shell_v1*)wl_registry_bind(registry, name, &zwlr_layer_shell_v1_interface, 1);
+    } else if (strcmp(interface, wp_fractional_scale_manager_v1_interface.name) == 0) {
+        g_pHyprpaper->m_sFractionalScale = (wp_fractional_scale_manager_v1*)wl_registry_bind(registry, name, &wp_fractional_scale_manager_v1_interface, 1);
+    } else if (strcmp(interface, wp_viewporter_interface.name) == 0) {
+        g_pHyprpaper->m_sViewporter = (wp_viewporter*)wl_registry_bind(registry, name, &wp_viewporter_interface, 1);
     }
 }
 
@@ -131,6 +135,19 @@ void Events::handleGlobalRemove(void *data, struct wl_registry *registry, uint32
             std::erase_if(g_pHyprpaper->m_vMonitors, [&](const auto& other) { return other->wayland_name == name; });
             return;
         }
+    }
+}
+
+void Events::handlePreferredScale(void *data, wp_fractional_scale_v1* fractionalScaleInfo, uint32_t scale) {
+    const double SCALE = scale / 120.0;
+
+    CLayerSurface *const pLS = (CLayerSurface*)data;
+
+    Debug::log(LOG, "handlePreferredScale: %.2lf for %lx", SCALE, pLS);
+
+    if (pLS->fScale != SCALE) {
+        pLS->fScale = SCALE;
+        g_pHyprpaper->tick(true);
     }
 }
 

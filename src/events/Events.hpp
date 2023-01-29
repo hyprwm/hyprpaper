@@ -35,6 +35,8 @@ namespace Events {
 
     void handlePointerLeave(void *data, struct wl_pointer *wl_pointer, uint32_t serial, struct wl_surface *surface);
 
+    void handlePreferredScale(void *data, wp_fractional_scale_v1 *wp_fractional_scale_v1, uint32_t scale);
+
     inline const wl_output_listener outputListener = {.geometry = geometry, .mode = mode, .done = done, .scale = scale, .name = name, .description = description};
 
     inline const zwlr_layer_surface_v1_listener layersurfaceListener = { .configure = ls_configure, .closed = handleLSClosed };
@@ -44,4 +46,6 @@ namespace Events {
     inline const wl_pointer_listener pointerListener = { .enter = handlePointerEnter, .leave = handlePointerLeave, .motion = handlePointerMotion, .button = handlePointerButton, .axis = handlePointerAxis };
 
     inline const wl_seat_listener seatListener = { .capabilities = handleCapabilities };
+
+    inline const wp_fractional_scale_v1_listener scaleListener = { .preferred_scale = handlePreferredScale };
 }

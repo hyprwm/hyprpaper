@@ -37,10 +37,24 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
 
     wl_region_destroy(PINPUTREGION);
 
+    // fractional scale, if supported by the compositor
+    if (g_pHyprpaper->m_sFractionalScale) {
+        pFractionalScaleInfo = wp_fractional_scale_manager_v1_get_fractional_scale(g_pHyprpaper->m_sFractionalScale, pSurface);
+        wp_fractional_scale_v1_add_listener(pFractionalScaleInfo, &Events::scaleListener, this);
+        pViewport = wp_viewporter_get_viewport(g_pHyprpaper->m_sViewporter, pSurface);
+        wl_surface_commit(pSurface);
+    }
+
     wl_display_flush(g_pHyprpaper->m_sDisplay);
 }
 
 CLayerSurface::~CLayerSurface() {
+    if (g_pHyprpaper->m_sFractionalScale && pFractionalScaleInfo) {
+        wp_fractional_scale_v1_destroy(pFractionalScaleInfo);
+
+        wp_viewport_destroy(pViewport);
+    }
+
     zwlr_layer_surface_v1_destroy(pLayerSurface);
     wl_surface_destroy(pSurface);
 

@@ -419,6 +419,9 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         }
     }
 
+    const Vector2D DIMENSIONS = pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? Vector2D{pMonitor->size.x * pMonitor->pCurrentLayerSurface->fScale, pMonitor->size.y * pMonitor->pCurrentLayerSurface->fScale} : Vector2D{pMonitor->size.x * pMonitor->scale, pMonitor->size.y * pMonitor->scale};
+    const double SURFACESCALE = pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale;
+
     const auto PCAIRO = PBUFFER->cairo;
     cairo_save(PCAIRO);
     cairo_set_operator(PCAIRO, CAIRO_OPERATOR_CLEAR);
@@ -427,7 +430,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
     if (CONTAIN) {
         cairo_set_source_rgb(PCAIRO, 0, 0, 0);
-        cairo_rectangle(PCAIRO, 0, 0, pMonitor->size.x * pMonitor->scale, pMonitor->size.y * pMonitor->scale);
+        cairo_rectangle(PCAIRO, 0, 0, DIMENSIONS.x, DIMENSIONS.y);
 
         cairo_fill(PCAIRO);
 
@@ -441,38 +444,45 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
     if (!CONTAIN) {
         if (pMonitor->size.x / pMonitor->size.y > PWALLPAPERTARGET->m_vSize.x / PWALLPAPERTARGET->m_vSize.y) {
-            scale = pMonitor->size.x * pMonitor->scale / PWALLPAPERTARGET->m_vSize.x;
+            scale = DIMENSIONS.x / PWALLPAPERTARGET->m_vSize.x;
 
-            origin.y = -(PWALLPAPERTARGET->m_vSize.y * scale - pMonitor->size.y * pMonitor->scale) / 2.f / scale;
+            origin.y = -(PWALLPAPERTARGET->m_vSize.y * scale - DIMENSIONS.y) / 2.f / scale;
 
         } else {
-            scale = pMonitor->size.y * pMonitor->scale / PWALLPAPERTARGET->m_vSize.y;
+            scale = DIMENSIONS.y / PWALLPAPERTARGET->m_vSize.y;
 
-            origin.x = -(PWALLPAPERTARGET->m_vSize.x * scale - pMonitor->size.x * pMonitor->scale) / 2.f / scale;
+            origin.x = -(PWALLPAPERTARGET->m_vSize.x * scale - DIMENSIONS.x) / 2.f / scale;
         }
     } else {
         if (pMonitor->size.x / pMonitor->size.y > PWALLPAPERTARGET->m_vSize.x / PWALLPAPERTARGET->m_vSize.y) {
-            scale = (pMonitor->size.y * pMonitor->scale) / PWALLPAPERTARGET->m_vSize.y;
+            scale = (DIMENSIONS.y) / PWALLPAPERTARGET->m_vSize.y;
 
-            origin.x = (pMonitor->size.x * pMonitor->scale - PWALLPAPERTARGET->m_vSize.x * scale);
+            origin.x = (DIMENSIONS.x - PWALLPAPERTARGET->m_vSize.x * scale);
         } else {
-            scale = (pMonitor->size.x * pMonitor->scale) / PWALLPAPERTARGET->m_vSize.x;
+            scale = (DIMENSIONS.x) / PWALLPAPERTARGET->m_vSize.x;
 
-            origin.y = (pMonitor->size.y * pMonitor->scale - PWALLPAPERTARGET->m_vSize.y * scale);
+            origin.y = (DIMENSIONS.y - PWALLPAPERTARGET->m_vSize.y * scale);
         }
     }
 
     Debug::log(LOG, "Image data for %s: %s at [%.2f, %.2f], scale: %.2f (original image size: [%i, %i])", pMonitor->name.c_str(), PWALLPAPERTARGET->m_szPath.c_str(), origin.x, origin.y, scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);
 
-    cairo_scale(PCAIRO, scale, scale);
+    cairo_scale(PCAIRO, scale * (DIMENSIONS.x / (pMonitor->size.x * pMonitor->scale)), scale * (DIMENSIONS.x / (pMonitor->size.x * pMonitor->scale)));
     cairo_set_source_surface(PCAIRO, PWALLPAPERTARGET->m_pCairoSurface, origin.x, origin.y);
 
     cairo_paint(PCAIRO);
     cairo_restore(PCAIRO);
 
     wl_surface_attach(pMonitor->pCurrentLayerSurface->pSurface, PBUFFER->buffer, 0, 0);
-    wl_surface_set_buffer_scale(pMonitor->pCurrentLayerSurface->pSurface, pMonitor->scale);
-    wl_surface_damage_buffer(pMonitor->pCurrentLayerSurface->pSurface, 0, 0, pMonitor->size.x, pMonitor->size.y);
+    wl_surface_set_buffer_scale(pMonitor->pCurrentLayerSurface->pSurface, SURFACESCALE);
+    wl_surface_damage_buffer(pMonitor->pCurrentLayerSurface->pSurface, 0, 0, 0xFFFF, 0xFFFF);
+    if (pMonitor->pCurrentLayerSurface->pFractionalScaleInfo) {
+        wl_fixed_t w, h;
+        w = wl_fixed_from_int((int)DIMENSIONS.x);
+        h = wl_fixed_from_int((int)DIMENSIONS.y);
+
+        wp_viewport_set_source(pMonitor->pCurrentLayerSurface->pViewport, wl_fixed_from_int(0), wl_fixed_from_int(0), w, h);
+    }
     wl_surface_commit(pMonitor->pCurrentLayerSurface->pSurface);
 
     // check if we dont need to remove a wallpaper

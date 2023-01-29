@@ -16,4 +16,8 @@ public:
 
     wl_cursor_image* pCursorImg = nullptr;
     wl_surface* pCursorSurface = nullptr;
+
+    wp_fractional_scale_v1* pFractionalScaleInfo = nullptr;
+    wp_viewport* pViewport = nullptr;
+    double fScale = 1.0;
 };

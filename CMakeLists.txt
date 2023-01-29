@@ -67,6 +67,8 @@ target_link_libraries(hyprpaper
         ${CMAKE_THREAD_LIBS_INIT}
         ${CMAKE_SOURCE_DIR}/wlr-layer-shell-unstable-v1-protocol.o
         ${CMAKE_SOURCE_DIR}/xdg-shell-protocol.o
+        ${CMAKE_SOURCE_DIR}/fractional-scale-v1-protocol.o
+        ${CMAKE_SOURCE_DIR}/viewporter-protocol.o
         wayland-cursor
 )
 
