@@ -419,8 +419,8 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         }
     }
 
-    const Vector2D DIMENSIONS = pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? Vector2D{pMonitor->size.x * pMonitor->pCurrentLayerSurface->fScale, pMonitor->size.y * pMonitor->pCurrentLayerSurface->fScale} : Vector2D{pMonitor->size.x * pMonitor->scale, pMonitor->size.y * pMonitor->scale};
     const double SURFACESCALE = pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale;
+    const Vector2D DIMENSIONS = Vector2D{std::round(pMonitor->size.x * SURFACESCALE), std::round(pMonitor->size.y * SURFACESCALE)};
 
     const auto PCAIRO = PBUFFER->cairo;
     cairo_save(PCAIRO);
@@ -467,21 +467,23 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
     Debug::log(LOG, "Image data for %s: %s at [%.2f, %.2f], scale: %.2f (original image size: [%i, %i])", pMonitor->name.c_str(), PWALLPAPERTARGET->m_szPath.c_str(), origin.x, origin.y, scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);
 
-    cairo_scale(PCAIRO, scale * (DIMENSIONS.x / (pMonitor->size.x * pMonitor->scale)), scale * (DIMENSIONS.x / (pMonitor->size.x * pMonitor->scale)));
+    cairo_scale(PCAIRO, scale, scale);
     cairo_set_source_surface(PCAIRO, PWALLPAPERTARGET->m_pCairoSurface, origin.x, origin.y);
 
     cairo_paint(PCAIRO);
     cairo_restore(PCAIRO);
 
     wl_surface_attach(pMonitor->pCurrentLayerSurface->pSurface, PBUFFER->buffer, 0, 0);
-    wl_surface_set_buffer_scale(pMonitor->pCurrentLayerSurface->pSurface, SURFACESCALE);
+    wl_surface_set_buffer_scale(pMonitor->pCurrentLayerSurface->pSurface, pMonitor->scale);
     wl_surface_damage_buffer(pMonitor->pCurrentLayerSurface->pSurface, 0, 0, 0xFFFF, 0xFFFF);
     if (pMonitor->pCurrentLayerSurface->pFractionalScaleInfo) {
         wl_fixed_t w, h;
-        w = wl_fixed_from_int((int)DIMENSIONS.x);
-        h = wl_fixed_from_int((int)DIMENSIONS.y);
+        w = wl_fixed_from_int(static_cast<int>(std::round(DIMENSIONS.x)));
+        h = wl_fixed_from_int(static_cast<int>(std::round(DIMENSIONS.y)));
 
-        wp_viewport_set_source(pMonitor->pCurrentLayerSurface->pViewport, wl_fixed_from_int(0), wl_fixed_from_int(0), w, h);
+        Debug::log(LOG, "Submitting %ix%i", static_cast<int>(std::round(DIMENSIONS.x)), static_cast<int>(std::round(DIMENSIONS.y)));
+
+        wp_viewport_set_destination(pMonitor->pCurrentLayerSurface->pViewport, static_cast<int>(std::round(DIMENSIONS.x)), static_cast<int>(std::round(DIMENSIONS.y)));
     }
     wl_surface_commit(pMonitor->pCurrentLayerSurface->pSurface);
 
