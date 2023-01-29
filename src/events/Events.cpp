@@ -86,6 +86,22 @@ void Events::ls_configure(void *data, zwlr_layer_surface_v1 *surface, uint32_t s
     Debug::log(LOG, "configure for %s", PLAYERSURFACE->m_pMonitor->name.c_str());
 }
 
+void Events::handleLSClosed(void *data, zwlr_layer_surface_v1 *zwlr_layer_surface_v1) {
+    const auto PLAYERSURFACE = (CLayerSurface*)data;
+
+    for (auto& m : g_pHyprpaper->m_vMonitors) {
+        std::erase_if(m->layerSurfaces, [&](const auto& other) { return other.get() == PLAYERSURFACE; });
+        if (m->pCurrentLayerSurface == PLAYERSURFACE) {
+            if (m->layerSurfaces.empty()) {
+                m->pCurrentLayerSurface = nullptr;
+            } else {
+                m->pCurrentLayerSurface = m->layerSurfaces.begin()->get();
+                g_pHyprpaper->recheckMonitor(m.get());
+            }
+        }
+    }
+}
+
 void Events::handleGlobal(void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t version) {
     if (strcmp(interface, wl_compositor_interface.name) == 0) {
         g_pHyprpaper->m_sCompositor = (wl_compositor *)wl_registry_bind(registry, name, &wl_compositor_interface, 4);
@@ -109,6 +125,12 @@ void Events::handleGlobal(void *data, struct wl_registry *registry, uint32_t nam
 }
 
 void Events::handleGlobalRemove(void *data, struct wl_registry *registry, uint32_t name) {
-    // todo
+    for (auto& m : g_pHyprpaper->m_vMonitors) {
+        if (m->wayland_name == name) {
+            Debug::log(LOG, "Destroying output %s", m->name.c_str());
+            std::erase_if(g_pHyprpaper->m_vMonitors, [&](const auto& other) { return other->wayland_name == name; });
+            return;
+        }
+    }
 }
 

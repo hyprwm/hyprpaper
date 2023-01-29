@@ -17,6 +17,8 @@ namespace Events {
 
     void ls_configure(void *data, zwlr_layer_surface_v1 *surface, uint32_t serial, uint32_t width, uint32_t height);
 
+    void handleLSClosed(void *data, zwlr_layer_surface_v1 *zwlr_layer_surface_v1);
+
     void handleGlobal(void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t version);
 
     void handleGlobalRemove(void *data, struct wl_registry *registry, uint32_t name);
@@ -35,7 +37,7 @@ namespace Events {
 
     inline const wl_output_listener outputListener = {.geometry = geometry, .mode = mode, .done = done, .scale = scale, .name = name, .description = description};
 
-    inline const zwlr_layer_surface_v1_listener layersurfaceListener = { .configure = ls_configure };
+    inline const zwlr_layer_surface_v1_listener layersurfaceListener = { .configure = ls_configure, .closed = handleLSClosed };
 
     inline const struct wl_registry_listener registryListener = { .global = handleGlobal, .global_remove = handleGlobalRemove };
 
