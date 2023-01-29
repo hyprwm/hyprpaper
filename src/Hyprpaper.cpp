@@ -477,12 +477,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     wl_surface_set_buffer_scale(pMonitor->pCurrentLayerSurface->pSurface, pMonitor->scale);
     wl_surface_damage_buffer(pMonitor->pCurrentLayerSurface->pSurface, 0, 0, 0xFFFF, 0xFFFF);
     if (pMonitor->pCurrentLayerSurface->pFractionalScaleInfo) {
-        wl_fixed_t w, h;
-        w = wl_fixed_from_int(static_cast<int>(std::round(DIMENSIONS.x)));
-        h = wl_fixed_from_int(static_cast<int>(std::round(DIMENSIONS.y)));
-
-        Debug::log(LOG, "Submitting %ix%i", static_cast<int>(std::round(DIMENSIONS.x)), static_cast<int>(std::round(DIMENSIONS.y)));
-
+        Debug::log(LOG, "Submitting viewport dest size %ix%i for %x", static_cast<int>(std::round(DIMENSIONS.x)), static_cast<int>(std::round(DIMENSIONS.y)), pMonitor->pCurrentLayerSurface);
         wp_viewport_set_destination(pMonitor->pCurrentLayerSurface->pViewport, static_cast<int>(std::round(DIMENSIONS.x)), static_cast<int>(std::round(DIMENSIONS.y)));
     }
     wl_surface_commit(pMonitor->pCurrentLayerSurface->pSurface);
