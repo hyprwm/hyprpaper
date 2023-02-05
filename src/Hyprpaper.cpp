@@ -474,7 +474,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     cairo_restore(PCAIRO);
 
     wl_surface_attach(pMonitor->pCurrentLayerSurface->pSurface, PBUFFER->buffer, 0, 0);
-    wl_surface_set_buffer_scale(pMonitor->pCurrentLayerSurface->pSurface, pMonitor->scale);
+    wl_surface_set_buffer_scale(pMonitor->pCurrentLayerSurface->pSurface, pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? 1 : pMonitor->scale);
     wl_surface_damage_buffer(pMonitor->pCurrentLayerSurface->pSurface, 0, 0, 0xFFFF, 0xFFFF);
     if (pMonitor->pCurrentLayerSurface->pFractionalScaleInfo) {
         Debug::log(LOG, "Submitting viewport dest size %ix%i for %x", static_cast<int>(std::round(DIMENSIONS.x)), static_cast<int>(std::round(DIMENSIONS.y)), pMonitor->pCurrentLayerSurface);
