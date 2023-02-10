@@ -200,14 +200,14 @@ void CHyprpaper::ensurePoolBuffersPresent() {
                 continue;
 
             auto it = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [wt = &wt, &m](const std::unique_ptr<SPoolBuffer>& el) {
-                return el->target == wt->m_szPath && el->pixelSize == m->size * m->scale;
+                return el->target == wt->m_szPath && el->pixelSize == m->size * (m->pCurrentLayerSurface->pFractionalScaleInfo ? m->pCurrentLayerSurface->fScale : m->scale);
             });
 
             if (it == m_vBuffers.end()) {
                 // create
                 const auto PBUFFER = m_vBuffers.emplace_back(std::make_unique<SPoolBuffer>()).get();
 
-                createBuffer(PBUFFER, m->size.x * m->scale, m->size.y * m->scale, WL_SHM_FORMAT_ARGB8888);
+                createBuffer(PBUFFER, m->size.x * (m->pCurrentLayerSurface->pFractionalScaleInfo ? m->pCurrentLayerSurface->fScale : m->scale), m->size.y * (m->pCurrentLayerSurface->pFractionalScaleInfo ? m->pCurrentLayerSurface->fScale : m->scale), WL_SHM_FORMAT_ARGB8888);
 
                 PBUFFER->target = wt.m_szPath;
 
@@ -392,7 +392,7 @@ void CHyprpaper::destroyBuffer(SPoolBuffer* pBuffer) {
 
 SPoolBuffer* CHyprpaper::getPoolBuffer(SMonitor* pMonitor, CWallpaperTarget* pWallpaperTarget) {
     return std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
-        return el->target == pWallpaperTarget->m_szPath && el->pixelSize == pMonitor->size * pMonitor->scale;
+        return el->target == pWallpaperTarget->m_szPath && el->pixelSize == pMonitor->size * (pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale);
     })->get();
 }
 
@@ -477,8 +477,8 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     wl_surface_set_buffer_scale(pMonitor->pCurrentLayerSurface->pSurface, pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? 1 : pMonitor->scale);
     wl_surface_damage_buffer(pMonitor->pCurrentLayerSurface->pSurface, 0, 0, 0xFFFF, 0xFFFF);
     if (pMonitor->pCurrentLayerSurface->pFractionalScaleInfo) {
-        Debug::log(LOG, "Submitting viewport dest size %ix%i for %x", static_cast<int>(std::round(DIMENSIONS.x)), static_cast<int>(std::round(DIMENSIONS.y)), pMonitor->pCurrentLayerSurface);
-        wp_viewport_set_destination(pMonitor->pCurrentLayerSurface->pViewport, static_cast<int>(std::round(DIMENSIONS.x)), static_cast<int>(std::round(DIMENSIONS.y)));
+        Debug::log(LOG, "Submitting viewport dest size %ix%i for %x", static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)), pMonitor->pCurrentLayerSurface);
+        wp_viewport_set_destination(pMonitor->pCurrentLayerSurface->pViewport, static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)));
     }
     wl_surface_commit(pMonitor->pCurrentLayerSurface->pSurface);
 
