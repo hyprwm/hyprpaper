@@ -200,14 +200,14 @@ void CHyprpaper::ensurePoolBuffersPresent() {
                 continue;
 
             auto it = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [wt = &wt, &m](const std::unique_ptr<SPoolBuffer>& el) {
-                auto scale = m->pCurrentLayerSurface && m->pCurrentLayerSurface->pFractionalScaleInfo ? m->pCurrentLayerSurface->fScale : m->scale;
+                auto scale = std::round(m->pCurrentLayerSurface && m->pCurrentLayerSurface->pFractionalScaleInfo ? m->pCurrentLayerSurface->fScale : m->scale);
                 return el->target == wt->m_szPath && el->pixelSize == m->size * scale;
             });
 
             if (it == m_vBuffers.end()) {
                 // create
                 const auto PBUFFER = m_vBuffers.emplace_back(std::make_unique<SPoolBuffer>()).get();
-                auto scale = m->pCurrentLayerSurface && m->pCurrentLayerSurface->pFractionalScaleInfo ? m->pCurrentLayerSurface->fScale : m->scale;
+                auto scale = std::round(m->pCurrentLayerSurface && m->pCurrentLayerSurface->pFractionalScaleInfo ? m->pCurrentLayerSurface->fScale : m->scale);
                 createBuffer(PBUFFER, m->size.x * scale, m->size.y * scale, WL_SHM_FORMAT_ARGB8888);
 
                 PBUFFER->target = wt.m_szPath;
@@ -393,7 +393,7 @@ void CHyprpaper::destroyBuffer(SPoolBuffer* pBuffer) {
 
 SPoolBuffer* CHyprpaper::getPoolBuffer(SMonitor* pMonitor, CWallpaperTarget* pWallpaperTarget) {
     return std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
-        auto scale =  pMonitor->pCurrentLayerSurface && pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale;
+        auto scale =  std::round(pMonitor->pCurrentLayerSurface && pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale);
         return el->target == pWallpaperTarget->m_szPath && el->pixelSize == pMonitor->size * scale;
     })->get();
 }
@@ -421,7 +421,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         }
     }
 
-    const double SURFACESCALE = pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale;
+    const double SURFACESCALE = std::round( pMonitor->pCurrentLayerSurface && pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale);
     const Vector2D DIMENSIONS = Vector2D{std::round(pMonitor->size.x * SURFACESCALE), std::round(pMonitor->size.y * SURFACESCALE)};
 
     const auto PCAIRO = PBUFFER->cairo;
@@ -475,14 +475,16 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     cairo_paint(PCAIRO);
     cairo_restore(PCAIRO);
 
-    wl_surface_attach(pMonitor->pCurrentLayerSurface->pSurface, PBUFFER->buffer, 0, 0);
-    wl_surface_set_buffer_scale(pMonitor->pCurrentLayerSurface->pSurface, pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? 1 : pMonitor->scale);
-    wl_surface_damage_buffer(pMonitor->pCurrentLayerSurface->pSurface, 0, 0, 0xFFFF, 0xFFFF);
-    if (pMonitor->pCurrentLayerSurface->pFractionalScaleInfo) {
-        Debug::log(LOG, "Submitting viewport dest size %ix%i for %x", static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)), pMonitor->pCurrentLayerSurface);
-        wp_viewport_set_destination(pMonitor->pCurrentLayerSurface->pViewport, static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)));
+    if(pMonitor->pCurrentLayerSurface) {
+        wl_surface_attach(pMonitor->pCurrentLayerSurface->pSurface, PBUFFER->buffer, 0, 0);
+        wl_surface_set_buffer_scale(pMonitor->pCurrentLayerSurface->pSurface, pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? 1 : pMonitor->scale);
+        wl_surface_damage_buffer(pMonitor->pCurrentLayerSurface->pSurface, 0, 0, 0xFFFF, 0xFFFF);
+        if (pMonitor->pCurrentLayerSurface->pFractionalScaleInfo) {
+            Debug::log(LOG, "Submitting viewport dest size %ix%i for %x", static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)), pMonitor->pCurrentLayerSurface);
+            wp_viewport_set_destination(pMonitor->pCurrentLayerSurface->pViewport, static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)));
+        }
+        wl_surface_commit(pMonitor->pCurrentLayerSurface->pSurface);
     }
-    wl_surface_commit(pMonitor->pCurrentLayerSurface->pSurface);
 
     // check if we dont need to remove a wallpaper
     if (pMonitor->layerSurfaces.size() > 1) {
