@@ -10,9 +10,10 @@ void CWallpaperTarget::create(const std::string& path) {
     const auto BEGINLOAD = std::chrono::system_clock::now();
 
     cairo_surface_t* CAIROSURFACE = nullptr;
-    if (path.find(".png") == path.length() - 4) {
+    const auto len = path.length();
+    if (path.find(".png") == len - 4 || path.find(".PNG") == len - 4) {
         CAIROSURFACE = cairo_image_surface_create_from_png(path.c_str());
-    } else if (path.find(".jpg") == path.length() - 4 || path.find(".jpeg") == path.length() - 5) {
+    } else if (path.find(".jpg") == len - 4 || path.find(".JPG") == len - 4 || path.find(".jpeg") == len - 5 || path.find(".JPEG") == len - 5) {
         CAIROSURFACE = JPEG::createSurfaceFromJPEG(path);
         m_bHasAlpha = false;
     } else {
