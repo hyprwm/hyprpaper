@@ -33,9 +33,9 @@ preload = /path/to/next_image.png
 # .. more preloads
 
 #set the default wallpaper(s) seen on inital workspace(s) --depending on the number of monitors used
-wallpaper = monitor,/path/to/image.png
+wallpaper = monitor1,/path/to/image.png
 #if more thn one monitor in use, can load a 2nd image
-wallpaper = monitor,/path/to/next_image.png
+wallpaper = monitor2,/path/to/next_image.png
 # .. more monitors
 ```
 
@@ -62,17 +62,16 @@ In any and all cases when you don't mind waiting 300ms for the wallpaper to chan
 # IPC
 You can use `hyprctl hyprpaper` (if on Hyprland) to issue a keyword, for example
 ```
- <-- yes use quotes around desired monitor and wallpaper
+ 
+#Example:
 
-Example:
+#If wallpaper is stored on local desktop in directory ~/Pictures
 
-If wallpaper is stored on local desktop in directory ~/Pictures
-
-make sure you have already preloaded desired wallpaper in hyprpaper.conf:
+#make sure you have already preloaded desired wallpaper in hyprpaper.conf:
 preload = ~/Pictures/myepicpng.png
 preload = ~/Pictures/myepicpngToo.png
 preload = ~/Pictures/myDAYUMepicpng.png
-... continue as desired, but be mindful of impact on memory
+#... continue as desired, but be mindful of impact on memory
 
 
 Now moving to hyprland.conf
@@ -82,6 +81,7 @@ In the actual configuration for Hyprland, hyprland.conf, variables need to be se
 $w1 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpng.png" 
 $w2 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpngToo.png" 
 $w3 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myDAYUMepicpngToo.png" 
+#yes use quotes around desired monitor and wallpaper
 ... continued with desired amount
 
 With the varibles created we can now "exec" the actions
