@@ -11,7 +11,7 @@ Hyprpaper is a blazing fast wallpaper utility for Hyprland with the ability to d
 
 # Installation
 
-[AUR](https://aur.archlinux.org/packages/hyprpaper-git): `yay|paru -S hyprpaper-git`
+[AUR](https://aur.archlinux.org/packages/hyprpaper-git): `yay -S hyprpaper-git`
 
 ### Manual:
 ```
@@ -34,7 +34,7 @@ preload = /path/to/next_image.png
 
 #set the default wallpaper(s) seen on inital workspace(s) --depending on the number of monitors used
 wallpaper = monitor1,/path/to/image.png
-#if more thn one monitor in use, can load a 2nd image
+#if more than one monitor in use, can load a 2nd image
 wallpaper = monitor2,/path/to/next_image.png
 # .. more monitors
 ```
@@ -74,9 +74,9 @@ preload = ~/Pictures/myepicpngAlso.png
 #... continue as desired, but be mindful of impact on memory
 ```
 
-In the actual configuration for Hyprland, *hyprland.conf*, variables need to be set so they can be used as keyword in bind command. The following example uses $w shorthand wallpaper variable:
+In the actual configuration for Hyprland, *hyprland.conf*, variables can be set for ease of read and to be used as keyword in bind command. The following example uses $w shorthand wallpaper variable:
 
-*~/.config/hypr/hyland.conf*
+*~/.config/hypr/hyprland.conf*
 ```
 $w1 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpng.png" 
 $w2 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpngToo.png" 
@@ -86,26 +86,26 @@ $w3 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpngAlso.png"
 ```
 With the varibles created we can now "exec" the actions.
 
-Remember in Hyprland we can bind more than one action to a key so in the case where we'd like to change the wallpaper when we switch workspace we have to ensure that the actions are bound to same key such as...
+Remember in Hyprland we can bind more than one action to a key so in the case where we'd like to change the wallpaper when we switch workspace we have to ensure that the actions are bound to the same key such as...
 
-*~/.config/hypr/hyland.conf*
+*~/.config/hypr/hyprland.conf*
 ```
-bind=SUPER,1,workspace,1  <-- Superkey + 1 switches to workspace 1
-bind=SUPER,1,exec,$w1     <-- SuperKey + 1 switches to wallpaper $w1 on DP-1 as defined in the variable
+bind=SUPER,1,workspace,1  #Superkey + 1 switches to workspace 1
+bind=SUPER,1,exec,$w1     #SuperKey + 1 switches to wallpaper $w1 on DP-1 as defined in the variable
 
-bind=SUPER,2,workspace,2  <-- Superkey + 2 switches to workspace 2
-bind=SUPER,2,exec,$w2     <-- SuperKey + 2 switches to wallpaper $w2 on DP-1 as defined in the variable
+bind=SUPER,2,workspace,2  #Superkey + 2 switches to workspace 2
+bind=SUPER,2,exec,$w2     #SuperKey + 2 switches to wallpaper $w2 on DP-1 as defined in the variable
 
-bind=SUPER,3,workspace,3  <-- Superkey + 3 switches to workspace 3
-bind=SUPER,3,exec,$w3     <-- SuperKey + 3 switches to wallpaper $w3 on DP-1 as defined in the variable
+bind=SUPER,3,workspace,3  #Superkey + 3 switches to workspace 3
+bind=SUPER,3,exec,$w3     #SuperKey + 3 switches to wallpaper $w3 on DP-1 as defined in the variable
 
 #... and so on 
 ```
 Because the default behavior in Hyprland is to also switch the workspace whenever bind=SUPERSHIFT is used to move a window to another workspace you may want to include the following:
 
 ```
-bind=SUPERSHIFT,1,movetoworkspace,1 <-- Superkey + Shift + 1 moves windows and switches to workspace 1
-bind=SUPERSHIFT,1,exec,$w1          <-- SuperKey + Shift + 1 switches to wallpaper $w1 on DP-1 as defined in the variable
+bind=SUPERSHIFT,1,movetoworkspace,1  #Superkey + Shift + 1 moves windows and switches to workspace 1
+bind=SUPERSHIFT,1,exec,$w1           #SuperKey + Shift + 1 switches to wallpaper $w1 on DP-1 as defined in the variable
 ```
 
 # Battery life
