@@ -11,7 +11,7 @@ Hyprpaper is a blazing fast wallpaper utility for Hyprland with the ability to d
 
 # Installation
 
-[AUR](https://aur.archlinux.org/packages/hyprpaper-git): `yay -S hyprpaper-git`
+[AUR](https://aur.archlinux.org/packages/hyprpaper-git): `yay|paru -S hyprpaper-git`
 
 ### Manual:
 ```
@@ -28,11 +28,14 @@ Hyprpaper is controlled by the config, like this:
 *~/.config/hypr/hyprpaper.conf*
 ```
 preload = /path/to/image.png
-
+#if more than one preload is desired then continue to preload other backgrounds
+preload = /path/to/next_image.png
 # .. more preloads
 
+#set the default wallpaper(s) seen on inital workspace(s) --depending on the number of monitors used
 wallpaper = monitor,/path/to/image.png
-
+#if more thn one monitor in use, can load a 2nd image
+wallpaper = monitor,/path/to/next_image.png
 # .. more monitors
 ```
 
@@ -59,8 +62,46 @@ In any and all cases when you don't mind waiting 300ms for the wallpaper to chan
 # IPC
 You can use `hyprctl hyprpaper` (if on Hyprland) to issue a keyword, for example
 ```
-hyprctl hyprpaper wallpaper DP-1,~/Pictures/myepicpng.png
-```
+ <-- yes use quotes around desired monitor and wallpaper
+
+Example:
+
+If wallpaper is stored on local desktop in directory ~/Pictures
+
+make sure you have already preloaded desired wallpaper in hyprpaper.conf:
+preload = ~/Pictures/myepicpng.png
+preload = ~/Pictures/myepicpngToo.png
+preload = ~/Pictures/myDAYUMepicpng.png
+... continue as desired, but be mindful of impact on memory
+
+
+Now moving to hyprland.conf
+
+In the actual configuration for Hyprland, hyprland.conf, variables need to be set so they can be used as keyword in bind command. The following example uses $w shorthand wallpaper variable
+
+$w1 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpng.png" 
+$w2 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpngToo.png" 
+$w3 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myDAYUMepicpngToo.png" 
+... continued with desired amount
+
+With the varibles created we can now "exec" the actions
+
+Remember in Hyprland we can bind more than one action to keys so in the case where we'd like to change the wallpaper when we switch workspace we have to ensure that the actions are binded to same key so
+
+bind=SUPER,1,workspace,1  <-- Superkey + 1 switches to workspace 1
+bind=SUPER,1,exec,$w1     <-- SuperKey + 1 switches to wallpaper $w1 on DP-1 as defined in the variable
+
+bind=SUPER,2,workspace,2  <-- Superkey + 2 switches to workspace 2
+bind=SUPER,2,exec,$w2     <-- SuperKey + 2 switches to wallpaper $w2 on DP-1 as defined in the variable
+
+... and so on 
+
+because the default behavior in Hyprland is to also switch the workspace whenever bind=SUPERSHIFT is used to move a window to another workspace you may want to include the following:
+
+bind=SUPERSHIFT,1,movetoworkspace,1 <-- Superkey + Shift + 1 moves windows and switches to workspace 1
+bind=SUPERSHIFT,1,exec,$w1          <-- SuperKey + Shift + 1 switches to wallpaper $w1 on DP-1 as defined in the variable
+
+...
 
 # Battery life
 Since the IPC has to tick every now and then, and poll in the background, battery life might be a tiny bit worse with IPC on. If you want to fully disable it, use
