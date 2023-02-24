@@ -64,17 +64,17 @@ You can use `hyprctl hyprpaper` (if on Hyprland) to issue a keyword, for example
 
 Example:
 
-If wallpaper is stored on local desktop in directory *~/Pictures*, then make sure you have already preloaded desired wallpaper in hyprpaper.conf.
+If your wallpapers are stored in *~/Pictures*, then make sure you have already preloaded the desired wallpapers in hyprpaper.conf.
 
 *~/.config/hypr/hyprpaper.conf*
 ```
 preload = ~/Pictures/myepicpng.png
 preload = ~/Pictures/myepicpngToo.png
 preload = ~/Pictures/myepicpngAlso.png
-#... continue as desired, but be mindful of impact on memory
+#... continue as desired, but be mindful of the impact on memory.
 ```
 
-In the actual configuration for Hyprland, *hyprland.conf*, variables can be set for ease of read and to be used as keyword in bind command. The following example uses $w shorthand wallpaper variable:
+In the actual configuration for Hyprland, *hyprland.conf*, variables can be set for ease of reading and to be used as shortcuts in the bind command. The following example uses $w shorthand wallpaper variables:
 
 *~/.config/hypr/hyprland.conf*
 ```
@@ -101,7 +101,7 @@ bind=SUPER,3,exec,$w3     #SuperKey + 3 switches to wallpaper $w3 on DP-1 as def
 
 #... and so on 
 ```
-Because the default behavior in Hyprland is to also switch the workspace whenever bind=SUPERSHIFT is used to move a window to another workspace you may want to include the following:
+Because the default behavior in Hyprland is to also switch the workspace whenever movetoworkspace is used to move a window to another workspace you may want to include the following:
 
 ```
 bind=SUPERSHIFT,1,movetoworkspace,1  #Superkey + Shift + 1 moves windows and switches to workspace 1
