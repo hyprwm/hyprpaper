@@ -70,7 +70,7 @@ If wallpaper is stored on local desktop in directory *~/Pictures*, then make sur
 ```
 preload = ~/Pictures/myepicpng.png
 preload = ~/Pictures/myepicpngToo.png
-preload = ~/Pictures/myDAYUMepicpng.png
+preload = ~/Pictures/myepicpngAlso.png
 #... continue as desired, but be mindful of impact on memory
 ```
 
@@ -80,7 +80,7 @@ In the actual configuration for Hyprland, *hyprland.conf*, variables need to be 
 ```
 $w1 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpng.png" 
 $w2 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpngToo.png" 
-$w3 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myDAYUMepicpngToo.png" 
+$w3 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpngAlso.png" 
 #yes use quotes around desired monitor and wallpaper
 #... continued with desired amount
 ```
@@ -95,6 +95,9 @@ bind=SUPER,1,exec,$w1     <-- SuperKey + 1 switches to wallpaper $w1 on DP-1 as 
 
 bind=SUPER,2,workspace,2  <-- Superkey + 2 switches to workspace 2
 bind=SUPER,2,exec,$w2     <-- SuperKey + 2 switches to wallpaper $w2 on DP-1 as defined in the variable
+
+bind=SUPER,3,workspace,3  <-- Superkey + 3 switches to workspace 3
+bind=SUPER,3,exec,$w3     <-- SuperKey + 3 switches to wallpaper $w3 on DP-1 as defined in the variable
 
 #... and so on 
 ```
