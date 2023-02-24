@@ -61,21 +61,23 @@ In any and all cases when you don't mind waiting 300ms for the wallpaper to chan
 
 # IPC
 You can use `hyprctl hyprpaper` (if on Hyprland) to issue a keyword, for example
+
+Example:
+
+If wallpaper is stored on local desktop in directory *~/Pictures*
+Make sure you have already preloaded desired wallpaper in hyprpaper.conf.
+
+*~/.config/hypr/hyprpaper.conf*
 ```
-#Example:
-
-#If wallpaper is stored on local desktop in directory ~/Pictures
-
-#make sure you have already preloaded desired wallpaper in hyprpaper.conf:
 preload = ~/Pictures/myepicpng.png
 preload = ~/Pictures/myepicpngToo.png
 preload = ~/Pictures/myDAYUMepicpng.png
 #... continue as desired, but be mindful of impact on memory
 ```
-
 Now moving to hyprland.conf
+In the actual configuration for Hyprland, hyprland.conf, variables need to be set so they can be used as keyword in bind command. The following example uses $w shorthand wallpaper variable:
 
-In the actual configuration for Hyprland, hyprland.conf, variables need to be set so they can be used as keyword in bind command. The following example uses $w shorthand wallpaper variable
+*~/.config/hypr/hyland.conf*
 ```
 $w1 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpng.png" 
 $w2 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpngToo.png" 
@@ -83,10 +85,11 @@ $w3 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myDAYUMepicpngToo.png"
 #yes use quotes around desired monitor and wallpaper
 #... continued with desired amount
 ```
-
 With the varibles created we can now "exec" the actions
 
-Remember in Hyprland we can bind more than one action to keys so in the case where we'd like to change the wallpaper when we switch workspace we have to ensure that the actions are binded to same key so
+Remember in Hyprland we can bind more than one action to keys so in the case where we'd like to change the wallpaper when we switch workspace we have to ensure that the actions are binded to same key so...
+
+*~/.config/hypr/hyland.conf*
 ```
 bind=SUPER,1,workspace,1  <-- Superkey + 1 switches to workspace 1
 bind=SUPER,1,exec,$w1     <-- SuperKey + 1 switches to wallpaper $w1 on DP-1 as defined in the variable
