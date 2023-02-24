@@ -86,7 +86,7 @@ $w3 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myDAYUMepicpngToo.png"
 ```
 With the varibles created we can now "exec" the actions.
 
-Remember in Hyprland we can bind more than one action to keys so in the case where we'd like to change the wallpaper when we switch workspace we have to ensure that the actions are binded to same key so...
+Remember in Hyprland we can bind more than one action to a key so in the case where we'd like to change the wallpaper when we switch workspace we have to ensure that the actions are bound to same key such as...
 
 *~/.config/hypr/hyland.conf*
 ```
