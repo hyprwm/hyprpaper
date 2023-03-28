@@ -10,10 +10,18 @@ void CWallpaperTarget::create(const std::string& path) {
     const auto BEGINLOAD = std::chrono::system_clock::now();
 
     cairo_surface_t* CAIROSURFACE = nullptr;
-    const auto len = path.length();
-    if (path.find(".png") == len - 4 || path.find(".PNG") == len - 4) {
+    const auto len = path.len()+36;
+    char cmd[len];
+    snprintf(cmd, len, "file -b --mime-type %s", path.c_str());
+    FILE *file = popen(cmd, "r");
+    char file_type[16];
+    fread(file_type, 1, 15, file);
+    file_type[15]='\0';
+    pclose(file);
+    Debug::log(LOG, "File: %s", file_type);
+    if (strncmp(file_type, "image/png", 9) == 0) { // file_type may have new line and EOF at the end
         CAIROSURFACE = cairo_image_surface_create_from_png(path.c_str());
-    } else if (path.find(".jpg") == len - 4 || path.find(".JPG") == len - 4 || path.find(".jpeg") == len - 5 || path.find(".JPEG") == len - 5) {
+    } else if (strncmp(file_type, "image/jpeg", 10) == 0) {
         CAIROSURFACE = JPEG::createSurfaceFromJPEG(path);
         m_bHasAlpha = false;
     } else {
