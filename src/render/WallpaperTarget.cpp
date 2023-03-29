@@ -20,7 +20,7 @@ void CWallpaperTarget::create(const std::string& path) {
     }
     else if (file_type == "")
     {
-        Debug::log(CRIT, "file command didn't return anything, are you sure file is isntalled?");
+        Debug::log(CRIT, "file command didn't return anything, are you sure file is installed?");
         exit(1);
     }
     else {
