@@ -10,9 +10,9 @@ void CWallpaperTarget::create(const std::string& path) {
     const auto BEGINLOAD = std::chrono::system_clock::now();
 
     cairo_surface_t* CAIROSURFACE = nullptr;
-    const auto len = path.len()+36;
+    const auto len = path.length()+36;
     char cmd[len];
-    snprintf(cmd, len, "file -b --mime-type %s", path.c_str());
+    sprintf(cmd, "file -b --mime-type %s", path.c_str());
     FILE *file = popen(cmd, "r");
     char file_type[16];
     fread(file_type, 1, 15, file);
