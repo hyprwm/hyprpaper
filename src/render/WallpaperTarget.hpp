@@ -2,8 +2,7 @@
 
 #include "../defines.hpp"
 #include "../helpers/Jpeg.hpp"
-#include <stdio.h>
-#include <string.h>
+#include "../helpers/System.hpp"
 
 class CWallpaperTarget {
 public:

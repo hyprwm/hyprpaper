@@ -10,22 +10,22 @@ void CWallpaperTarget::create(const std::string& path) {
     const auto BEGINLOAD = std::chrono::system_clock::now();
 
     cairo_surface_t* CAIROSURFACE = nullptr;
-    const auto len = path.length()+36;
-    char cmd[len];
-    sprintf(cmd, "file -b --mime-type %s", path.c_str());
-    FILE *file = popen(cmd, "r");
-    char file_type[16];
-    fread(file_type, 1, 15, file);
-    file_type[15]='\0';
-    pclose(file);
-    Debug::log(LOG, "File: %s", file_type);
-    if (strncmp(file_type, "image/png", 9) == 0) { // file_type may have new line and EOF at the end
+    const std::string cmd = "file -b --mime-type " + path;
+    std::string file_type(execAndGet(cmd.c_str()));
+    if (file_type.contains("image/png")) { //Do not change to == as string has newline at the end
         CAIROSURFACE = cairo_image_surface_create_from_png(path.c_str());
-    } else if (strncmp(file_type, "image/jpeg", 10) == 0) {
+    } else if (file_type.contains("image/jpeg")) { 
         CAIROSURFACE = JPEG::createSurfaceFromJPEG(path);
         m_bHasAlpha = false;
-    } else {
+    }
+    else if (file_type == "")
+    {
+        Debug::log(CRIT, "file command didn't return anything, are you sure file is isntalled?");
+        exit(1);
+    }
+    else {
         Debug::log(CRIT, "unrecognized image %s", path.c_str());
+        Debug::log(LOG, "Returned file type is: %s", file_type.c_str());
         exit(1);
     }
 
