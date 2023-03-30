@@ -18,11 +18,6 @@ void CWallpaperTarget::create(const std::string& path) {
         CAIROSURFACE = JPEG::createSurfaceFromJPEG(path);
         m_bHasAlpha = false;
     }
-    else if (file_type == "")
-    {
-        Debug::log(CRIT, "file command didn't return anything, are you sure file is installed?");
-        exit(1);
-    }
     else {
         Debug::log(CRIT, "unrecognized image %s", path.c_str());
         Debug::log(LOG, "Returned file type is: %s", file_type.c_str());
