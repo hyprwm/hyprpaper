@@ -12,6 +12,7 @@
     genSystems = lib.genAttrs [
       # Add more systems if they are supported
       "x86_64-linux"
+      "aarch64-linux"
     ];
     pkgsFor = nixpkgs.legacyPackages;
     mkDate = longDate: (lib.concatStringsSep "-" [
