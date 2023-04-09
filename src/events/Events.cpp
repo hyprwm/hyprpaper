@@ -6,7 +6,9 @@ void Events::geometry(void *data, wl_output *output, int32_t x, int32_t y, int32
 }
 
 void Events::mode(void *data, wl_output *output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
-    // ignored
+    const auto PMONITOR = (SMonitor*)data;
+
+    PMONITOR->size = Vector2D(width, height);
 }
 
 void Events::done(void *data, wl_output *wl_output) {
@@ -14,7 +16,7 @@ void Events::done(void *data, wl_output *wl_output) {
 
     PMONITOR->readyForLS = true;
 
-    g_pHyprpaper->recheckAllMonitors();
+    g_pHyprpaper->tick(true);
 }
 
 void Events::scale(void *data, wl_output *wl_output, int32_t scale) {
