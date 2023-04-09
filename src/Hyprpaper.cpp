@@ -392,10 +392,14 @@ void CHyprpaper::destroyBuffer(SPoolBuffer* pBuffer) {
 }
 
 SPoolBuffer* CHyprpaper::getPoolBuffer(SMonitor* pMonitor, CWallpaperTarget* pWallpaperTarget) {
-    return std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
+    const auto IT = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
         auto scale = std::round((pMonitor->pCurrentLayerSurface && pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale) * 120.0) / 120.0;
         return el->target == pWallpaperTarget->m_szPath && vectorDeltaLessThan(el->pixelSize, pMonitor->size * scale, 1);
-    })->get();
+    });
+
+    if (IT == m_vBuffers.end())
+        return nullptr;
+    return IT->get();
 }
 
 void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
