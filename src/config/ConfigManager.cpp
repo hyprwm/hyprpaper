@@ -107,6 +107,8 @@ void CConfigManager::parseKeyword(const std::string& COMMAND, const std::string&
         handleUnload(COMMAND, VALUE);
     else if (COMMAND == "ipc")
         g_pHyprpaper->m_bIPCEnabled = VALUE == "1" || VALUE == "yes" || VALUE == "on" || VALUE == "true";
+    else if (COMMAND == "splash")
+        g_pHyprpaper->m_bRenderSplash = VALUE == "1" || VALUE == "yes" || VALUE == "on" || VALUE == "true";
     else
         parseError = "unknown keyword " + COMMAND;
 }

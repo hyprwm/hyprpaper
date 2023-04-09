@@ -37,6 +37,7 @@ public:
     std::vector<std::unique_ptr<SMonitor>> m_vMonitors;
 
     bool        m_bIPCEnabled = true;
+    bool        m_bRenderSplash = false;
     std::string m_szExplicitConfigPath;
     bool        m_bNoFractionalScale = false;
 

@@ -473,6 +473,32 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     cairo_set_source_surface(PCAIRO, PWALLPAPERTARGET->m_pCairoSurface, origin.x, origin.y);
 
     cairo_paint(PCAIRO);
+
+    if (g_pHyprpaper->m_bRenderSplash && getenv("HYPRLAND_INSTANCE_SIGNATURE")) {
+        auto SPLASH = execAndGet("hyprctl splash");
+        SPLASH.pop_back();
+
+        Debug::log(LOG, "Rendering splash: %s", SPLASH.c_str());
+
+        cairo_select_font_face(PCAIRO, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+
+        const auto FONTSIZE = (int)(DIMENSIONS.y / 76.0 / scale);
+        cairo_set_font_size(PCAIRO, FONTSIZE);
+
+        cairo_set_source_rgba(PCAIRO, 1.0, 1.0, 1.0, 0.32);
+
+        cairo_text_extents_t textExtents;
+        cairo_text_extents(PCAIRO, SPLASH.c_str(), &textExtents);
+
+        cairo_move_to(PCAIRO, ((DIMENSIONS.x - textExtents.width * scale) / 2.0) / scale, (DIMENSIONS.y * 0.99 - textExtents.height * scale) / scale);
+
+        Debug::log(LOG, "Splash font size: %d, pos: %.2f, %.2f", FONTSIZE, (DIMENSIONS.x - textExtents.width) / 2.0 / scale, DIMENSIONS.y * 0.95 - textExtents.height / scale);
+
+        cairo_show_text(PCAIRO, SPLASH.c_str());
+
+        cairo_surface_flush(PWALLPAPERTARGET->m_pCairoSurface);
+    }
+
     cairo_restore(PCAIRO);
 
     if (pMonitor->pCurrentLayerSurface) {
