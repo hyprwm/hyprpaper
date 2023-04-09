@@ -6,6 +6,7 @@
 #include "helpers/Monitor.hpp"
 #include "events/Events.hpp"
 #include "helpers/PoolBuffer.hpp"
+#include "helpers/MiscFunctions.hpp"
 #include "ipc/Socket.hpp"
 #include <mutex>
 

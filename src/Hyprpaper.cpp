@@ -201,7 +201,7 @@ void CHyprpaper::ensurePoolBuffersPresent() {
 
             auto it = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [wt = &wt, &m](const std::unique_ptr<SPoolBuffer>& el) {
                 auto scale = std::round((m->pCurrentLayerSurface && m->pCurrentLayerSurface->pFractionalScaleInfo ? m->pCurrentLayerSurface->fScale : m->scale) * 120.0) / 120.0;
-                return el->target == wt->m_szPath && el->pixelSize == m->size * scale;
+                return el->target == wt->m_szPath && vectorDeltaLessThan(el->pixelSize, m->size * scale, 1);
             });
 
             if (it == m_vBuffers.end()) {
@@ -394,7 +394,7 @@ void CHyprpaper::destroyBuffer(SPoolBuffer* pBuffer) {
 SPoolBuffer* CHyprpaper::getPoolBuffer(SMonitor* pMonitor, CWallpaperTarget* pWallpaperTarget) {
     return std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
         auto scale = std::round((pMonitor->pCurrentLayerSurface && pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale) * 120.0) / 120.0;
-        return el->target == pWallpaperTarget->m_szPath && el->pixelSize == pMonitor->size * scale;
+        return el->target == pWallpaperTarget->m_szPath && vectorDeltaLessThan(el->pixelSize, pMonitor->size * scale, 1);
     })->get();
 }
 
