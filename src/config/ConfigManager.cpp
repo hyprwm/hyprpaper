@@ -6,23 +6,13 @@ CConfigManager::CConfigManager() {
     // Read file from default location
     // or from an explicit location given by user
 
-    std::string configPath;
-    if (g_pHyprpaper->m_szExplicitConfigPath.empty()) {
-        const char* const ENVHOME = getenv("HOME");
-        configPath = ENVHOME + std::string("/.config/hypr/hyprpaper.conf");
-    } else {
-        configPath = g_pHyprpaper->m_szExplicitConfigPath;
-    }
+    std::string configPath = getMainConfigPath();
 
     std::ifstream ifs;
     ifs.open(configPath);
 
     if (!ifs.good()) {
-        if (g_pHyprpaper->m_szExplicitConfigPath.empty()) {
-            Debug::log(CRIT, "No config file provided. Default config file `~/.config/hypr/hyprpaper.conf` couldn't be opened.");
-        } else {
-            Debug::log(CRIT, "No config file provided. Specified file `%s` couldn't be opened.", configPath.c_str());
-        }
+        Debug::log(CRIT, "Config file `%s` couldn't be opened.", configPath.c_str());
         exit(1);
     }
 
@@ -56,6 +46,18 @@ CConfigManager::CConfigManager() {
         exit(1);
         return;
     }
+}
+
+std::string CConfigManager::getMainConfigPath() {
+    if (!g_pHyprpaper->m_szExplicitConfigPath.empty())
+        return g_pHyprpaper->m_szExplicitConfigPath;
+    
+    std::string config_home = std::string(getenv("XDG_CONFIG_HOME"));
+    if (config_home == "")
+        config_home = std::string(getenv("HOME")) + "/.config";
+
+    std::string normal_file_name = std::string("/hypr/hyprpaper.conf");
+    return config_home + normal_file_name;
 }
 
 std::string CConfigManager::removeBeginEndSpacesTabs(std::string str) {
