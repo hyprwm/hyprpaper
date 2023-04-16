@@ -14,6 +14,7 @@ public:
     zwlr_layer_surface_v1* pLayerSurface = nullptr;
     wl_surface* pSurface = nullptr;
 
+    wl_cursor_theme* pCursorTheme = nullptr;
     wl_cursor_image* pCursorImg = nullptr;
     wl_surface* pCursorSurface = nullptr;
 

@@ -146,7 +146,9 @@ void CHyprpaper::recheckMonitor(SMonitor* pMonitor) {
                     XCURSOR_SIZE = 24;
                 }
             }
-            pMonitor->pCurrentLayerSurface->pCursorImg = wl_cursor_theme_get_cursor(wl_cursor_theme_load(getenv("XCURSOR_THEME"), XCURSOR_SIZE * pMonitor->scale, m_sSHM), "left_ptr")->images[0];
+
+            pMonitor->pCurrentLayerSurface->pCursorTheme = wl_cursor_theme_load(getenv("XCURSOR_THEME"), XCURSOR_SIZE * pMonitor->scale, m_sSHM);
+            pMonitor->pCurrentLayerSurface->pCursorImg = wl_cursor_theme_get_cursor(pMonitor->pCurrentLayerSurface->pCursorTheme, "left_ptr")->images[0];
         }
     }
 

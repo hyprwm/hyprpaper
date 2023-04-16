@@ -49,6 +49,10 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
 }
 
 CLayerSurface::~CLayerSurface() {
+
+    if (pCursorTheme)
+        wl_cursor_theme_destroy(pCursorTheme);
+
     if (g_pHyprpaper->m_sFractionalScale && pFractionalScaleInfo) {
         wp_fractional_scale_v1_destroy(pFractionalScaleInfo);
 
