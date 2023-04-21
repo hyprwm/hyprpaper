@@ -1,6 +1,9 @@
 #include "ConfigManager.hpp"
 #include "../Hyprpaper.hpp"
+#include "../debug/Log.hpp"
 
+#include <algorithm>
+#include <string_view>
 CConfigManager::CConfigManager() {
     // Initialize the configuration
     // Read file from default location
@@ -112,7 +115,36 @@ void CConfigManager::parseKeyword(const std::string& COMMAND, const std::string&
     else
         parseError = "unknown keyword " + COMMAND;
 }
+namespace {
+    inline static std::size_t skip_intersection_chars(std::string_view src, std::string_view test_chars) {
+        auto l_test_chars = test_chars.size();
+        decltype(src.size()) i = 0;
 
+        decltype(src.size()) match_index = 0;
+        while (i < src.size()) {
+            if (src[i] == test_chars[match_index]) {
+                i++;
+                continue;
+            }
+            match_index++;
+            decltype(i) j = 0;
+            while (match_index < l_test_chars && src[i] != test_chars[match_index]) {
+                match_index++;
+                j++;
+            }
+            if (match_index < l_test_chars)
+                continue;
+            while (j < l_test_chars && src[i] != test_chars[match_index - l_test_chars]) {
+                match_index++;
+                j++;
+            }
+            if (j == l_test_chars)
+                break;
+            match_index = match_index % l_test_chars;
+        }
+        return i;
+    }
+}
 void CConfigManager::handleWallpaper(const std::string& COMMAND, const std::string& VALUE) {
     if (VALUE.find_first_of(',') == std::string::npos) {
         parseError = "wallpaper failed (syntax)";
@@ -135,7 +167,75 @@ void CConfigManager::handleWallpaper(const std::string& COMMAND, const std::stri
     }
 
     if (!std::filesystem::exists(WALLPAPER)) {
-        parseError = "wallpaper failed (no such file)";
+        auto recover = [&, this]() -> bool {
+            bool try_next = false;
+
+            auto count = skip_intersection_chars(WALLPAPER, " \t\r\n");
+            std::string_view sv(WALLPAPER.begin() + count, WALLPAPER.end());
+            if (sv.starts_with("next")) {
+                count += 4;
+                if (skip_intersection_chars({sv.begin() + 4, sv.end()}, " \t\r\n") + count == WALLPAPER.size()) {
+                    try_next = true;
+                }
+            }
+
+            if (!try_next) {
+                return false;
+            }
+
+            // todo how to get that which monitor the current window associate with
+            // try default monitor name
+            bool default_name = false;
+            if (skip_intersection_chars(MONITOR, " \t\r\n") == MONITOR.size()) {
+                if (g_pHyprpaper->m_vMonitors.empty() || !g_pHyprpaper->m_mMonitorActiveWallpaperTargets.contains(g_pHyprpaper->m_vMonitors[0].get())) {
+                    return false;
+                }
+                default_name = true;
+                MONITOR="";
+            } else {
+                int monitori = -1;
+                for (int i = 0; auto&& p : g_pHyprpaper->m_vMonitors) {
+                    if (p->name == MONITOR) {
+                        monitori = i;
+                        break;
+                    }
+                    i++;
+                }
+
+                if (monitori == -1) {
+                    return false;
+                }
+            }
+
+            auto&& s = g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR];
+
+            auto it = g_pHyprpaper->m_mWallpaperTargets.find(s);
+
+            if (it != g_pHyprpaper->m_mWallpaperTargets.end()) {
+                it++;
+            } else {
+                return false;
+            }
+
+            if (it == g_pHyprpaper->m_mWallpaperTargets.end()) {
+                it = g_pHyprpaper->m_mWallpaperTargets.begin();
+            }
+            if (default_name) {
+                auto&& dn = g_pHyprpaper->m_vMonitors[0]->name;
+                g_pHyprpaper->clearWallpaperFromMonitor(dn);
+                g_pHyprpaper->m_mMonitorActiveWallpapers[dn] = it->first;
+                g_pHyprpaper->m_mMonitorWallpaperRenderData[dn].contain = contain;
+            }
+            g_pHyprpaper->clearWallpaperFromMonitor(MONITOR);
+            g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR] = it->first;
+            g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
+
+            return true;
+        };
+        if (!recover()) {
+            parseError = "wallpaper failed (no such file)";
+            return;
+        }
         return;
     }
 
@@ -184,10 +284,10 @@ void CConfigManager::handleUnload(const std::string& COMMAND, const std::string&
 void CConfigManager::handleUnloadAll(const std::string& COMMAND, const std::string& VALUE) {
     std::vector<std::string> toUnload;
 
-    for (auto&[name, target] : g_pHyprpaper->m_mWallpaperTargets) {
+    for (auto& [name, target] : g_pHyprpaper->m_mWallpaperTargets) {
 
         bool exists = false;
-        for (auto&[mon, target2] : g_pHyprpaper->m_mMonitorActiveWallpaperTargets) {
+        for (auto& [mon, target2] : g_pHyprpaper->m_mMonitorActiveWallpaperTargets) {
             if (&target == target2) {
                 exists = true;
                 break;
@@ -206,7 +306,7 @@ void CConfigManager::handleUnloadAll(const std::string& COMMAND, const std::stri
 
 // trim from both ends
 std::string CConfigManager::trimPath(std::string path) {
-    //trims whitespaces, tabs and new line feeds
+    // trims whitespaces, tabs and new line feeds
     size_t pathStartIndex = path.find_first_not_of(" \t\r\n");
     size_t pathEndIndex = path.find_last_not_of(" \t\r\n");
     return path.substr(pathStartIndex, pathEndIndex - pathStartIndex + 1);
