@@ -191,7 +191,7 @@ void CConfigManager::handleWallpaper(const std::string& COMMAND, const std::stri
                     return false;
                 }
                 default_name = true;
-                MONITOR="";
+                MONITOR = "";
             } else {
                 int monitori = -1;
                 for (int i = 0; auto&& p : g_pHyprpaper->m_vMonitors) {
@@ -204,6 +204,11 @@ void CConfigManager::handleWallpaper(const std::string& COMMAND, const std::stri
 
                 if (monitori == -1) {
                     return false;
+                }
+
+                if (monitori == 0) {
+                    default_name = true;
+                    MONITOR = "";
                 }
             }
 
