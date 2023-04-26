@@ -6,6 +6,7 @@
 
 struct SMonitor {
     std::string name = "";
+    std::string description = "";
     wl_output* output = nullptr;
     uint32_t wayland_name = 0;
     Vector2D size;

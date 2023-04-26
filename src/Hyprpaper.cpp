@@ -184,7 +184,17 @@ void CHyprpaper::removeOldHyprpaperImages() {
 }
 
 SMonitor* CHyprpaper::getMonitorFromName(const std::string& monname) {
+    bool useDesc = false;
+    std::string desc = "";
+    if (monname.find("desc:") == 0) {
+        useDesc = true;
+        desc = monname.substr(5);
+    }
+
     for (auto& m : m_vMonitors) {
+        if (useDesc && m->description.find(desc) == 0)
+            return m.get();
+
         if (m->name == monname)
             return m.get();
     }
@@ -270,6 +280,21 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
         return; // has
 
     // get the target
+    for (auto& [mon, path1] : m_mMonitorActiveWallpapers) {
+        if (mon.find("desc:") != 0)
+            continue;
+
+        if (pMonitor->description.find(mon.substr(5)) == 0) {
+            for (auto& [path2, target] : m_mWallpaperTargets) {
+                if (path1 == path2) {
+                    it->second = &target;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+
     for (auto& [mon, path1] : m_mMonitorActiveWallpapers) {
         if (mon == pMonitor->name) {
             for (auto& [path2, target] : m_mWallpaperTargets) {

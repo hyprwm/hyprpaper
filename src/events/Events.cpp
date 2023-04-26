@@ -32,7 +32,9 @@ void Events::name(void *data, wl_output *wl_output, const char *name) {
 }
 
 void Events::description(void *data, wl_output *wl_output, const char *description) {
-    // i do not care
+    const auto PMONITOR = (SMonitor*)data;
+
+    PMONITOR->description = description;
 }
 
 void Events::handleCapabilities(void *data, wl_seat *wl_seat, uint32_t capabilities) {
