@@ -68,3 +68,7 @@ all:
 	make clear
 	make protocols
 	make release
+
+install:
+	make all
+	cp ./build/hyprpaper /usr/bin -f
