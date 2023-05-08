@@ -16,6 +16,7 @@ void Events::done(void *data, wl_output *wl_output) {
 
     PMONITOR->readyForLS = true;
 
+    std::lock_guard<std::mutex> lg(g_pHyprpaper->m_mtTickMutex);
     g_pHyprpaper->tick(true);
 }
 
@@ -151,6 +152,7 @@ void Events::handlePreferredScale(void *data, wp_fractional_scale_v1* fractional
 
     if (pLS->fScale != SCALE) {
         pLS->fScale = SCALE;
+        std::lock_guard<std::mutex> lg(g_pHyprpaper->m_mtTickMutex);
         g_pHyprpaper->tick(true);
     }
 }

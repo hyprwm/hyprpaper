@@ -57,6 +57,8 @@ void CIPCSocket::initialize() {
                 break;
             }
 
+            std::lock_guard<std::mutex> lg(g_pHyprpaper->m_mtTickMutex);
+
             auto messageSize = read(ACCEPTEDCONNECTION, readBuffer, 1024);
             readBuffer[messageSize == 1024 ? 1023 : messageSize] = '\0';
 

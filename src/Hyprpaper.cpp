@@ -26,13 +26,12 @@ void CHyprpaper::init() {
     wl_registry_add_listener(registry, &Events::registryListener, nullptr);
 
     while (wl_display_dispatch(m_sDisplay) != -1) {
+        std::lock_guard<std::mutex> lg(m_mtTickMutex);
         tick(true);
     }
 }
 
 void CHyprpaper::tick(bool force) {
-    std::lock_guard<std::mutex> lg(m_mtTickMutex);
-
     bool reload = g_pIPCSocket->mainThreadParseRequest();
 
     if (!reload && !force)
