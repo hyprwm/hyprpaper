@@ -1,8 +1,17 @@
 #include "Hyprpaper.hpp"
+#include <filesystem>
+#include <fstream>
+#include <sys/types.h>
+#include <signal.h>
 
 CHyprpaper::CHyprpaper() = default;
 
 void CHyprpaper::init() {
+
+    if (!lockSingleInstance()) {
+        Debug::log(CRIT, "Cannot launch multiple instances of Hyprpaper at once!");
+        exit(1);
+    }
 
     removeOldHyprpaperImages();
 
@@ -29,6 +38,8 @@ void CHyprpaper::init() {
         std::lock_guard<std::mutex> lg(m_mtTickMutex);
         tick(true);
     }
+
+    unlockSingleInstance();
 }
 
 void CHyprpaper::tick(bool force) {
@@ -551,4 +562,39 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
             }
         }
     }
+}
+
+bool CHyprpaper::lockSingleInstance() {
+    const std::string XDG_RUNTIME_DIR = getenv("XDG_RUNTIME_DIR");
+
+    const auto LOCKFILE = XDG_RUNTIME_DIR + "/hyprpaper.lock";
+
+    if (std::filesystem::exists(LOCKFILE)) {
+        std::ifstream ifs(LOCKFILE);
+        std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+
+        try {
+            kill(std::stoull(content), 0);
+
+            if (errno != ESRCH)
+                return false;
+        } catch (std::exception& e) {
+            ;
+        }
+    }
+
+    // create lockfile
+    std::ofstream ofs(LOCKFILE, std::ios::trunc);
+
+    ofs << std::to_string(getpid());
+
+    ofs.close();
+
+    return true;
+}
+
+void CHyprpaper::unlockSingleInstance() {
+    const std::string XDG_RUNTIME_DIR = getenv("XDG_RUNTIME_DIR");
+    const auto LOCKFILE = XDG_RUNTIME_DIR + "/hyprpaper.lock";
+    unlink(LOCKFILE.c_str());
 }

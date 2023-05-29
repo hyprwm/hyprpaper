@@ -59,6 +59,8 @@ public:
     SPoolBuffer* getPoolBuffer(SMonitor*, CWallpaperTarget*);
     void        unloadWallpaper(const std::string&);
     void        createSeat(wl_seat*);
+    bool        lockSingleInstance(); // fails on multi-instance
+    void        unlockSingleInstance();
 
     std::mutex  m_mtTickMutex;
 
