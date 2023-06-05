@@ -21,6 +21,12 @@ make all
 ```
 *the output binary will be in `./build/`, copy it to your PATH, e.g. `/usr/bin`*
 
+#### Dependencies
+On OpenSUSE:
+```
+sudo zypper install ninja gcc-c++ wayland-protocols-devel Mesa-libGLESv3-devel
+```
+
 # Usage
 
 Hyprpaper is controlled by the config, like this:
