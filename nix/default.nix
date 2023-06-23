@@ -5,6 +5,7 @@
   cmake,
   ninja,
   cairo,
+  file,
   fribidi,
   libdatrie,
   libjpeg,
@@ -34,6 +35,7 @@ stdenv.mkDerivation {
 
   buildInputs = [
     cairo
+    file
     fribidi
     libdatrie
     libjpeg

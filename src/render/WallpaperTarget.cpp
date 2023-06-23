@@ -1,5 +1,7 @@
 #include "WallpaperTarget.hpp"
 
+#include <magic.h>
+
 CWallpaperTarget::~CWallpaperTarget() {
     cairo_surface_destroy(m_pCairoSurface);
 }
@@ -17,8 +19,22 @@ void CWallpaperTarget::create(const std::string& path) {
         CAIROSURFACE = JPEG::createSurfaceFromJPEG(path);
         m_bHasAlpha = false;
     } else {
-        Debug::log(CRIT, "unrecognized image %s", path.c_str());
-        exit(1);
+        // magic is slow, so only use it when no recognized extension is found
+        auto handle = magic_open(MAGIC_NONE|MAGIC_COMPRESS);
+        magic_load(handle, nullptr);
+
+        const auto type_str = std::string(magic_file(handle, path.c_str()));
+        const auto first_word = type_str.substr(0, type_str.find(" "));
+
+        if (first_word == "PNG") {
+            CAIROSURFACE = cairo_image_surface_create_from_png(path.c_str());
+        } else if (first_word == "JPEG") {
+            CAIROSURFACE = JPEG::createSurfaceFromJPEG(path);
+            m_bHasAlpha = false;
+        } else {
+            Debug::log(CRIT, "unrecognized image %s", path.c_str());
+            exit(1);
+        }
     }
 
     if (cairo_surface_status(CAIROSURFACE) != CAIRO_STATUS_SUCCESS) {
