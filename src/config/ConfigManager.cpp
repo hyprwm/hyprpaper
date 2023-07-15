@@ -51,13 +51,15 @@ CConfigManager::CConfigManager() {
 std::string CConfigManager::getMainConfigPath() {
     if (!g_pHyprpaper->m_szExplicitConfigPath.empty())
         return g_pHyprpaper->m_szExplicitConfigPath;
-    
-    std::string config_home = std::string(getenv("XDG_CONFIG_HOME"));
-    if (config_home == "")
-        config_home = std::string(getenv("HOME")) + "/.config";
 
-    std::string normal_file_name = std::string("/hypr/hyprpaper.conf");
-    return config_home + normal_file_name;
+    static const char* xdgConfigHome = getenv("XDG_CONFIG_HOME");
+    std::string configPath;
+    if (!xdgConfigHome)
+        configPath = getenv("HOME") + std::string("/.config");
+    else
+        configPath = xdgConfigHome;
+
+    return configPath + "/hypr/hyprpaper.conf";
 }
 
 std::string CConfigManager::removeBeginEndSpacesTabs(std::string str) {
@@ -186,10 +188,10 @@ void CConfigManager::handleUnload(const std::string& COMMAND, const std::string&
 void CConfigManager::handleUnloadAll(const std::string& COMMAND, const std::string& VALUE) {
     std::vector<std::string> toUnload;
 
-    for (auto&[name, target] : g_pHyprpaper->m_mWallpaperTargets) {
+    for (auto& [name, target] : g_pHyprpaper->m_mWallpaperTargets) {
 
         bool exists = false;
-        for (auto&[mon, target2] : g_pHyprpaper->m_mMonitorActiveWallpaperTargets) {
+        for (auto& [mon, target2] : g_pHyprpaper->m_mMonitorActiveWallpaperTargets) {
             if (&target == target2) {
                 exists = true;
                 break;
@@ -208,7 +210,7 @@ void CConfigManager::handleUnloadAll(const std::string& COMMAND, const std::stri
 
 // trim from both ends
 std::string CConfigManager::trimPath(std::string path) {
-    //trims whitespaces, tabs and new line feeds
+    // trims whitespaces, tabs and new line feeds
     size_t pathStartIndex = path.find_first_not_of(" \t\r\n");
     size_t pathEndIndex = path.find_last_not_of(" \t\r\n");
     return path.substr(pathStartIndex, pathEndIndex - pathStartIndex + 1);
