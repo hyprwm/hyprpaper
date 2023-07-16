@@ -9,6 +9,7 @@ public:
     CConfigManager();
 
     std::deque<std::string> m_dRequestedPreloads;
+    std::string getMainConfigPath();
 
 private:
     std::string parseError;
