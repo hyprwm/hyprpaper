@@ -121,7 +121,13 @@ void CHyprpaper::preloadAllWallpapersFromConfig() {
             continue;
 
         m_mWallpaperTargets[wp] = CWallpaperTarget();
-        m_mWallpaperTargets[wp].create(wp);
+        if (std::filesystem::is_symlink(wp)) {
+            auto real_wp = std::filesystem::read_symlink(wp);
+            m_mWallpaperTargets[wp].create(real_wp);
+        } else {
+            m_mWallpaperTargets[wp].create(wp);
+        }
+
     }
 
     g_pConfigManager->m_dRequestedPreloads.clear();
