@@ -137,6 +137,7 @@ void Events::handleGlobalRemove(void *data, struct wl_registry *registry, uint32
     for (auto& m : g_pHyprpaper->m_vMonitors) {
         if (m->wayland_name == name) {
             Debug::log(LOG, "Destroying output %s", m->name.c_str());
+            g_pHyprpaper->clearWallpaperFromMonitor(m->name);
             std::erase_if(g_pHyprpaper->m_vMonitors, [&](const auto& other) { return other->wayland_name == name; });
             return;
         }
