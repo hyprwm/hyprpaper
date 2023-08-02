@@ -270,6 +270,8 @@ void CHyprpaper::clearWallpaperFromMonitor(const std::string& monname) {
     if (it != m_mMonitorActiveWallpaperTargets.end())
         m_mMonitorActiveWallpaperTargets.erase(it);
 
+    PMONITOR->hasATarget = true;
+
     if (PMONITOR->pCurrentLayerSurface) {
 
         PMONITOR->pCurrentLayerSurface = nullptr;
