@@ -9,7 +9,6 @@
 
 #include <pthread.h>
 #include <cmath>
-#include <cmath>
 
 #define class _class
 #define namespace _namespace
