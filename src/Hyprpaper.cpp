@@ -541,7 +541,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         cairo_text_extents_t textExtents;
         cairo_text_extents(PCAIRO, SPLASH.c_str(), &textExtents);
 
-        cairo_move_to(PCAIRO, ((DIMENSIONS.x - textExtents.width * scale) / 2.0) / scale, (DIMENSIONS.y * 0.99 - textExtents.height * scale) / scale);
+        cairo_move_to(PCAIRO, ((DIMENSIONS.x - textExtents.width * scale) / 2.0) / scale, (DIMENSIONS.y - (textExtents.height + g_pHyprpaper->m_iSplashOffset) * scale) / scale);
 
         Debug::log(LOG, "Splash font size: %d, pos: %.2f, %.2f", FONTSIZE, (DIMENSIONS.x - textExtents.width) / 2.0 / scale, DIMENSIONS.y * 0.95 - textExtents.height / scale);
 
