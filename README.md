@@ -123,6 +123,7 @@ in the config.
 
 # Misc
 You can set `splash = true` to enable the splash rendering over the wallpaper.
+
 The value for `splash_offset` sets the splash rendering offset from the bottom of the display.
 
 ## Unloading
