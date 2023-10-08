@@ -124,7 +124,7 @@ in the config.
 # Misc
 You can set `splash = true` to enable the splash rendering over the wallpaper.
 
-The value for `splash_offset` sets the splash rendering offset from the bottom of the display.
+The value for `splash_offset` sets, in percentage, the splash rendering offset relative to the bottom of the display.
 
 ## Unloading
 If you use a lot of wallpapers, consider unloading those that you no longer need. This will mean you need to load them again if you wish to use them for a second time, but will free the memory used by the preloaded bitmap. (Usually 8 - 20MB, depending on the resolution)
