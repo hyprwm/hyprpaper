@@ -113,7 +113,13 @@ void CConfigManager::parseKeyword(const std::string& COMMAND, const std::string&
         g_pHyprpaper->m_bIPCEnabled = VALUE == "1" || VALUE == "yes" || VALUE == "on" || VALUE == "true";
     else if (COMMAND == "splash")
         g_pHyprpaper->m_bRenderSplash = VALUE == "1" || VALUE == "yes" || VALUE == "on" || VALUE == "true";
-    else
+    else if (COMMAND == "splash_offset") {
+        try {
+            g_pHyprpaper->m_fSplashOffset = std::clamp(std::stof(VALUE), 0.f, 100.f);
+        } catch (std::exception& e) {
+            parseError = "invalid splash_offset value " + VALUE;
+        }
+    } else
         parseError = "unknown keyword " + COMMAND;
 }
 

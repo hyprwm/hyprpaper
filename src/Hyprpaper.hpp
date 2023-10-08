@@ -38,6 +38,7 @@ public:
 
     bool        m_bIPCEnabled = true;
     bool        m_bRenderSplash = false;
+    float       m_fSplashOffset = 2;
     std::string m_szExplicitConfigPath;
     bool        m_bNoFractionalScale = false;
 
