@@ -24,7 +24,7 @@ make all
 #### Dependencies
 On OpenSUSE:
 ```
-sudo zypper install ninja gcc-c++ wayland-protocols-devel Mesa-libGLESv3-devel
+sudo zypper install ninja gcc-c++ wayland-protocols-devel Mesa-libGLESv3-devel file-devel
 ```
 
 # Usage
