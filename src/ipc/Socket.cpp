@@ -84,41 +84,42 @@ void CIPCSocket::initialize() {
 }
 
 bool CIPCSocket::mainThreadParseRequest() {
+    
+    if (!m_bRequestReady)
+        return false;
 
-  if (!m_bRequestReady)
-    return false;
+    std::string copy = m_szRequest;
 
-  std::string copy = m_szRequest;
+    // now we can work on the copy
 
-  // now we can work on the copy
+    if (copy == "")
+        return false;
 
-  if (copy == "")
-    return false;
-  Debug::log(LOG, "Received a request: %s", copy.c_str());
+    Debug::log(LOG, "Received a request: %s", copy.c_str());
 
-  // parse
-  if (copy.find("wallpaper") == 0 || copy.find("preload") == 0 || copy.find("unload") == 0) {
-    g_pConfigManager->parseError = ""; // reset parse error
+    // parse
+    if (copy.find("wallpaper") == 0 || copy.find("preload") == 0 || copy.find("unload") == 0) {
+        g_pConfigManager->parseError = ""; // reset parse error
 
-    g_pConfigManager->parseKeyword(copy.substr(0, copy.find_first_of(' ')), copy.substr(copy.find_first_of(' ') + 1));
+        g_pConfigManager->parseKeyword(copy.substr(0, copy.find_first_of(' ')), copy.substr(copy.find_first_of(' ') + 1));
 
-    if (!g_pConfigManager->parseError.empty()) {
-      m_szReply = g_pConfigManager->parseError;
-      m_bReplyReady = true;
-      m_bRequestReady = false;
-      return false;
+        if (!g_pConfigManager->parseError.empty()) {
+            m_szReply = g_pConfigManager->parseError;
+            m_bReplyReady = true;
+            m_bRequestReady = false;
+            return false;
+        }
     }
-  }
-  else {
-    m_szReply = "invalid command";
+    else {
+        m_szReply = "invalid command";
+        m_bReplyReady = true;
+        m_bRequestReady = false;
+        return false;
+    }
+
+    m_szReply = "ok";
     m_bReplyReady = true;
     m_bRequestReady = false;
-    return false;
-  }
 
-  m_szReply = "ok";
-  m_bReplyReady = true;
-  m_bRequestReady = false;
-
-  return true;
+    return true;
 }
