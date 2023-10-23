@@ -1,21 +1,21 @@
 #include "Socket.hpp"
 #include "../Hyprpaper.hpp"
 
-#include <netinet/in.h>
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include <cerrno>
 
 void CIPCSocket::initialize() {
-     std::thread([&]() {
+    std::thread([&]() {
         const auto SOCKET = socket(AF_UNIX, SOCK_STREAM, 0);
- 
+
         if (SOCKET < 0) {
             Debug::log(ERR, "Couldn't start the hyprpaper Socket. (1) IPC will not work.");
             return;
@@ -45,46 +45,46 @@ void CIPCSocket::initialize() {
 
         char readBuffer[1024] = {0};
 
-	Debug::log(LOG, "hyprpaper socket started at %s (fd: %i)", socketPath.c_str(), SOCKET); 
-	while (1) {
-	  const auto ACCEPTEDCONNECTION = accept(SOCKET, (sockaddr*)&clientAddress, &clientSize);
-	  if (ACCEPTEDCONNECTION < 0) {
-	    Debug::log(ERR, "Couldn't listen on the hyprpaper Socket. (3) IPC will not work.");
-	    break;
-	  }else {
-	    do {
-	      Debug::log(LOG, "Accepted incoming socket connection request on fd %i", ACCEPTEDCONNECTION);
-	      std::lock_guard<std::mutex> lg(g_pHyprpaper->m_mtTickMutex);
+        Debug::log(LOG, "hyprpaper socket started at %s (fd: %i)", socketPath.c_str(), SOCKET);
+        while (1) {
+            const auto ACCEPTEDCONNECTION = accept(SOCKET, (sockaddr*)&clientAddress, &clientSize);
+            if (ACCEPTEDCONNECTION < 0) {
+                Debug::log(ERR, "Couldn't listen on the hyprpaper Socket. (3) IPC will not work.");
+                break;
+            } else {
+                do {
+                    Debug::log(LOG, "Accepted incoming socket connection request on fd %i", ACCEPTEDCONNECTION);
+                    std::lock_guard<std::mutex> lg(g_pHyprpaper->m_mtTickMutex);
 
-	      auto messageSize = read(ACCEPTEDCONNECTION, readBuffer, 1024);
-	      readBuffer[messageSize == 1024 ? 1023 : messageSize] = '\0';
-	      if (messageSize == 0)
-		break;
-	      std::string request(readBuffer);
+                    auto messageSize = read(ACCEPTEDCONNECTION, readBuffer, 1024);
+                    readBuffer[messageSize == 1024 ? 1023 : messageSize] = '\0';
+                    if (messageSize == 0)
+                        break;
+                    std::string request(readBuffer);
 
-	      m_szRequest = request;
-	      m_bRequestReady = true;
+                    m_szRequest = request;
+                    m_bRequestReady = true;
 
-	      g_pHyprpaper->tick(true);
-	      while (!m_bReplyReady) { // wait for Hyprpaper to finish processing the request
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
-	      }
-	      write(ACCEPTEDCONNECTION, m_szReply.c_str(), m_szReply.length());
-	      m_bReplyReady = false;
-	      m_szReply = "";
+                    g_pHyprpaper->tick(true);
+                    while (!m_bReplyReady) { // wait for Hyprpaper to finish processing the request
+                        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    }
+                    write(ACCEPTEDCONNECTION, m_szReply.c_str(), m_szReply.length());
+                    m_bReplyReady = false;
+                    m_szReply = "";
 
-	    }while(1);
-	    Debug::log(LOG, "Closing Accepted Connection");
-	    close(ACCEPTEDCONNECTION);
-	  }
-	}
+                } while (1);
+                Debug::log(LOG, "Closing Accepted Connection");
+                close(ACCEPTEDCONNECTION);
+            }
+        }
 
-	close(SOCKET);
-     }).detach();
+        close(SOCKET);
+    }).detach();
 }
 
 bool CIPCSocket::mainThreadParseRequest() {
-    
+
     if (!m_bRequestReady)
         return false;
 
@@ -109,8 +109,7 @@ bool CIPCSocket::mainThreadParseRequest() {
             m_bRequestReady = false;
             return false;
         }
-    }
-    else {
+    } else {
         m_szReply = "invalid command";
         m_bReplyReady = true;
         m_bRequestReady = false;
