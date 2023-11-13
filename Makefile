@@ -1,4 +1,4 @@
-PREFIX = /usr/local
+PREFIX ?= /usr
 CFLAGS ?= -g -Wall -Wextra -Werror -Wno-unused-parameter -Wno-sign-compare -Wno-unused-function -Wno-unused-variable -Wno-unused-result -Wdeclaration-after-statement
 
 CFLAGS += -I. -DWLR_USE_UNSTABLE -std=c99
@@ -71,4 +71,4 @@ all:
 
 install:
 	make all
-	cp ./build/hyprpaper /usr/bin -f
+	cp ./build/hyprpaper $(PREFIX)/bin -f
