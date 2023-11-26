@@ -539,11 +539,19 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         wl_surface_attach(pMonitor->pCurrentLayerSurface->pSurface, PBUFFER->buffer, 0, 0);
         wl_surface_set_buffer_scale(pMonitor->pCurrentLayerSurface->pSurface, pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? 1 : pMonitor->scale);
         wl_surface_damage_buffer(pMonitor->pCurrentLayerSurface->pSurface, 0, 0, 0xFFFF, 0xFFFF);
+
+        // our wps are always opaque
+        auto opaqueRegion = wl_compositor_create_region(g_pHyprpaper->m_sCompositor);
+        wl_region_add(opaqueRegion, 0, 0, PBUFFER->pixelSize.x, PBUFFER->pixelSize.y);
+        wl_surface_set_opaque_region(pMonitor->pCurrentLayerSurface->pSurface, opaqueRegion);
+
         if (pMonitor->pCurrentLayerSurface->pFractionalScaleInfo) {
             Debug::log(LOG, "Submitting viewport dest size %ix%i for %x", static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)), pMonitor->pCurrentLayerSurface);
             wp_viewport_set_destination(pMonitor->pCurrentLayerSurface->pViewport, static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)));
         }
         wl_surface_commit(pMonitor->pCurrentLayerSurface->pSurface);
+
+        wl_region_destroy(opaqueRegion);
     }
 
     // check if we dont need to remove a wallpaper
