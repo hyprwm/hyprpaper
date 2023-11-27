@@ -17,7 +17,7 @@ Hyprpaper is a blazing fast wallpaper utility for Hyprland with the ability to d
 
 ### Dependencies
 The development files of these packages need to be installed on the system for `hyprpaper` to build correctly.
-(Development packages are usually suffixed with `-dev` or `-devel` in most distros's repos).
+(Development packages are usually suffixed with `-dev` or `-devel` in most distros' repos).
 - wayland
 - wayland-protocols
 - pango
