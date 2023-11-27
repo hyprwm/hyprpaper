@@ -13,19 +13,41 @@ Hyprpaper is a blazing fast wallpaper utility for Hyprland with the ability to d
 
 [Arch Linux](https://archlinux.org/packages/community/x86_64/hyprpaper/): `pacman -S hyprpaper`
 
-### Manual:
+## Manual:
+
+### Dependencies
+The development files of these packages need to be installed on the system for `hyprpaper` to build correctly.
+(Development packages are usually suffixed with `-dev` or `-devel` in most distros' repos).
+- wayland
+- wayland-protocols
+- pango
+- cairo
+- file
+- libglvnd
+- libglvnd-core
+- libjpeg-turbo
+
+Also `gcc-c++` and `ninja` needs to installed.
+
+To install all of these in Fedora, run this command:
+```
+sudo dnf install wayland-devel wayland-protocols-devel pango-devel cairo-devel file-devel libglvnd-devel libglvnd-core-devel libjpeg-turbo-devel gcc-c++
+```
+
+On OpenSUSE:
+```
+sudo zypper install ninja gcc-c++ wayland-protocols-devel Mesa-libGLESv3-devel file-devel
+```
+
+### Building
+
 ```
 git clone https://github.com/hyprwm/hyprpaper
 cd hyprpaper
 make all
 ```
-*the output binary will be in `./build/`, copy it to your PATH, e.g. `/usr/bin`*
 
-#### Dependencies
-On OpenSUSE:
-```
-sudo zypper install ninja gcc-c++ wayland-protocols-devel Mesa-libGLESv3-devel file-devel
-```
+*the output binary will be in `./build/`, copy it to your PATH, e.g. `/usr/bin`*
 
 # Usage
 
