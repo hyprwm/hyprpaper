@@ -12,8 +12,8 @@ CConfigManager::CConfigManager() {
     ifs.open(configPath);
 
     if (!ifs.good()) {
-        Debug::log(CRIT, "Config file `%s` couldn't be opened.", configPath.c_str());
-        exit(1);
+        Debug::log(WARN, "Config file `%s` couldn't be opened. Running without a config!", configPath.c_str());
+        return;
     }
 
     std::string line = "";
@@ -42,8 +42,7 @@ CConfigManager::CConfigManager() {
     }
 
     if (!parseError.empty()) {
-        Debug::log(CRIT, "Exiting because of config parse errors!\n%s", parseError.c_str());
-        exit(1);
+        Debug::log(WARN, "Config parse error: \n%s\n\nRunning and ignoring errors...\n", parseError.c_str());
         return;
     }
 }
