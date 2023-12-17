@@ -8,6 +8,7 @@
   file,
   fribidi,
   libdatrie,
+  libGL,
   libjpeg,
   libselinux,
   libsepol,
@@ -38,6 +39,7 @@ stdenv.mkDerivation {
     file
     fribidi
     libdatrie
+    libGL
     libjpeg
     libselinux
     libsepol
