@@ -2,12 +2,13 @@
 
 #include "../defines.hpp"
 #include "../helpers/Jpeg.hpp"
+#include "../helpers/Webp.hpp"
 
 class CWallpaperTarget {
 public:
 
     ~CWallpaperTarget();
-    
+
     void        create(const std::string& path);
 
     std::string m_szPath;

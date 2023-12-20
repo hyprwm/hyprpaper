@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.4)
-project(hyprpaper 
+project(hyprpaper
     DESCRIPTION "A blazing fast wayland wallpaper utility"
 )
 
@@ -41,7 +41,7 @@ add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-unused-value -Wno-m
 find_package(Threads REQUIRED)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(deps REQUIRED IMPORTED_TARGET wayland-client wayland-protocols cairo pango pangocairo libjpeg)
+pkg_check_modules(deps REQUIRED IMPORTED_TARGET wayland-client wayland-protocols cairo pango pangocairo libjpeg libwebp)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
 

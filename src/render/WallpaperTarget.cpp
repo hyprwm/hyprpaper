@@ -18,6 +18,8 @@ void CWallpaperTarget::create(const std::string& path) {
     } else if (path.find(".jpg") == len - 4 || path.find(".JPG") == len - 4 || path.find(".jpeg") == len - 5 || path.find(".JPEG") == len - 5) {
         CAIROSURFACE = JPEG::createSurfaceFromJPEG(path);
         m_bHasAlpha = false;
+    } else if (path.find(".webp") == len - 5 || path.find(".WEBP") == len - 5) {
+        CAIROSURFACE = WEBP::createSurfaceFromWEBP(path);
     } else {
         // magic is slow, so only use it when no recognized extension is found
         auto handle = magic_open(MAGIC_NONE|MAGIC_COMPRESS);
