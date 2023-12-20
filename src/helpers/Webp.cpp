@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <webp/decode.h>
+
 cairo_surface_t* WEBP::createSurfaceFromWEBP(const std::string& path) {
 
     if (!std::filesystem::exists(path)) {
