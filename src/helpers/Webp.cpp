@@ -77,7 +77,7 @@ cairo_surface_t* WEBP::createSurfaceFromWEBP(const std::string& path) {
     cairo_surface_mark_dirty(cairoSurface);
     cairo_surface_set_mime_data(cairoSurface, CAIRO_MIME_TYPE_PNG, (const unsigned char*)imageRawData, fileInfo.st_size, free, imageRawData);
 
-	WebPFreeDecBuffer(&config.output);
+    WebPFreeDecBuffer(&config.output);
 
     return cairoSurface;
 
