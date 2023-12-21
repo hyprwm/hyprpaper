@@ -26,6 +26,7 @@ The development files of these packages need to be installed on the system for `
 - libglvnd
 - libglvnd-core
 - libjpeg-turbo
+- libwebp
 
 Also `gcc-c++` and `ninja` needs to installed.
 
@@ -67,7 +68,7 @@ wallpaper = monitor2,/path/to/next_image.png
 # .. more monitors
 ```
 
-Preload will tell Hyprland to load a particular image (supported formats: png, jpg, jpeg). Wallpaper will apply the wallpaper to the selected output (`monitor` is the monitor's name, easily can be retrieved with `hyprctl monitors`. You can leave it empty for a wildcard (aka fallback). You can also use `desc:` followed by the monitor's description without the (PORT) at the end)
+Preload will tell Hyprland to load a particular image (supported formats: png, jpg, jpeg, webp). Wallpaper will apply the wallpaper to the selected output (`monitor` is the monitor's name, easily can be retrieved with `hyprctl monitors`. You can leave it empty for a wildcard (aka fallback). You can also use `desc:` followed by the monitor's description without the (PORT) at the end)
 
 You may add `contain:` before the file path in `wallpaper=` to set the mode to contain instead of cover:
 
@@ -106,9 +107,9 @@ In the actual configuration for Hyprland, *hyprland.conf*, variables can be set 
 
 *~/.config/hypr/hyprland.conf*
 ```
-$w1 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpng.png" 
-$w2 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpngToo.png" 
-$w3 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpngAlso.png" 
+$w1 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpng.png"
+$w2 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpngToo.png"
+$w3 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpngAlso.png"
 #yes use quotes around desired monitor and wallpaper
 #... continued with desired amount
 ```
@@ -127,7 +128,7 @@ bind=SUPER,2,exec,$w2     #SuperKey + 2 switches to wallpaper $w2 on DP-1 as def
 bind=SUPER,3,workspace,3  #Superkey + 3 switches to workspace 3
 bind=SUPER,3,exec,$w3     #SuperKey + 3 switches to wallpaper $w3 on DP-1 as defined in the variable
 
-#... and so on 
+#... and so on
 ```
 Because the default behavior in Hyprland is to also switch the workspace whenever movetoworkspace is used to move a window to another workspace you may want to include the following:
 
