@@ -13,6 +13,7 @@
   libselinux,
   libsepol,
   libthai,
+  libwebp,
   pango,
   pcre,
   util-linux,
@@ -44,6 +45,7 @@ stdenv.mkDerivation {
     libselinux
     libsepol
     libthai
+    libwebp
     pango
     pcre
     wayland
