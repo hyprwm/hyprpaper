@@ -215,6 +215,9 @@ void CConfigManager::handleUnloadAll(const std::string& COMMAND, const std::stri
 
 // trim from both ends
 std::string CConfigManager::trimPath(std::string path) {
+    if (path.empty())
+        return "";
+
     // trims whitespaces, tabs and new line feeds
     size_t pathStartIndex = path.find_first_not_of(" \t\r\n");
     size_t pathEndIndex = path.find_last_not_of(" \t\r\n");
