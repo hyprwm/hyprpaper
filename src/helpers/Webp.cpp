@@ -52,11 +52,11 @@ cairo_surface_t* WEBP::createSurfaceFromWEBP(const std::string& path) {
     }
 
 
-    if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-        config.output.colorspace = MODE_bgrA;
-    else
-        config.output.colorspace = MODE_Argb;
-
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    config.output.colorspace = MODE_bgrA;
+#else
+    config.output.colorspace = MODE_Argb;
+#endif
 
     const auto CAIRODATA = cairo_image_surface_get_data(cairoSurface);
     const auto CAIROSTRIDE = cairo_image_surface_get_stride(cairoSurface);
