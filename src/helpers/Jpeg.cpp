@@ -4,10 +4,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
-#error "your system is not little endian, jpeg will not work, ping vaxry or something"
-#endif
-
 cairo_surface_t* JPEG::createSurfaceFromJPEG(const std::string& path) {
 
     if (!std::filesystem::exists(path)) {
@@ -44,7 +40,11 @@ cairo_surface_t* JPEG::createSurfaceFromJPEG(const std::string& path) {
     jpeg_mem_src(&decompressStruct, (const unsigned char*)imageRawData, fileInfo.st_size);
     jpeg_read_header(&decompressStruct, true);
 
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     decompressStruct.out_color_space = JCS_EXT_BGRA;
+#else
+    decompressStruct.out_color_space = JCS_EXT_ARGB;
+#endif
 
     // decompress
     jpeg_start_decompress(&decompressStruct);
@@ -69,7 +69,7 @@ cairo_surface_t* JPEG::createSurfaceFromJPEG(const std::string& path) {
     cairo_surface_mark_dirty(cairoSurface);
     cairo_surface_set_mime_data(cairoSurface, CAIRO_MIME_TYPE_JPEG, (const unsigned char*)imageRawData, fileInfo.st_size, free, imageRawData);
     jpeg_finish_decompress(&decompressStruct);
-    jpeg_destroy_decompress(&decompressStruct);    
+    jpeg_destroy_decompress(&decompressStruct);
 
     return cairoSurface;
 }
