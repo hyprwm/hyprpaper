@@ -99,12 +99,11 @@ bool CIPCSocket::mainThreadParseRequest() {
 
     // parse
     if (copy.find("wallpaper") == 0 || copy.find("preload") == 0 || copy.find("unload") == 0) {
-        g_pConfigManager->parseError = ""; // reset parse error
 
-        g_pConfigManager->parseKeyword(copy.substr(0, copy.find_first_of(' ')), copy.substr(copy.find_first_of(' ') + 1));
+        const auto RESULT = g_pConfigManager->config->parseDynamic(copy.substr(0, copy.find_first_of(' ')).c_str(), copy.substr(copy.find_first_of(' ') + 1).c_str());
 
-        if (!g_pConfigManager->parseError.empty()) {
-            m_szReply = g_pConfigManager->parseError;
+        if (RESULT.error) {
+            m_szReply = RESULT.getError();
             m_bReplyReady = true;
             m_bRequestReady = false;
             return false;

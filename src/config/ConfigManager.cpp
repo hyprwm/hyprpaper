@@ -1,135 +1,18 @@
 #include "ConfigManager.hpp"
 #include "../Hyprpaper.hpp"
 
-CConfigManager::CConfigManager() {
-    // Initialize the configuration
-    // Read file from default location
-    // or from an explicit location given by user
+static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
+    const std::string COMMAND = C;
+    const std::string VALUE = V;
+    Hyprlang::CParseResult result;
 
-    std::string configPath = getMainConfigPath();
-
-    std::ifstream ifs;
-    ifs.open(configPath);
-
-    if (!ifs.good()) {
-        Debug::log(WARN, "Config file `%s` couldn't be opened. Running without a config!", configPath.c_str());
-        return;
-    }
-
-    std::string line = "";
-    int linenum = 1;
-    if (ifs.is_open()) {
-        while (std::getline(ifs, line)) {
-            // Read line by line
-            try {
-                parseLine(line);
-            } catch (...) {
-                Debug::log(ERR, "Error reading line from config. Line:");
-                Debug::log(NONE, "%s", line.c_str());
-
-                parseError += "Config error at line " + std::to_string(linenum) + ": Line parsing error.";
-            }
-
-            if (!parseError.empty()) {
-                parseError = "Config error at line " + std::to_string(linenum) + ": " + parseError;
-                break;
-            }
-
-            ++linenum;
-        }
-
-        ifs.close();
-    }
-
-    if (!parseError.empty()) {
-        Debug::log(WARN, "Config parse error: \n%s\n\nRunning and ignoring errors...\n", parseError.c_str());
-        return;
-    }
-}
-
-std::string CConfigManager::getMainConfigPath() {
-    if (!g_pHyprpaper->m_szExplicitConfigPath.empty())
-        return g_pHyprpaper->m_szExplicitConfigPath;
-
-    static const char* xdgConfigHome = getenv("XDG_CONFIG_HOME");
-    std::string configPath;
-    if (!xdgConfigHome)
-        configPath = getenv("HOME") + std::string("/.config");
-    else
-        configPath = xdgConfigHome;
-
-    return configPath + "/hypr/hyprpaper.conf";
-}
-
-std::string CConfigManager::removeBeginEndSpacesTabs(std::string str) {
-    while (str[0] == ' ' || str[0] == '\t') {
-        str = str.substr(1);
-    }
-
-    while (str.length() != 0 && (str[str.length() - 1] == ' ' || str[str.length() - 1] == '\t')) {
-        str = str.substr(0, str.length() - 1);
-    }
-
-    return str;
-}
-
-void CConfigManager::parseLine(std::string& line) {
-    // first check if its not a comment
-    const auto COMMENTSTART = line.find_first_of('#');
-    if (COMMENTSTART == 0)
-        return;
-
-    // now, cut the comment off
-    if (COMMENTSTART != std::string::npos)
-        line = line.substr(0, COMMENTSTART);
-
-    // Strip line
-    while (line[0] == ' ' || line[0] == '\t') {
-        line = line.substr(1);
-    }
-
-    // And parse
-    // check if command
-    const auto EQUALSPLACE = line.find_first_of('=');
-
-    if (EQUALSPLACE == std::string::npos)
-        return;
-
-    const auto COMMAND = removeBeginEndSpacesTabs(line.substr(0, EQUALSPLACE));
-    const auto VALUE = removeBeginEndSpacesTabs(line.substr(EQUALSPLACE + 1));
-
-    parseKeyword(COMMAND, VALUE);
-}
-
-void CConfigManager::parseKeyword(const std::string& COMMAND, const std::string& VALUE) {
-    if (COMMAND == "wallpaper")
-        handleWallpaper(COMMAND, VALUE);
-    else if (COMMAND == "preload")
-        handlePreload(COMMAND, VALUE);
-    else if (COMMAND == "unload")
-        handleUnload(COMMAND, VALUE);
-    else if (COMMAND == "ipc")
-        g_pHyprpaper->m_bIPCEnabled = VALUE == "1" || VALUE == "yes" || VALUE == "on" || VALUE == "true";
-    else if (COMMAND == "splash")
-        g_pHyprpaper->m_bRenderSplash = VALUE == "1" || VALUE == "yes" || VALUE == "on" || VALUE == "true";
-    else if (COMMAND == "splash_offset") {
-        try {
-            g_pHyprpaper->m_fSplashOffset = std::clamp(std::stof(VALUE), 0.f, 100.f);
-        } catch (std::exception& e) {
-            parseError = "invalid splash_offset value " + VALUE;
-        }
-    } else
-        parseError = "unknown keyword " + COMMAND;
-}
-
-void CConfigManager::handleWallpaper(const std::string& COMMAND, const std::string& VALUE) {
     if (VALUE.find_first_of(',') == std::string::npos) {
-        parseError = "wallpaper failed (syntax)";
-        return;
+        result.setError("wallpaper failed (syntax)");
+        return result;
     }
 
     auto MONITOR = VALUE.substr(0, VALUE.find_first_of(','));
-    auto WALLPAPER = trimPath(VALUE.substr(VALUE.find_first_of(',') + 1));
+    auto WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(VALUE.find_first_of(',') + 1));
 
     bool contain = false;
 
@@ -144,21 +27,25 @@ void CConfigManager::handleWallpaper(const std::string& COMMAND, const std::stri
     }
 
     if (!std::filesystem::exists(WALLPAPER)) {
-        parseError = "wallpaper failed (no such file)";
-        return;
+        result.setError("wallpaper failed (no such file)");
+        return result;
     }
 
-    if (std::find(m_dRequestedPreloads.begin(), m_dRequestedPreloads.end(), WALLPAPER) == m_dRequestedPreloads.end() && !g_pHyprpaper->isPreloaded(WALLPAPER)) {
-        parseError = "wallpaper failed (not preloaded)";
-        return;
+    if (std::find(g_pConfigManager->m_dRequestedPreloads.begin(), g_pConfigManager->m_dRequestedPreloads.end(), WALLPAPER) == g_pConfigManager->m_dRequestedPreloads.end() && !g_pHyprpaper->isPreloaded(WALLPAPER)) {
+        result.setError("wallpaper failed (not preloaded)");
+        return result;
     }
 
     g_pHyprpaper->clearWallpaperFromMonitor(MONITOR);
     g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR] = WALLPAPER;
     g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
+
+    return result;
 }
 
-void CConfigManager::handlePreload(const std::string& COMMAND, const std::string& VALUE) {
+static Hyprlang::CParseResult handlePreload(const char* C, const char* V) {
+    const std::string COMMAND = C;
+    const std::string VALUE = V;
     auto WALLPAPER = VALUE;
 
     if (WALLPAPER[0] == '~') {
@@ -167,30 +54,19 @@ void CConfigManager::handlePreload(const std::string& COMMAND, const std::string
     }
 
     if (!std::filesystem::exists(WALLPAPER)) {
-        parseError = "preload failed (no such file)";
-        return;
+        Hyprlang::CParseResult result;
+        result.setError((std::string{"no such file: "} + WALLPAPER).c_str());
+        return result;
     }
 
-    m_dRequestedPreloads.emplace_back(WALLPAPER);
+    g_pConfigManager->m_dRequestedPreloads.emplace_back(WALLPAPER);
+
+    return Hyprlang::CParseResult{};
 }
 
-void CConfigManager::handleUnload(const std::string& COMMAND, const std::string& VALUE) {
-    auto WALLPAPER = VALUE;
-
-    if (VALUE == "all") {
-        handleUnloadAll(COMMAND, VALUE);
-        return;
-    }
-
-    if (WALLPAPER[0] == '~') {
-        static const char* const ENVHOME = getenv("HOME");
-        WALLPAPER = std::string(ENVHOME) + WALLPAPER.substr(1);
-    }
-
-    g_pHyprpaper->unloadWallpaper(WALLPAPER);
-}
-
-void CConfigManager::handleUnloadAll(const std::string& COMMAND, const std::string& VALUE) {
+static Hyprlang::CParseResult handleUnloadAll(const char* C, const char* V) {
+    const std::string COMMAND = C;
+    const std::string VALUE = V;
     std::vector<std::string> toUnload;
 
     for (auto& [name, target] : g_pHyprpaper->m_mWallpaperTargets) {
@@ -211,6 +87,69 @@ void CConfigManager::handleUnloadAll(const std::string& COMMAND, const std::stri
 
     for (auto& tu : toUnload)
         g_pHyprpaper->unloadWallpaper(tu);
+
+    return Hyprlang::CParseResult{};
+}
+
+static Hyprlang::CParseResult handleUnload(const char* C, const char* V) {
+    const std::string COMMAND = C;
+    const std::string VALUE = V;
+    auto WALLPAPER = VALUE;
+
+    if (VALUE == "all")
+        return handleUnloadAll(C, V);
+
+    if (WALLPAPER[0] == '~') {
+        static const char* const ENVHOME = getenv("HOME");
+        WALLPAPER = std::string(ENVHOME) + WALLPAPER.substr(1);
+    }
+
+    g_pHyprpaper->unloadWallpaper(WALLPAPER);
+
+    return Hyprlang::CParseResult{};
+}
+
+CConfigManager::CConfigManager() {
+    // Initialize the configuration
+    // Read file from default location
+    // or from an explicit location given by user
+
+    std::string configPath = getMainConfigPath();
+
+    config = std::make_unique<Hyprlang::CConfig>(configPath.c_str(), Hyprlang::SConfigOptions{});
+
+    config->addConfigValue("ipc", {1L});
+    config->addConfigValue("splash", {1L});
+    config->addConfigValue("splash_offset", {2.F});
+
+    config->registerHandler(&handleWallpaper, "wallpaper", {.allowFlags = false});
+    config->registerHandler(&handleUnload, "unload", {.allowFlags = false});
+    config->registerHandler(&handlePreload, "preload", {.allowFlags = false});
+    config->registerHandler(&handleUnloadAll, "unloadAll", {.allowFlags = false});
+
+    config->commence();
+}
+
+void CConfigManager::parse() {
+    const auto ERROR = config->parse();
+
+    if (ERROR.error)
+        std::cout << "Error in config: \n"
+                  << ERROR.getError() << "\n";
+}
+
+std::string CConfigManager::getMainConfigPath() {
+    if (!g_pHyprpaper->m_szExplicitConfigPath.empty())
+        return g_pHyprpaper->m_szExplicitConfigPath;
+
+    static const char* xdgConfigHome = getenv("XDG_CONFIG_HOME");
+    std::string configPath;
+    if (!xdgConfigHome)
+        configPath = getenv("HOME") + std::string("/.config");
+    else
+        configPath = xdgConfigHome;
+
+    return configPath + "/hypr/hyprpaper.conf";
 }
 
 // trim from both ends

@@ -1,8 +1,8 @@
 #include "Hyprpaper.hpp"
 #include <filesystem>
 #include <fstream>
-#include <sys/types.h>
 #include <signal.h>
+#include <sys/types.h>
 
 CHyprpaper::CHyprpaper() = default;
 
@@ -18,6 +18,8 @@ void CHyprpaper::init() {
     g_pConfigManager = std::make_unique<CConfigManager>();
     g_pIPCSocket = std::make_unique<CIPCSocket>();
 
+    g_pConfigManager->parse();
+
     m_sDisplay = (wl_display*)wl_display_connect(nullptr);
 
     if (!m_sDisplay) {
@@ -27,7 +29,7 @@ void CHyprpaper::init() {
 
     preloadAllWallpapersFromConfig();
 
-    if (m_bIPCEnabled)
+    if (std::any_cast<int64_t>(g_pConfigManager->config->getConfigValue("ipc")))
         g_pIPCSocket->initialize();
 
     // run
@@ -129,7 +131,6 @@ void CHyprpaper::preloadAllWallpapersFromConfig() {
         } else {
             m_mWallpaperTargets[wp].create(wp);
         }
-
     }
 
     g_pConfigManager->m_dRequestedPreloads.clear();
@@ -450,6 +451,8 @@ SPoolBuffer* CHyprpaper::getPoolBuffer(SMonitor* pMonitor, CWallpaperTarget* pWa
 }
 
 void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
+    static auto* const PRENDERSPLASH = reinterpret_cast<int64_t*>(g_pConfigManager->config->getConfigValuePtr("splash"));
+    static auto* const PSPLASHOFFSET = reinterpret_cast<float*>(g_pConfigManager->config->getConfigValuePtr("splash_offset"));
     const auto PWALLPAPERTARGET = m_mMonitorActiveWallpaperTargets[pMonitor];
     const auto CONTAIN = m_mMonitorWallpaperRenderData[pMonitor->name].contain;
 
@@ -508,7 +511,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
     cairo_paint(PCAIRO);
 
-    if (g_pHyprpaper->m_bRenderSplash && getenv("HYPRLAND_INSTANCE_SIGNATURE")) {
+    if (*PRENDERSPLASH && getenv("HYPRLAND_INSTANCE_SIGNATURE")) {
         auto SPLASH = execAndGet("hyprctl splash");
         SPLASH.pop_back();
 
@@ -524,9 +527,9 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         cairo_text_extents_t textExtents;
         cairo_text_extents(PCAIRO, SPLASH.c_str(), &textExtents);
 
-        cairo_move_to(PCAIRO, ((DIMENSIONS.x - textExtents.width * scale) / 2.0) / scale, ((DIMENSIONS.y * (100 - m_fSplashOffset)) / 100 - textExtents.height * scale) / scale);
+        cairo_move_to(PCAIRO, ((DIMENSIONS.x - textExtents.width * scale) / 2.0) / scale, ((DIMENSIONS.y * (100 - *PSPLASHOFFSET)) / 100 - textExtents.height * scale) / scale);
 
-        Debug::log(LOG, "Splash font size: %d, pos: %.2f, %.2f", FONTSIZE, (DIMENSIONS.x - textExtents.width) / 2.0 / scale, ((DIMENSIONS.y * (100 - m_fSplashOffset)) / 100 - textExtents.height * scale) / scale);
+        Debug::log(LOG, "Splash font size: %d, pos: %.2f, %.2f", FONTSIZE, (DIMENSIONS.x - textExtents.width) / 2.0 / scale, ((DIMENSIONS.y * (100 - *PSPLASHOFFSET)) / 100 - textExtents.height * scale) / scale);
 
         cairo_show_text(PCAIRO, SPLASH.c_str());
 

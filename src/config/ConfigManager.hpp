@@ -1,5 +1,6 @@
 #pragma once
 #include "../defines.hpp"
+#include <hyprlang.hpp>
 
 class CIPCSocket;
 
@@ -7,23 +8,15 @@ class CConfigManager {
 public:
     // gets all the data from the config
     CConfigManager();
+    void parse();
 
     std::deque<std::string> m_dRequestedPreloads;
     std::string getMainConfigPath();
-
-private:
-    std::string parseError;
-
-    void parseLine(std::string&);
-    std::string removeBeginEndSpacesTabs(std::string in);
-    void parseKeyword(const std::string&, const std::string&);
-
-    void handleWallpaper(const std::string&, const std::string&);
-    void handlePreload(const std::string&, const std::string&);
-    void handleUnload(const std::string&, const std::string&);
-    void handleUnloadAll(const std::string&, const std::string&);
     std::string trimPath(std::string path);
 
+    std::unique_ptr<Hyprlang::CConfig> config;
+
+private:
     friend class CIPCSocket;
 };
 

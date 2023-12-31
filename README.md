@@ -27,12 +27,19 @@ The development files of these packages need to be installed on the system for `
 - libglvnd-core
 - libjpeg-turbo
 - libwebp
+- hyprlang
 
-Also `gcc-c++` and `ninja` needs to installed.
+Please note hyprpaper > 0.5.0 depends on [hyprlang](https://github.com/hyprwm/hyprlang) which is new
+and might not be packaged for your distro yet. If that's the case, build and install it from source.
 
 To install all of these in Fedora, run this command:
 ```
 sudo dnf install wayland-devel wayland-protocols-devel pango-devel cairo-devel file-devel libglvnd-devel libglvnd-core-devel libjpeg-turbo-devel libwebp-devel gcc-c++
+```
+
+On Arch:
+```
+sudo pacman -S ninja gcc wayland-protocols libjpeg-turbo libwebp pango cairo pkgconf cmake libglvnd wayland
 ```
 
 On OpenSUSE:

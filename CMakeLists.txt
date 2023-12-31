@@ -65,6 +65,7 @@ target_link_libraries(hyprpaper
         GLESv2
         pthread
         magic
+        hyprlang
         ${CMAKE_THREAD_LIBS_INIT}
         ${CMAKE_SOURCE_DIR}/wlr-layer-shell-unstable-v1-protocol.o
         ${CMAKE_SOURCE_DIR}/xdg-shell-protocol.o
