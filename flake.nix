@@ -1,13 +1,17 @@
 {
   description = "Hyprpaper is a blazing fast Wayland wallpaper utility with IPC controls";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    hyprlang.url = "github:hyprwm/hyprlang";
+  };
 
   outputs = {
     self,
     nixpkgs,
     ...
-  }: let
+  } @ inputs: let
     inherit (nixpkgs) lib;
     genSystems = lib.genAttrs [
       # Add more systems if they are supported
@@ -26,6 +30,7 @@
         stdenv = prev.gcc12Stdenv;
         version = "0.pre" + "+date=" + (mkDate (self.lastModifiedDate or "19700101")) + "_" + (self.shortRev or "dirty");
         inherit (prev.xorg) libXdmcp;
+        inherit (inputs.hyprlang.packages.${prev.system}) hyprlang;
       };
       hyprpaper-debug = hyprpaper.override {debug = true;};
     };

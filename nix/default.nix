@@ -7,6 +7,7 @@
   cairo,
   file,
   fribidi,
+  hyprlang,
   libdatrie,
   libGL,
   libjpeg,
@@ -39,6 +40,7 @@ stdenv.mkDerivation {
     cairo
     file
     fribidi
+    hyprlang
     libdatrie
     libGL
     libjpeg
