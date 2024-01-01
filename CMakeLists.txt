@@ -41,7 +41,7 @@ add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-unused-value -Wno-m
 find_package(Threads REQUIRED)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(deps REQUIRED IMPORTED_TARGET wayland-client wayland-protocols cairo pango pangocairo libjpeg libwebp)
+pkg_check_modules(deps REQUIRED IMPORTED_TARGET wayland-client wayland-protocols cairo pango pangocairo libjpeg libwebp hyprlang>=0.2.0)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
 
@@ -65,7 +65,6 @@ target_link_libraries(hyprpaper
         GLESv2
         pthread
         magic
-        hyprlang
         ${CMAKE_THREAD_LIBS_INIT}
         ${CMAKE_SOURCE_DIR}/wlr-layer-shell-unstable-v1-protocol.o
         ${CMAKE_SOURCE_DIR}/xdg-shell-protocol.o

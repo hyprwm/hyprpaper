@@ -116,7 +116,7 @@ CConfigManager::CConfigManager() {
 
     std::string configPath = getMainConfigPath();
 
-    config = std::make_unique<Hyprlang::CConfig>(configPath.c_str(), Hyprlang::SConfigOptions{});
+    config = std::make_unique<Hyprlang::CConfig>(configPath.c_str(), Hyprlang::SConfigOptions{.allowMissingConfig = true});
 
     config->addConfigValue("ipc", {1L});
     config->addConfigValue("splash", {1L});
