@@ -5,11 +5,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1704112024,
-        "narHash": "sha256-eKS5iEiyfxQYc4R0Bofxtd9rdCCDzw8kpYZx/xj6wb0=",
+        "lastModified": 1704230242,
+        "narHash": "sha256-S8DM+frECqmAdaUb3y5n3RjY73ajZcL5rnmx5YO+CkY=",
         "owner": "hyprwm",
         "repo": "hyprlang",
-        "rev": "5cb3d2ba62d94b1e470d308ae05a9589b22c3c07",
+        "rev": "db5e1399b90d5a339330bdd49c5bca6fe58d6f60",
         "type": "github"
       },
       "original": {

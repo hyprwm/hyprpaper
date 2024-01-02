@@ -5,6 +5,7 @@
   cmake,
   ninja,
   cairo,
+  expat,
   file,
   fribidi,
   hyprlang,
@@ -17,6 +18,7 @@
   libwebp,
   pango,
   pcre,
+  pcre2,
   util-linux,
   wayland,
   wayland-protocols,
@@ -38,6 +40,7 @@ stdenv.mkDerivation {
 
   buildInputs = [
     cairo
+    expat
     file
     fribidi
     hyprlang
@@ -50,6 +53,7 @@ stdenv.mkDerivation {
     libwebp
     pango
     pcre
+    pcre2
     wayland
     wayland-protocols
     wayland-scanner

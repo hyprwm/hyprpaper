@@ -27,7 +27,7 @@
   in {
     overlays.default = _: prev: rec {
       hyprpaper = prev.callPackage ./nix/default.nix {
-        stdenv = prev.gcc12Stdenv;
+        stdenv = prev.gcc13Stdenv;
         version = "0.pre" + "+date=" + (mkDate (self.lastModifiedDate or "19700101")) + "_" + (self.shortRev or "dirty");
         inherit (prev.xorg) libXdmcp;
         inherit (inputs.hyprlang.packages.${prev.system}) hyprlang;
