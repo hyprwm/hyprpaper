@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../defines.hpp"
-#include "PoolBuffer.hpp"
 #include "../render/LayerSurface.hpp"
+#include "PoolBuffer.hpp"
 
 struct SMonitor {
     std::string name = "";
@@ -14,6 +14,8 @@ struct SMonitor {
 
     bool readyForLS = false;
     bool hasATarget = true;
+
+    bool wildcard = true;
 
     uint32_t configureSerial = 0;
     SPoolBuffer buffer;

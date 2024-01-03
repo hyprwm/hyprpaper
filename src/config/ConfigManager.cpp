@@ -40,6 +40,20 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR] = WALLPAPER;
     g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
 
+    if (MONITOR.empty()) {
+        for (auto& m : g_pHyprpaper->m_vMonitors) {
+            if (!m->hasATarget || m->wildcard) {
+                g_pHyprpaper->clearWallpaperFromMonitor(m->name);
+                g_pHyprpaper->m_mMonitorActiveWallpapers[m->name] = WALLPAPER;
+                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].contain = contain;
+            }
+        }
+    } else {
+        const auto PMON = g_pHyprpaper->getMonitorFromName(MONITOR);
+        if (PMON)
+            PMON->wildcard = false;
+    }
+
     return result;
 }
 

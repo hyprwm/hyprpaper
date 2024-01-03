@@ -1,72 +1,73 @@
 #include "Events.hpp"
 #include "../Hyprpaper.hpp"
 
-void Events::geometry(void *data, wl_output *output, int32_t x, int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel, const char *make, const char *model, int32_t transform) {
+void Events::geometry(void* data, wl_output* output, int32_t x, int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel, const char* make, const char* model, int32_t transform) {
     // ignored
 }
 
-void Events::mode(void *data, wl_output *output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
+void Events::mode(void* data, wl_output* output, uint32_t flags, int32_t width, int32_t height, int32_t refresh) {
     const auto PMONITOR = (SMonitor*)data;
 
     PMONITOR->size = Vector2D(width, height);
 }
 
-void Events::done(void *data, wl_output *wl_output) {
+void Events::done(void* data, wl_output* wl_output) {
     const auto PMONITOR = (SMonitor*)data;
 
     PMONITOR->readyForLS = true;
 
     std::lock_guard<std::mutex> lg(g_pHyprpaper->m_mtTickMutex);
-    g_pHyprpaper->tick(true);
+    if (g_pConfigManager) // don't tick if this is the first roundtrip
+        g_pHyprpaper->tick(true);
 }
 
-void Events::scale(void *data, wl_output *wl_output, int32_t scale) {
+void Events::scale(void* data, wl_output* wl_output, int32_t scale) {
     const auto PMONITOR = (SMonitor*)data;
 
     PMONITOR->scale = scale;
 }
 
-void Events::name(void *data, wl_output *wl_output, const char *name) {
+void Events::name(void* data, wl_output* wl_output, const char* name) {
     const auto PMONITOR = (SMonitor*)data;
 
     PMONITOR->name = name;
 }
 
-void Events::description(void *data, wl_output *wl_output, const char *description) {
+void Events::description(void* data, wl_output* wl_output, const char* description) {
     const auto PMONITOR = (SMonitor*)data;
 
     PMONITOR->description = description;
 }
 
-void Events::handleCapabilities(void *data, wl_seat *wl_seat, uint32_t capabilities) {
+void Events::handleCapabilities(void* data, wl_seat* wl_seat, uint32_t capabilities) {
     if (capabilities & WL_SEAT_CAPABILITY_POINTER) {
         wl_pointer_add_listener(wl_seat_get_pointer(wl_seat), &pointerListener, wl_seat);
     }
 }
 
-void Events::handlePointerLeave(void *data, struct wl_pointer *wl_pointer, uint32_t serial, struct wl_surface *surface) {
+void Events::handlePointerLeave(void* data, struct wl_pointer* wl_pointer, uint32_t serial, struct wl_surface* surface) {
     // ignored
     wl_surface_commit(surface);
 
     g_pHyprpaper->m_pLastMonitor = nullptr;
 }
 
-void Events::handlePointerAxis(void *data, wl_pointer *wl_pointer, uint32_t time, uint32_t axis, wl_fixed_t value) {
+void Events::handlePointerAxis(void* data, wl_pointer* wl_pointer, uint32_t time, uint32_t axis, wl_fixed_t value) {
     // ignored
 }
 
-void Events::handlePointerMotion(void *data, struct wl_pointer *wl_pointer, uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+void Events::handlePointerMotion(void* data, struct wl_pointer* wl_pointer, uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y) {
     // ignored
     if (g_pHyprpaper->m_pLastMonitor) {
         wl_surface_commit(g_pHyprpaper->m_pLastMonitor->pCurrentLayerSurface->pSurface);
     }
 }
 
-void Events::handlePointerButton(void *data, struct wl_pointer *wl_pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) {
+void Events::handlePointerButton(void* data, struct wl_pointer* wl_pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t button_state) {
     // ignored
 }
 
-void Events::handlePointerEnter(void *data, struct wl_pointer *wl_pointer, uint32_t serial, struct wl_surface *surface, wl_fixed_t surface_x, wl_fixed_t surface_y) {
+void Events::handlePointerEnter(void* data, struct wl_pointer* wl_pointer, uint32_t serial, struct wl_surface* surface, wl_fixed_t surface_x, wl_fixed_t surface_y) {
     for (auto& mon : g_pHyprpaper->m_vMonitors) {
         if (mon->pCurrentLayerSurface->pSurface == surface) {
             g_pHyprpaper->m_pLastMonitor = mon.get();
@@ -79,7 +80,7 @@ void Events::handlePointerEnter(void *data, struct wl_pointer *wl_pointer, uint3
     }
 }
 
-void Events::ls_configure(void *data, zwlr_layer_surface_v1 *surface, uint32_t serial, uint32_t width, uint32_t height) {
+void Events::ls_configure(void* data, zwlr_layer_surface_v1* surface, uint32_t serial, uint32_t width, uint32_t height) {
     const auto PLAYERSURFACE = (CLayerSurface*)data;
 
     PLAYERSURFACE->m_pMonitor->size = Vector2D(width, height);
@@ -91,7 +92,7 @@ void Events::ls_configure(void *data, zwlr_layer_surface_v1 *surface, uint32_t s
     Debug::log(LOG, "configure for %s", PLAYERSURFACE->m_pMonitor->name.c_str());
 }
 
-void Events::handleLSClosed(void *data, zwlr_layer_surface_v1 *zwlr_layer_surface_v1) {
+void Events::handleLSClosed(void* data, zwlr_layer_surface_v1* zwlr_layer_surface_v1) {
     const auto PLAYERSURFACE = (CLayerSurface*)data;
 
     for (auto& m : g_pHyprpaper->m_vMonitors) {
@@ -107,18 +108,18 @@ void Events::handleLSClosed(void *data, zwlr_layer_surface_v1 *zwlr_layer_surfac
     }
 }
 
-void Events::handleGlobal(void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t version) {
+void Events::handleGlobal(void* data, struct wl_registry* registry, uint32_t name, const char* interface, uint32_t version) {
     if (strcmp(interface, wl_compositor_interface.name) == 0) {
-        g_pHyprpaper->m_sCompositor = (wl_compositor *)wl_registry_bind(registry, name, &wl_compositor_interface, 4);
+        g_pHyprpaper->m_sCompositor = (wl_compositor*)wl_registry_bind(registry, name, &wl_compositor_interface, 4);
     } else if (strcmp(interface, wl_shm_interface.name) == 0) {
-        g_pHyprpaper->m_sSHM = (wl_shm *)wl_registry_bind(registry, name, &wl_shm_interface, 1);
+        g_pHyprpaper->m_sSHM = (wl_shm*)wl_registry_bind(registry, name, &wl_shm_interface, 1);
     } else if (strcmp(interface, wl_output_interface.name) == 0) {
         g_pHyprpaper->m_mtTickMutex.lock();
 
         const auto PMONITOR = g_pHyprpaper->m_vMonitors.emplace_back(std::make_unique<SMonitor>()).get();
         PMONITOR->wayland_name = name;
         PMONITOR->name = "";
-        PMONITOR->output = (wl_output *)wl_registry_bind(registry, name, &wl_output_interface, 4);
+        PMONITOR->output = (wl_output*)wl_registry_bind(registry, name, &wl_output_interface, 4);
         wl_output_add_listener(PMONITOR->output, &Events::outputListener, PMONITOR);
 
         g_pHyprpaper->m_mtTickMutex.unlock();
@@ -133,7 +134,7 @@ void Events::handleGlobal(void *data, struct wl_registry *registry, uint32_t nam
     }
 }
 
-void Events::handleGlobalRemove(void *data, struct wl_registry *registry, uint32_t name) {
+void Events::handleGlobalRemove(void* data, struct wl_registry* registry, uint32_t name) {
     for (auto& m : g_pHyprpaper->m_vMonitors) {
         if (m->wayland_name == name) {
             Debug::log(LOG, "Destroying output %s", m->name.c_str());
@@ -144,10 +145,10 @@ void Events::handleGlobalRemove(void *data, struct wl_registry *registry, uint32
     }
 }
 
-void Events::handlePreferredScale(void *data, wp_fractional_scale_v1* fractionalScaleInfo, uint32_t scale) {
+void Events::handlePreferredScale(void* data, wp_fractional_scale_v1* fractionalScaleInfo, uint32_t scale) {
     const double SCALE = scale / 120.0;
 
-    CLayerSurface *const pLS = (CLayerSurface*)data;
+    CLayerSurface* const pLS = (CLayerSurface*)data;
 
     Debug::log(LOG, "handlePreferredScale: %.2lf for %lx", SCALE, pLS);
 
@@ -157,4 +158,3 @@ void Events::handlePreferredScale(void *data, wp_fractional_scale_v1* fractional
         g_pHyprpaper->tick(true);
     }
 }
-

@@ -15,11 +15,6 @@ void CHyprpaper::init() {
 
     removeOldHyprpaperImages();
 
-    g_pConfigManager = std::make_unique<CConfigManager>();
-    g_pIPCSocket = std::make_unique<CIPCSocket>();
-
-    g_pConfigManager->parse();
-
     m_sDisplay = (wl_display*)wl_display_connect(nullptr);
 
     if (!m_sDisplay) {
@@ -27,25 +22,36 @@ void CHyprpaper::init() {
         exit(1);
     }
 
+    // run
+    wl_registry* registry = wl_display_get_registry(m_sDisplay);
+    wl_registry_add_listener(registry, &Events::registryListener, nullptr);
+
+    wl_display_roundtrip(m_sDisplay);
+
+    while (m_vMonitors.size() < 1 || m_vMonitors[0]->name.empty()) {
+        wl_display_dispatch(m_sDisplay);
+    }
+
+    g_pConfigManager = std::make_unique<CConfigManager>();
+    g_pIPCSocket = std::make_unique<CIPCSocket>();
+
+    g_pConfigManager->parse();
+
     preloadAllWallpapersFromConfig();
 
     if (std::any_cast<Hyprlang::INT>(g_pConfigManager->config->getConfigValue("ipc")))
         g_pIPCSocket->initialize();
 
-    // run
-    wl_registry* registry = wl_display_get_registry(m_sDisplay);
-    wl_registry_add_listener(registry, &Events::registryListener, nullptr);
-
-    while (wl_display_dispatch(m_sDisplay) != -1) {
+    do {
         std::lock_guard<std::mutex> lg(m_mtTickMutex);
         tick(true);
-    }
+    } while (wl_display_dispatch(m_sDisplay) != -1);
 
     unlockSingleInstance();
 }
 
 void CHyprpaper::tick(bool force) {
-    bool reload = g_pIPCSocket->mainThreadParseRequest();
+    bool reload = g_pIPCSocket && g_pIPCSocket->mainThreadParseRequest();
 
     if (!reload && !force)
         return;
@@ -453,6 +459,10 @@ SPoolBuffer* CHyprpaper::getPoolBuffer(SMonitor* pMonitor, CWallpaperTarget* pWa
 void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     static auto* const PRENDERSPLASH = reinterpret_cast<Hyprlang::INT* const*>(g_pConfigManager->config->getConfigValuePtr("splash")->getDataStaticPtr());
     static auto* const PSPLASHOFFSET = reinterpret_cast<Hyprlang::FLOAT* const*>(g_pConfigManager->config->getConfigValuePtr("splash_offset")->getDataStaticPtr());
+
+    if (!m_mMonitorActiveWallpaperTargets[pMonitor])
+        recheckMonitor(pMonitor);
+
     const auto PWALLPAPERTARGET = m_mMonitorActiveWallpaperTargets[pMonitor];
     const auto CONTAIN = m_mMonitorWallpaperRenderData[pMonitor->name].contain;
 
