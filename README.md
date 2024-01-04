@@ -68,7 +68,7 @@ preload = /path/to/image.png
 preload = /path/to/next_image.png
 # .. more preloads
 
-#set the default wallpaper(s) seen on inital workspace(s) --depending on the number of monitors used
+#set the default wallpaper(s) seen on initial workspace(s) --depending on the number of monitors used
 wallpaper = monitor1,/path/to/image.png
 #if more than one monitor in use, can load a 2nd image
 wallpaper = monitor2,/path/to/next_image.png
@@ -128,7 +128,7 @@ $w3 = hyprctl hyprpaper wallpaper "DP-1,~/Pictures/myepicpngAlso.png"
 #yes use quotes around desired monitor and wallpaper
 #... continued with desired amount
 ```
-With the varibles created we can now "exec" the actions.
+With the variables created we can now "exec" the actions.
 
 Remember in Hyprland we can bind more than one action to a key so in the case where we'd like to change the wallpaper when we switch workspace we have to ensure that the actions are bound to the same key such as...
 
