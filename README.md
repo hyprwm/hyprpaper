@@ -73,6 +73,14 @@ wallpaper = monitor1,/path/to/image.png
 #if more than one monitor in use, can load a 2nd image
 wallpaper = monitor2,/path/to/next_image.png
 # .. more monitors
+
+#enable splash text rendering over the wallpaper
+splash = true
+
+#fully disable ipc
+# ipc = off
+
+
 ```
 
 Preload will tell Hyprland to load a particular image (supported formats: png, jpg, jpeg, webp). Wallpaper will apply the wallpaper to the selected output (`monitor` is the monitor's name, easily can be retrieved with `hyprctl monitors`. You can leave it empty for a wildcard (aka fallback). You can also use `desc:` followed by the monitor's description without the (PORT) at the end)

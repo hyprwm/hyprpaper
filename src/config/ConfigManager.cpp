@@ -133,7 +133,7 @@ CConfigManager::CConfigManager() {
     config = std::make_unique<Hyprlang::CConfig>(configPath.c_str(), Hyprlang::SConfigOptions{.allowMissingConfig = true});
 
     config->addConfigValue("ipc", {1L});
-    config->addConfigValue("splash", {1L});
+    config->addConfigValue("splash", {0L});
     config->addConfigValue("splash_offset", {2.F});
 
     config->registerHandler(&handleWallpaper, "wallpaper", {.allowFlags = false});
