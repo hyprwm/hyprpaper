@@ -90,34 +90,77 @@ bool CIPCSocket::mainThreadParseRequest() {
 
     std::string copy = m_szRequest;
 
-    // now we can work on the copy
-
     if (copy == "")
         return false;
+    
+    // now we can work on the copy
 
     Debug::log(LOG, "Received a request: %s", copy.c_str());
 
-    // parse
+    // set default reply
+    m_szReply = "ok";
+    m_bReplyReady = true;
+    m_bRequestReady = false;
+
+    
+    // config commands
     if (copy.find("wallpaper") == 0 || copy.find("preload") == 0 || copy.find("unload") == 0) {
 
         const auto RESULT = g_pConfigManager->config->parseDynamic(copy.substr(0, copy.find_first_of(' ')).c_str(), copy.substr(copy.find_first_of(' ') + 1).c_str());
 
         if (RESULT.error) {
             m_szReply = RESULT.getError();
-            m_bReplyReady = true;
-            m_bRequestReady = false;
             return false;
         }
-    } else {
-        m_szReply = "invalid command";
-        m_bReplyReady = true;
-        m_bRequestReady = false;
-        return false;
+
+        return true;
+    
+    }
+    
+    if (copy.find("listloaded") == 0) {
+        
+        const auto numWallpapersLoaded = g_pHyprpaper->m_mWallpaperTargets.size();
+        Debug::log(LOG, "numWallpapersLoaded: %d", numWallpapersLoaded);
+
+        if (numWallpapersLoaded == 0) {
+            m_szReply = "no wallpapers loaded";
+            return false;
+        }
+    
+        m_szReply = "";
+        long unsigned int i = 0;
+        for (auto& [name, target] : g_pHyprpaper->m_mWallpaperTargets) {
+            m_szReply += name;
+            i++;
+            if (i < numWallpapersLoaded) m_szReply += '\n'; // dont add newline on last entry
+        }
+
+        return true;
+
     }
 
-    m_szReply = "ok";
-    m_bReplyReady = true;
-    m_bRequestReady = false;
+    if (copy.find("listactive") == 0) {
+        
+        const auto numWallpapersActive = g_pHyprpaper->m_mMonitorActiveWallpapers.size();
+        Debug::log(LOG, "numWallpapersActive: %d", numWallpapersActive);
 
-    return true;
+        if (numWallpapersActive == 0) {
+            m_szReply = "no wallpapers active";
+            return false;
+        }
+    
+        m_szReply = "";
+        long unsigned int i = 0;
+        for (auto& [mon, path1] : g_pHyprpaper->m_mMonitorActiveWallpapers) {
+            m_szReply += mon + " = " + path1;
+            i++;
+            if (i < numWallpapersActive) m_szReply += '\n'; // dont add newline on last entry
+        }
+        
+        return true;
+
+    }
+
+    m_szReply = "invalid command";
+    return false;
 }
