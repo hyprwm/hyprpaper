@@ -152,6 +152,13 @@ bind=SUPERSHIFT,1,movetoworkspace,1  #Superkey + Shift + 1 moves windows and swi
 bind=SUPERSHIFT,1,exec,$w1           #SuperKey + Shift + 1 switches to wallpaper $w1 on DP-1 as defined in the variable
 ```
 
+## Getting information from hyprpaper
+You can also use `hyprctl hyprpaper` to get information about the state of hyprpaper using the following commands:
+```
+listloaded - lists the wallpapers that are currently preloaded (useful for dynamically preloading and unloading)
+listactive - prints the active wallpapers hyprpaper is displaying, along with its accociated monitor
+```
+
 # Battery life
 Since the IPC has to tick every now and then, and poll in the background, battery life might be a tiny bit worse with IPC on. If you want to fully disable it, use
 ```
