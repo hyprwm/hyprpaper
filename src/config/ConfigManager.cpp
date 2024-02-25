@@ -36,24 +36,29 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
         return result;
     }
 
-    g_pHyprpaper->clearWallpaperFromMonitor(MONITOR);
-    g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR] = WALLPAPER;
-    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
-
-    if (MONITOR.empty()) {
+    if (MONITOR.empty()) { //if the monitor string is empty we set all the empty monitors to the same wallpaper
         for (auto& m : g_pHyprpaper->m_vMonitors) {
             if (!m->hasATarget || m->wildcard) {
+                Debug::log(LOG, "Setting wallpaper for monitor %s", m->name);
                 g_pHyprpaper->clearWallpaperFromMonitor(m->name);
                 g_pHyprpaper->m_mMonitorActiveWallpapers[m->name] = WALLPAPER;
                 g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].contain = contain;
             }
         }
-    } else {
-        const auto PMON = g_pHyprpaper->getMonitorFromName(MONITOR);
-        if (PMON)
-            PMON->wildcard = false;
+        return result;
     }
 
+    const auto PMON = g_pHyprpaper->getMonitorFromName(MONITOR);
+    if (!PMON){ //does monitor by name of MONITOR exist?
+        result.setError("wallpaper failed (no such monitor)");
+        return result;
+    }
+
+    g_pHyprpaper->clearWallpaperFromMonitor(MONITOR); //should be fine to keep using MONITOR instead of using PMON->name here
+    g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR] = WALLPAPER;
+    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
+
+    PMON->wildcard = false;
     return result;
 }
 
