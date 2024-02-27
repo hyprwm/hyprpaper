@@ -36,29 +36,24 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
         return result;
     }
 
-    if (MONITOR.empty()) { //if the monitor string is empty we set all the empty monitors to the same wallpaper
+    g_pHyprpaper->clearWallpaperFromMonitor(MONITOR);
+    g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR] = WALLPAPER;
+    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
+
+    if (MONITOR.empty()) {
         for (auto& m : g_pHyprpaper->m_vMonitors) {
             if (!m->hasATarget || m->wildcard) {
-                Debug::log(LOG, "Setting wallpaper for monitor %s", m->name);
                 g_pHyprpaper->clearWallpaperFromMonitor(m->name);
                 g_pHyprpaper->m_mMonitorActiveWallpapers[m->name] = WALLPAPER;
                 g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].contain = contain;
             }
         }
-        return result;
+    } else {
+        const auto PMON = g_pHyprpaper->getMonitorFromName(MONITOR);
+        if (PMON)
+            PMON->wildcard = false;
     }
 
-    const auto PMON = g_pHyprpaper->getMonitorFromName(MONITOR);
-    if (!PMON){ //does monitor by name of MONITOR exist?
-        result.setError("wallpaper failed (no such monitor)");
-        return result;
-    }
-
-    g_pHyprpaper->clearWallpaperFromMonitor(MONITOR); //should be fine to keep using MONITOR instead of using PMON->name here
-    g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR] = WALLPAPER;
-    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
-
-    PMON->wildcard = false;
     return result;
 }
 
@@ -89,6 +84,19 @@ static Hyprlang::CParseResult handleUnloadAll(const char* C, const char* V) {
     std::vector<std::string> toUnload;
 
     for (auto& [name, target] : g_pHyprpaper->m_mWallpaperTargets) {
+        if (VALUE == "unused") {
+            bool exists = false;
+            for (auto& [mon, target2] : g_pHyprpaper->m_mMonitorActiveWallpaperTargets) {
+                if (&target == target2) {
+                    exists = true;
+                    break;
+                }
+            }
+
+            if (exists)
+                continue;
+        }
+
         toUnload.emplace_back(name);
     }
 
@@ -103,7 +111,7 @@ static Hyprlang::CParseResult handleUnload(const char* C, const char* V) {
     const std::string VALUE = V;
     auto WALLPAPER = VALUE;
 
-    if (VALUE == "all")
+    if (VALUE == "all" || VALUE == "unused")
         return handleUnloadAll(C, V);
 
     if (WALLPAPER[0] == '~') {
