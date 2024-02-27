@@ -89,18 +89,6 @@ static Hyprlang::CParseResult handleUnloadAll(const char* C, const char* V) {
     std::vector<std::string> toUnload;
 
     for (auto& [name, target] : g_pHyprpaper->m_mWallpaperTargets) {
-
-        bool exists = false;
-        for (auto& [mon, target2] : g_pHyprpaper->m_mMonitorActiveWallpaperTargets) {
-            if (&target == target2) {
-                exists = true;
-                break;
-            }
-        }
-
-        if (exists)
-            continue;
-
         toUnload.emplace_back(name);
     }
 
