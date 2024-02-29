@@ -94,7 +94,7 @@ wallpaper = monitor,contain:/path/to/image.jpg
 A Wallpaper ***cannot*** be applied without preloading. The config is ***not*** reloaded dynamically.
 
 ## Important note to the inner workings
-Preload does exactly what it says. It loads the entire wallpaper into memory. This can result in around 8 - 20MB of mem usage. It is not recommended to preload every wallpaper you have, as it will be a) taking a couple seconds at the beginning to load and b) take 100s of MBs of disk and RAM usage.
+Preload does exactly what it says. It loads the entire wallpaper into memory as uncompressed. This can result in unreasonable high mem usage at higher resolutions, as an example: for 4k screen each preloaded image will allocate ~132.7MB. It is not recommended to preload every wallpaper you have, as it will be a) taking a couple seconds at the beginning to load and b) take 100s of MBs of disk and RAM usage.
 
 Preload is meant only for situations in which you want a wallpaper to switch INSTANTLY when you issue a wallpaper keyword (e.g. wallpaper per workspace)
 
