@@ -11,7 +11,7 @@ Hyprpaper is a blazing fast wallpaper utility for Hyprland with the ability to d
 
 # Installation
 
-[Arch Linux](https://archlinux.org/packages/community/x86_64/hyprpaper/): `pacman -S hyprpaper`
+[Arch Linux](https://archlinux.org/packages/extra/x86_64/hyprpaper/): `pacman -S hyprpaper`
 
 ## Manual:
 
