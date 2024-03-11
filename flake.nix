@@ -39,6 +39,11 @@
       (self.overlays.default null pkgsFor.${system})
       // {default = self.packages.${system}.hyprpaper;});
 
+    homeManagerModules = {
+      default = self.homeManagerModules.hyprpaper;
+      hyprpaper = import ./nix/hm-module.nix self;
+    };
+
     formatter = genSystems (system: pkgsFor.${system}.alejandra);
   };
 }
