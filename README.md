@@ -49,13 +49,18 @@ sudo zypper install ninja gcc-c++ wayland-protocols-devel Mesa-libGLESv3-devel f
 
 ### Building
 
-```
-git clone https://github.com/hyprwm/hyprpaper
-cd hyprpaper
-make all
+Building is done via CMake:
+
+```sh
+cmake --no-warn-unused-cli -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_INSTALL_PREFIX:PATH=/usr -S . -B ./build
+cmake --build ./build --config Release --target hyprpaper -j`nproc 2>/dev/null || getconf NPROCESSORS_CONF`
 ```
 
-*the output binary will be in `./build/`, copy it to your PATH, e.g. `/usr/bin`*
+Install with:
+
+```sh
+cmake --install ./build
+```
 
 # Usage
 

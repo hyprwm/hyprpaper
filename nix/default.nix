@@ -3,7 +3,6 @@
   stdenv,
   pkg-config,
   cmake,
-  ninja,
   cairo,
   expat,
   file,
@@ -30,11 +29,16 @@
 stdenv.mkDerivation {
   pname = "hyprpaper" + lib.optionalString debug "-debug";
   inherit version;
+
   src = ../.;
+
+  cmakeBuildType =
+    if debug
+    then "Debug"
+    else "Release";
 
   nativeBuildInputs = [
     cmake
-    ninja
     pkg-config
   ];
 
@@ -60,33 +64,6 @@ stdenv.mkDerivation {
     libXdmcp
     util-linux
   ];
-
-  configurePhase = ''
-    runHook preConfigure
-
-    make protocols
-
-    runHook postConfigure
-  '';
-
-  buildPhase = ''
-    runHook preBuild
-
-    make release
-
-    runHook postBuild
-  '';
-
-  installPhase = ''
-    runHook preInstall
-
-    mkdir -p $out/{bin,share/licenses}
-
-    install -Dm755 build/hyprpaper -t $out/bin
-    install -Dm644 LICENSE -t $out/share/licenses/hyprpaper
-
-    runHook postInstall
-  '';
 
   meta = with lib; {
     homepage = "https://github.com/hyprwm/hyprpaper";
