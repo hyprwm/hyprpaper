@@ -65,7 +65,8 @@ function(protocol protoPath protoName external)
 endfunction()
 
 include_directories(.)
-add_compile_options(-std=c++2b -DWLR_USE_UNSTABLE )
+set(CMAKE_CXX_STANDARD 23)
+add_compile_options(-DWLR_USE_UNSTABLE)
 add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-unused-value -Wno-missing-field-initializers -Wno-narrowing)
 find_package(Threads REQUIRED)
 
