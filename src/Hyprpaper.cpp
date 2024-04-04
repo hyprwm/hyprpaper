@@ -532,7 +532,11 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         const auto FONTSIZE = (int)(DIMENSIONS.y / 76.0 / scale);
         cairo_set_font_size(PCAIRO, FONTSIZE);
 
-        cairo_set_source_rgba(PCAIRO, 1.0, 1.0, 1.0, 0.32);
+        static auto* const PSPLASHCOLOR = reinterpret_cast<Hyprlang::INT* const*>(g_pConfigManager->config->getConfigValuePtr("splash_color")->getDataStaticPtr());
+        
+        Debug::log(LOG, "Splash color: %x", **PSPLASHCOLOR);
+
+        cairo_set_source_rgba(PCAIRO, ((**PSPLASHCOLOR >> 16) & 0xFF) / 255.0, ((**PSPLASHCOLOR >> 8) & 0xFF) / 255.0, (**PSPLASHCOLOR & 0xFF) / 255.0, ((**PSPLASHCOLOR >> 24) & 0xFF) / 255.0);
 
         cairo_text_extents_t textExtents;
         cairo_text_extents(PCAIRO, SPLASH.c_str(), &textExtents);
