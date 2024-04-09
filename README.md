@@ -36,7 +36,7 @@ and might not be packaged for your distro yet. If that's the case, build and ins
 
 To install all of these in Fedora, run this command:
 ```
-sudo dnf install wayland-devel wayland-protocols-devel pango-devel cairo-devel file-devel libglvnd-devel libglvnd-core-devel libjpeg-turbo-devel libwebp-devel gcc-c++
+sudo dnf install wayland-devel wayland-protocols-devel hyprlang-devel pango-devel cairo-devel file-devel libglvnd-devel libglvnd-core-devel libjpeg-turbo-devel libwebp-devel gcc-c++
 ```
 
 On Arch:
