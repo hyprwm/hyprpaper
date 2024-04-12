@@ -35,8 +35,11 @@ void Events::name(void* data, wl_output* wl_output, const char* name) {
 
 void Events::description(void* data, wl_output* wl_output, const char* description) {
     const auto PMONITOR = (SMonitor*)data;
+    // remove comma character from description. This allow monitor specific rules to work on monitor with comma on their description
+    std::string m_description = description;
+    std::erase(m_description, ',');
 
-    PMONITOR->description = description;
+    PMONITOR->description = m_description;
 }
 
 void Events::handleCapabilities(void* data, wl_seat* wl_seat, uint32_t capabilities) {
