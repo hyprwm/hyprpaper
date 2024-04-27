@@ -20,7 +20,7 @@ in {
     enable = mkEnableOption "Hyprpaper, Hyprland's wallpaper utility";
 
     package = mkOption {
-      description = "The hyprpapr package";
+      description = "The hyprpaper package";
       type = package;
       default = self.packages.${pkgs.stdenv.hostPlatform.system}.hyprpaper;
     };
