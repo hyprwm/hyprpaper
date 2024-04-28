@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <pwd.h>
 
 void CIPCSocket::initialize() {
     std::thread([&]() {
@@ -24,12 +25,14 @@ void CIPCSocket::initialize() {
         sockaddr_un SERVERADDRESS = {.sun_family = AF_UNIX};
 
         const auto HISenv = getenv("HYPRLAND_INSTANCE_SIGNATURE");
+        const std::string USERID = std::to_string(getpwuid(getuid())->pw_uid);
 
-        std::string socketPath = HISenv ? "/tmp/hypr/" + std::string(HISenv) + "/.hyprpaper.sock" : "/tmp/hypr/.hyprpaper.sock";
+        const auto USERDIR = "/run/user/" + USERID + "/hypr/";
 
-        if (!HISenv) {
-            mkdir("/tmp/hypr", S_IRWXU | S_IRWXG);
-        }
+        std::string socketPath = HISenv ? USERDIR + std::string(HISenv) + "/.hyprpaper.sock" : USERDIR + ".hyprpaper.sock";
+
+        if (!HISenv)
+            mkdir(USERDIR.c_str(), S_IRWXU);
 
         unlink(socketPath.c_str());
 
@@ -92,7 +95,7 @@ bool CIPCSocket::mainThreadParseRequest() {
 
     if (copy == "")
         return false;
-    
+
     // now we can work on the copy
 
     Debug::log(LOG, "Received a request: %s", copy.c_str());
@@ -102,7 +105,6 @@ bool CIPCSocket::mainThreadParseRequest() {
     m_bReplyReady = true;
     m_bRequestReady = false;
 
-    
     // config commands
     if (copy.find("wallpaper") == 0 || copy.find("preload") == 0 || copy.find("unload") == 0) {
 
@@ -114,11 +116,10 @@ bool CIPCSocket::mainThreadParseRequest() {
         }
 
         return true;
-    
     }
-    
+
     if (copy.find("listloaded") == 0) {
-        
+
         const auto numWallpapersLoaded = g_pHyprpaper->m_mWallpaperTargets.size();
         Debug::log(LOG, "numWallpapersLoaded: %d", numWallpapersLoaded);
 
@@ -126,21 +127,21 @@ bool CIPCSocket::mainThreadParseRequest() {
             m_szReply = "no wallpapers loaded";
             return false;
         }
-    
+
         m_szReply = "";
         long unsigned int i = 0;
         for (auto& [name, target] : g_pHyprpaper->m_mWallpaperTargets) {
             m_szReply += name;
             i++;
-            if (i < numWallpapersLoaded) m_szReply += '\n'; // dont add newline on last entry
+            if (i < numWallpapersLoaded)
+                m_szReply += '\n'; // dont add newline on last entry
         }
 
         return true;
-
     }
 
     if (copy.find("listactive") == 0) {
-        
+
         const auto numWallpapersActive = g_pHyprpaper->m_mMonitorActiveWallpapers.size();
         Debug::log(LOG, "numWallpapersActive: %d", numWallpapersActive);
 
@@ -148,17 +149,17 @@ bool CIPCSocket::mainThreadParseRequest() {
             m_szReply = "no wallpapers active";
             return false;
         }
-    
+
         m_szReply = "";
         long unsigned int i = 0;
         for (auto& [mon, path1] : g_pHyprpaper->m_mMonitorActiveWallpapers) {
             m_szReply += mon + " = " + path1;
             i++;
-            if (i < numWallpapersActive) m_szReply += '\n'; // dont add newline on last entry
+            if (i < numWallpapersActive)
+                m_szReply += '\n'; // dont add newline on last entry
         }
-        
-        return true;
 
+        return true;
     }
 
     m_szReply = "invalid command";
