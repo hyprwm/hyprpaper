@@ -25,9 +25,10 @@ void CIPCSocket::initialize() {
         sockaddr_un SERVERADDRESS = {.sun_family = AF_UNIX};
 
         const auto HISenv = getenv("HYPRLAND_INSTANCE_SIGNATURE");
+        const auto RUNTIMEdir = getenv("XDG_RUNTIME_DIR");
         const std::string USERID = std::to_string(getpwuid(getuid())->pw_uid);
 
-        const auto USERDIR = "/run/user/" + USERID + "/hypr/";
+        const auto USERDIR = RUNTIMEdir ? RUNTIMEdir + std::string{"/hypr/"} : "/run/user/" + USERID + "/hypr/";
 
         std::string socketPath = HISenv ? USERDIR + std::string(HISenv) + "/.hyprpaper.sock" : USERDIR + ".hyprpaper.sock";
 
