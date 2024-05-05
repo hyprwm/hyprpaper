@@ -23,6 +23,7 @@
   wayland-protocols,
   wayland-scanner,
   libXdmcp,
+  commit,
   debug ? false,
   version ? "git",
 }:
@@ -31,6 +32,11 @@ stdenv.mkDerivation {
   inherit version;
 
   src = ../.;
+
+  prePatch = ''
+    substituteInPlace src/main.cpp \
+      --replace GIT_COMMIT_HASH '"${commit}"'
+  '';
 
   cmakeBuildType =
     if debug

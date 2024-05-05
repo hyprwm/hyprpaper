@@ -35,6 +35,7 @@
         hyprpaper = final.callPackage ./nix/default.nix {
           stdenv = final.gcc13Stdenv;
           version = "0.pre" + "+date=" + (mkDate (self.lastModifiedDate or "19700101")) + "_" + (self.shortRev or "dirty");
+          commit = self.rev or "";
           inherit (final.xorg) libXdmcp;
           inherit (inputs.hyprlang.packages.${final.system}) hyprlang;
         };
