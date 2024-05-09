@@ -46,7 +46,7 @@ in {
     splash_color = mkOption {
       description = "Splash color";
       type = str;
-      default = "rgba(255, 0, 0, 1.0)";
+      default = "rgba(85, 255, 255, 1.0)";
     };
 
     preloads = mkOption {
