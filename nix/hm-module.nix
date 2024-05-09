@@ -43,6 +43,12 @@ in {
       default = 2.0;
     };
 
+    splash_color = mkOption {
+      description = "Splash color";
+      type = str;
+      default = "rgba(255, 0, 0, 1.0)";
+    };
+
     preloads = mkOption {
       description = "List of paths to images that will be loaded into memory.";
       type = listOf str;
@@ -71,6 +77,7 @@ in {
       }
       splash = ${boolToString cfg.splash}
       splash_offset = ${toString cfg.splash_offset}
+      splash_color = ${cfg.splash_color}
 
       ${
         builtins.concatStringsSep "\n"
