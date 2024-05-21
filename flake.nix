@@ -50,7 +50,7 @@
 
     homeManagerModules = {
       default = self.homeManagerModules.hyprpaper;
-      hyprpaper = import ./nix/hm-module.nix self;
+      hyprpaper = builtins.throw "hyprpaper: the flake HM module has been removed. Use the module from Home Manager upstream.";
     };
 
     formatter = eachSystem (system: pkgsFor.${system}.alejandra);
