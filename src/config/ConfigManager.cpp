@@ -124,6 +124,35 @@ static Hyprlang::CParseResult handleUnload(const char* C, const char* V) {
     return Hyprlang::CParseResult{};
 }
 
+static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
+    const std::string COMMAND = C;
+    const std::string VALUE = V;
+
+    auto WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(VALUE.find_first_of(',') + 1));
+
+    auto preloadResult = handlePreload(C, WALLPAPER.c_str());
+    if (preloadResult.error)
+        return preloadResult;
+
+    auto wallpaperResult = handleWallpaper(C, V);
+    if (wallpaperResult.error)
+        return wallpaperResult;
+
+    auto MONITOR = VALUE.substr(0, VALUE.find_first_of(','));
+
+    if (MONITOR.empty()) {
+        for (auto& m : g_pHyprpaper->m_vMonitors) {
+            auto OLD_WALLPAPER = g_pHyprpaper->m_mMonitorActiveWallpapers[m->name];
+            g_pHyprpaper->unloadWallpaper(OLD_WALLPAPER);
+        }
+    } else {
+        auto OLD_WALLPAPER = g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR];
+        g_pHyprpaper->unloadWallpaper(OLD_WALLPAPER);
+    }
+
+    return Hyprlang::CParseResult{};
+}
+
 CConfigManager::CConfigManager() {
     // Initialize the configuration
     // Read file from default location
@@ -142,6 +171,7 @@ CConfigManager::CConfigManager() {
     config->registerHandler(&handleUnload, "unload", {.allowFlags = false});
     config->registerHandler(&handlePreload, "preload", {.allowFlags = false});
     config->registerHandler(&handleUnloadAll, "unloadAll", {.allowFlags = false});
+    config->registerHandler(&handleReload, "reload", {.allowFlags = false});
 
     config->commence();
 }
