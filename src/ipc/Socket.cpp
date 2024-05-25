@@ -107,7 +107,7 @@ bool CIPCSocket::mainThreadParseRequest() {
     m_bRequestReady = false;
 
     // config commands
-    if (copy.find("wallpaper") == 0 || copy.find("preload") == 0 || copy.find("unload") == 0) {
+    if (copy.find("wallpaper") == 0 || copy.find("preload") == 0 || copy.find("unload") == 0 || copy.find("reload") == 0) {
 
         const auto RESULT = g_pConfigManager->config->parseDynamic(copy.substr(0, copy.find_first_of(' ')).c_str(), copy.substr(copy.find_first_of(' ') + 1).c_str());
 
