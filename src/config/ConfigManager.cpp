@@ -130,13 +130,13 @@ static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
 
     auto WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(VALUE.find_first_of(',') + 1));
 
+    if (WALLPAPER.find("contain:") == 0) {
+        WALLPAPER = WALLPAPER.substr(8);
+    }
+
     auto preloadResult = handlePreload(C, WALLPAPER.c_str());
     if (preloadResult.error)
         return preloadResult;
-
-    auto wallpaperResult = handleWallpaper(C, V);
-    if (wallpaperResult.error)
-        return wallpaperResult;
 
     auto MONITOR = VALUE.substr(0, VALUE.find_first_of(','));
 
@@ -149,6 +149,10 @@ static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
         auto OLD_WALLPAPER = g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR];
         g_pHyprpaper->unloadWallpaper(OLD_WALLPAPER);
     }
+
+    auto wallpaperResult = handleWallpaper(C, V);
+    if (wallpaperResult.error)
+        return wallpaperResult;
 
     return Hyprlang::CParseResult{};
 }
