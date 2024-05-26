@@ -163,6 +163,23 @@ bool CIPCSocket::mainThreadParseRequest() {
         return true;
     }
 
+    if (copy.find("listmonitors") == 0) {
+
+        const auto numMonitors = g_pHyprpaper->m_vMonitors.size();
+        Debug::log(LOG, "numMonitors: %d", numMonitors);
+
+        m_szReply = "";
+        long unsigned int i = 0;
+        for (auto& m : g_pHyprpaper->m_vMonitors) {
+            m_szReply += m.get()->name.c_str();
+            i++;
+            if (i < numMonitors)
+                m_szReply += '\n'; // dont add newline on last entry
+        }
+
+        return true;
+    }
+
     m_szReply = "invalid command";
     return false;
 }
