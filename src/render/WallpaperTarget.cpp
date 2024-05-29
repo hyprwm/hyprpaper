@@ -18,6 +18,9 @@ void CWallpaperTarget::create(const std::string& path) {
     } else if (path.find(".jpg") == len - 4 || path.find(".JPG") == len - 4 || path.find(".jpeg") == len - 5 || path.find(".JPEG") == len - 5) {
         CAIROSURFACE = JPEG::createSurfaceFromJPEG(path);
         m_bHasAlpha = false;
+    } else if (path.find(".bmp") == len - 4 || path.find(".BMP") == len - 4) {
+        CAIROSURFACE = BMP::createSurfaceFromBMP(path);
+        m_bHasAlpha = false;
     } else if (path.find(".webp") == len - 5 || path.find(".WEBP") == len - 5) {
         CAIROSURFACE = WEBP::createSurfaceFromWEBP(path);
     } else {
@@ -32,6 +35,9 @@ void CWallpaperTarget::create(const std::string& path) {
             CAIROSURFACE = cairo_image_surface_create_from_png(path.c_str());
         } else if (first_word == "JPEG") {
             CAIROSURFACE = JPEG::createSurfaceFromJPEG(path);
+            m_bHasAlpha = false;
+        } else if (first_word == "BMP") {
+            CAIROSURFACE = BMP::createSurfaceFromBMP(path);
             m_bHasAlpha = false;
         } else {
             Debug::log(CRIT, "unrecognized image %s", path.c_str());
