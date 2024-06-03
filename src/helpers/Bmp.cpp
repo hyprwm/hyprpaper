@@ -24,12 +24,23 @@ public:
     uint32_t numberOfImportantCollors;
 
     BmpHeader(std::ifstream& file) {
+        file.seekg(0, std::ios::end);
+        uint32_t streamLength = file.tellg();
+        file.seekg(0, std::ios::beg);
+
         file.read(reinterpret_cast<char*>(&format), sizeof(format));
-        if (!(format[0] == 66 and format[1] == 77)) {
+        if (!(format[0] == 66 && format[1] == 77)) {
             Debug::log(ERR, "Unable to parse bitmap header: wrong bmp file type");
             exit(1);
         }
+
         file.read(reinterpret_cast<char*>(&sizeOfFile), sizeof(sizeOfFile));
+
+        if (sizeOfFile != streamLength) {
+            Debug::log(ERR, "Unable to parse bitmap header: wrong value of file size header");
+            exit(1);
+        }
+
         file.read(reinterpret_cast<char*>(&reserved1), sizeof(reserved1));
         file.read(reinterpret_cast<char*>(&reserved2), sizeof(reserved2));
         file.read(reinterpret_cast<char*>(&dataOffset), sizeof(dataOffset));
@@ -44,9 +55,15 @@ public:
         file.read(reinterpret_cast<char*>(&verticalResolutionPPM), sizeof(verticalResolutionPPM));
         file.read(reinterpret_cast<char*>(&numberOfCollors), sizeof(numberOfCollors));
         file.read(reinterpret_cast<char*>(&numberOfImportantCollors), sizeof(numberOfImportantCollors));
-        if (imageSize == 0) {
+
+        if (!imageSize)
             imageSize = sizeOfFile - dataOffset;
+
+        if (imageSize != (width * height * numberOfBitPerPixel/8)) {
+            Debug::log(ERR, "Unable to parse bitmap header: wrong image size");
+            exit(1);
         }
+
         file.seekg(dataOffset);
     };
 };
@@ -54,15 +71,15 @@ public:
 void reflectImage(unsigned char* image, uint32_t numberOfRows, int stride) {
     int rowStart = 0;
     int rowEnd = numberOfRows - 1;
-    unsigned char* temp = (unsigned char*) malloc(stride);
+    std::vector<unsigned char> temp;
+    temp.reserve(stride);
     while (rowStart < rowEnd) {
-        memcpy(temp, &image[rowStart * stride], stride);
+        memcpy(&temp[0], &image[rowStart * stride], stride);
         memcpy(&image[rowStart * stride], &image[rowEnd * stride], stride);
-        memcpy(&image[rowEnd * stride], temp, stride);
+        memcpy(&image[rowEnd * stride], &temp[0], stride);
         rowStart++;
         rowEnd--;
     }
-    free(temp);
 };
 
 void convertRgbToArgb(std::ifstream& imageStream, unsigned char* outputImage, uint32_t newImageSize) {
@@ -89,22 +106,21 @@ cairo_surface_t* BMP::createSurfaceFromBMP(const std::string& path) {
 
     std::ifstream bitmapImageStream(path);
     BmpHeader bitmapHeader(bitmapImageStream);
-    unsigned char* imageData;
 
     cairo_format_t format = CAIRO_FORMAT_ARGB32;
     int stride = cairo_format_stride_for_width (format, bitmapHeader.width);
-    imageData = (unsigned char*) malloc(bitmapHeader.height * stride);
+    unsigned char* imageData = (unsigned char*) malloc(bitmapHeader.height * stride);
 
-    if (bitmapHeader.numberOfBitPerPixel == 24) {
+    if (bitmapHeader.numberOfBitPerPixel == 24)
         convertRgbToArgb(bitmapImageStream, imageData, bitmapHeader.height * stride);
-    } else if (bitmapHeader.numberOfBitPerPixel == 32) {
+    else if (bitmapHeader.numberOfBitPerPixel == 32)
         bitmapImageStream.read(reinterpret_cast<char*>(&imageData), bitmapHeader.imageSize);
-    } else {
+    else {
         Debug::log(ERR, "createSurfaceFromBMP: unsupported bmp format");
         bitmapImageStream.close();
         exit(1);
     }
     bitmapImageStream.close();
     reflectImage(imageData, bitmapHeader.height, stride);
-    return cairo_image_surface_create_for_data (imageData, format, bitmapHeader.width, bitmapHeader.height, stride);
+    return cairo_image_surface_create_for_data(imageData, format, bitmapHeader.width, bitmapHeader.height, stride);
 }
