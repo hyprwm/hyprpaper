@@ -72,7 +72,7 @@ void reflectImage(unsigned char* image, uint32_t numberOfRows, int stride) {
     int rowStart = 0;
     int rowEnd = numberOfRows - 1;
     std::vector<unsigned char> temp;
-    temp.reserve(stride);
+    temp.resize(stride);
     while (rowStart < rowEnd) {
         memcpy(&temp[0], &image[rowStart * stride], stride);
         memcpy(&image[rowStart * stride], &image[rowEnd * stride], stride);
