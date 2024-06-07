@@ -2,6 +2,7 @@
 
 #include "../defines.hpp"
 #include "../helpers/Jpeg.hpp"
+#include "../helpers/Bmp.hpp"
 #include "../helpers/Webp.hpp"
 
 class CWallpaperTarget {
