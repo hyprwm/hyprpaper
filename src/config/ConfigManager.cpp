@@ -26,8 +26,10 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
         WALLPAPER = std::string(ENVHOME) + WALLPAPER.substr(1);
     }
 
-    if (!std::filesystem::exists(WALLPAPER)) {
-        result.setError("wallpaper failed (no such file)");
+    std::error_code ec;
+
+    if (!std::filesystem::exists(WALLPAPER, ec)) {
+        result.setError((std::string{"wallpaper failed ("} + (ec ? ec.message() : std::string{"no such file"}) + std::string{": "} + WALLPAPER + std::string{")"}).c_str());
         return result;
     }
 
@@ -67,9 +69,11 @@ static Hyprlang::CParseResult handlePreload(const char* C, const char* V) {
         WALLPAPER = std::string(ENVHOME) + WALLPAPER.substr(1);
     }
 
-    if (!std::filesystem::exists(WALLPAPER)) {
+    std::error_code ec;
+
+    if (!std::filesystem::exists(WALLPAPER, ec)) {
         Hyprlang::CParseResult result;
-        result.setError((std::string{"no such file: "} + WALLPAPER).c_str());
+        result.setError(((ec ? ec.message() : std::string{"no such file"}) + std::string{": "} + WALLPAPER).c_str());
         return result;
     }
 
