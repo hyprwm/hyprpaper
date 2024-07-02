@@ -158,6 +158,7 @@ void Events::handlePreferredScale(void* data, wp_fractional_scale_v1* fractional
     if (pLS->fScale != SCALE) {
         pLS->fScale = SCALE;
         std::lock_guard<std::mutex> lg(g_pHyprpaper->m_mtTickMutex);
+        pLS->m_pMonitor->wantsReload = true;
         g_pHyprpaper->tick(true);
     }
 }
