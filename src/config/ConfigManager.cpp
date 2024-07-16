@@ -1,5 +1,6 @@
 #include "ConfigManager.hpp"
 #include "../Hyprpaper.hpp"
+#include <hyprutils/path/Path.hpp>
 
 static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     const std::string COMMAND = C;
@@ -196,14 +197,11 @@ std::string CConfigManager::getMainConfigPath() {
     if (!g_pHyprpaper->m_szExplicitConfigPath.empty())
         return g_pHyprpaper->m_szExplicitConfigPath;
 
-    static const char* xdgConfigHome = getenv("XDG_CONFIG_HOME");
-    std::string configPath;
-    if (!xdgConfigHome)
-        configPath = getenv("HOME") + std::string("/.config");
+    static const auto paths = Hyprutils::Path::findConfig("hyprpaper");
+    if (paths.first.has_value())
+        return paths.first.value();
     else
-        configPath = xdgConfigHome;
-
-    return configPath + "/hypr/hyprpaper.conf";
+        throw std::runtime_error("Could not find config in HOME, XDG_CONFIG_HOME, XDG_CONFIG_DIRS or /etc/hypr.");
 }
 
 // trim from both ends

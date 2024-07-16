@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.4)
 project(hyprpaper
     DESCRIPTION "A blazing fast wayland wallpaper utility"
+    VERSION 0.7.0
 )
 
 set(CMAKE_MESSAGE_LOG_LEVEL "STATUS")
@@ -71,7 +72,7 @@ add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-unused-value -Wno-m
 find_package(Threads REQUIRED)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(deps REQUIRED IMPORTED_TARGET wayland-client wayland-protocols cairo pango pangocairo libjpeg libwebp hyprlang>=0.2.0)
+pkg_check_modules(deps REQUIRED IMPORTED_TARGET wayland-client wayland-protocols cairo pango pangocairo libjpeg libwebp hyprlang>=0.2.0 hyprutils>=0.2.0)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
 
