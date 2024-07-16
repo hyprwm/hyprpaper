@@ -3,10 +3,20 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-    hyprlang.url = "github:hyprwm/hyprlang";
-
     systems.url = "github:nix-systems/default-linux";
+
+    hyprutils = {
+      url = "github:hyprwm/hyprutils";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
+    };
+
+    hyprlang = {
+      url = "github:hyprwm/hyprlang";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
+      inputs.hyprutils.follows = "hyprutils";
+    };
   };
 
   outputs = {
@@ -31,16 +41,18 @@
   in {
     overlays = {
       default = self.overlays.hyprpaper;
-      hyprpaper = final: prev: rec {
-        hyprpaper = final.callPackage ./nix/default.nix {
-          stdenv = final.gcc13Stdenv;
-          version = "0.pre" + "+date=" + (mkDate (self.lastModifiedDate or "19700101")) + "_" + (self.shortRev or "dirty");
-          commit = self.rev or "";
-          inherit (final.xorg) libXdmcp;
-          inherit (inputs.hyprlang.packages.${final.system}) hyprlang;
-        };
-        hyprpaper-debug = hyprpaper.override {debug = true;};
-      };
+      hyprpaper = lib.composeManyExtensions [
+        inputs.hyprlang.overlays.default
+        inputs.hyprutils.overlays.default
+        (final: prev: rec {
+          hyprpaper = final.callPackage ./nix/default.nix {
+            stdenv = final.gcc13Stdenv;
+            version = "0.7.0" + "+date=" + (mkDate (self.lastModifiedDate or "19700101")) + "_" + (self.shortRev or "dirty");
+            commit = self.rev or "";
+          };
+          hyprpaper-debug = hyprpaper.override {debug = true;};
+        })
+      ];
     };
 
     packages = eachSystem (system: {
