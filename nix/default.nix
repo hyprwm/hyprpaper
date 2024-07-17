@@ -8,6 +8,8 @@
   file,
   fribidi,
   hyprlang,
+  hyprutils,
+  hyprwayland-scanner,
   libdatrie,
   libGL,
   libjpeg,
@@ -22,7 +24,7 @@
   wayland,
   wayland-protocols,
   wayland-scanner,
-  libXdmcp,
+  xorg,
   commit,
   debug ? false,
   version ? "git",
@@ -45,6 +47,7 @@ stdenv.mkDerivation {
 
   nativeBuildInputs = [
     cmake
+    hyprwayland-scanner
     pkg-config
   ];
 
@@ -54,6 +57,7 @@ stdenv.mkDerivation {
     file
     fribidi
     hyprlang
+    hyprutils
     libdatrie
     libGL
     libjpeg
@@ -67,15 +71,15 @@ stdenv.mkDerivation {
     wayland
     wayland-protocols
     wayland-scanner
-    libXdmcp
+    xorg.libXdmcp
     util-linux
   ];
 
   meta = with lib; {
-    homepage = "https://github.com/hyprwm/hyprpaper";
     description = "A blazing fast wayland wallpaper utility with IPC controls";
+    homepage = "https://github.com/hyprwm/hyprpaper";
     license = licenses.bsd3;
-    platforms = platforms.linux;
     mainProgram = "hyprpaper";
+    platforms = platforms.linux;
   };
 }
