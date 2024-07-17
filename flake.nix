@@ -17,6 +17,12 @@
       inputs.systems.follows = "systems";
       inputs.hyprutils.follows = "hyprutils";
     };
+
+    hyprwayland-scanner = {
+      url = "github:hyprwm/hyprwayland-scanner";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
+    };
   };
 
   outputs = {
@@ -44,6 +50,7 @@
       hyprpaper = lib.composeManyExtensions [
         inputs.hyprlang.overlays.default
         inputs.hyprutils.overlays.default
+        inputs.hyprwayland-scanner.overlays.default
         (final: prev: rec {
           hyprpaper = final.callPackage ./nix/default.nix {
             stdenv = final.gcc13Stdenv;
