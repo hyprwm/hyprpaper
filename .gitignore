@@ -19,6 +19,11 @@ result
 *-protocol.h
 .ccls-cache
 
+protocols/*.hpp
+protocols/*.cpp
+
+.cache/
+
 hyprctl/hyprctl
 
 gmon.out

@@ -5,18 +5,18 @@
 class CIPCSocket;
 
 class CConfigManager {
-public:
+  public:
     // gets all the data from the config
     CConfigManager();
-    void parse();
+    void                               parse();
 
-    std::deque<std::string> m_dRequestedPreloads;
-    std::string getMainConfigPath();
-    std::string trimPath(std::string path);
+    std::deque<std::string>            m_dRequestedPreloads;
+    std::string                        getMainConfigPath();
+    std::string                        trimPath(std::string path);
 
     std::unique_ptr<Hyprlang::CConfig> config;
 
-private:
+  private:
     friend class CIPCSocket;
 };
 

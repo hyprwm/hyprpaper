@@ -1,24 +1,23 @@
 #pragma once
 
 #include "../defines.hpp"
+#include "protocols/fractional-scale-v1.hpp"
+#include "protocols/viewporter.hpp"
+#include "protocols/wayland.hpp"
+#include "protocols/wlr-layer-shell-unstable-v1.hpp"
 
 struct SMonitor;
 
 class CLayerSurface {
-public:
+  public:
     explicit CLayerSurface(SMonitor*);
     ~CLayerSurface();
 
-    SMonitor* m_pMonitor = nullptr;
+    SMonitor*                 m_pMonitor = nullptr;
 
-    zwlr_layer_surface_v1* pLayerSurface = nullptr;
-    wl_surface* pSurface = nullptr;
-
-    wl_cursor_theme* pCursorTheme = nullptr;
-    wl_cursor_image* pCursorImg = nullptr;
-    wl_surface* pCursorSurface = nullptr;
-
-    wp_fractional_scale_v1* pFractionalScaleInfo = nullptr;
-    wp_viewport* pViewport = nullptr;
-    double fScale = 1.0;
+    SP<CCZwlrLayerSurfaceV1>  pLayerSurface        = nullptr;
+    SP<CCWlSurface>           pSurface             = nullptr;
+    SP<CCWpFractionalScaleV1> pFractionalScaleInfo = nullptr;
+    SP<CCWpViewport>          pViewport            = nullptr;
+    double                    fScale               = 1.0;
 };

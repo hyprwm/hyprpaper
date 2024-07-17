@@ -1,6 +1,7 @@
 #include "ConfigManager.hpp"
 #include "../Hyprpaper.hpp"
 #include <hyprutils/path/Path.hpp>
+#include <filesystem>
 
 static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     const std::string COMMAND = C;
@@ -12,19 +13,19 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
         return result;
     }
 
-    auto MONITOR = VALUE.substr(0, VALUE.find_first_of(','));
+    auto MONITOR   = VALUE.substr(0, VALUE.find_first_of(','));
     auto WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(VALUE.find_first_of(',') + 1));
 
     bool contain = false;
 
     if (WALLPAPER.find("contain:") == 0) {
         WALLPAPER = WALLPAPER.substr(8);
-        contain = true;
+        contain   = true;
     }
 
     if (WALLPAPER[0] == '~') {
         static const char* const ENVHOME = getenv("HOME");
-        WALLPAPER = std::string(ENVHOME) + WALLPAPER.substr(1);
+        WALLPAPER                        = std::string(ENVHOME) + WALLPAPER.substr(1);
     }
 
     std::error_code ec;
@@ -34,20 +35,21 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
         return result;
     }
 
-    if (std::find(g_pConfigManager->m_dRequestedPreloads.begin(), g_pConfigManager->m_dRequestedPreloads.end(), WALLPAPER) == g_pConfigManager->m_dRequestedPreloads.end() && !g_pHyprpaper->isPreloaded(WALLPAPER)) {
+    if (std::find(g_pConfigManager->m_dRequestedPreloads.begin(), g_pConfigManager->m_dRequestedPreloads.end(), WALLPAPER) == g_pConfigManager->m_dRequestedPreloads.end() &&
+        !g_pHyprpaper->isPreloaded(WALLPAPER)) {
         result.setError("wallpaper failed (not preloaded)");
         return result;
     }
 
     g_pHyprpaper->clearWallpaperFromMonitor(MONITOR);
-    g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR] = WALLPAPER;
+    g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR]            = WALLPAPER;
     g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
 
     if (MONITOR.empty()) {
         for (auto& m : g_pHyprpaper->m_vMonitors) {
             if (!m->hasATarget || m->wildcard) {
                 g_pHyprpaper->clearWallpaperFromMonitor(m->name);
-                g_pHyprpaper->m_mMonitorActiveWallpapers[m->name] = WALLPAPER;
+                g_pHyprpaper->m_mMonitorActiveWallpapers[m->name]            = WALLPAPER;
                 g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].contain = contain;
             }
         }
@@ -61,13 +63,13 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
 }
 
 static Hyprlang::CParseResult handlePreload(const char* C, const char* V) {
-    const std::string COMMAND = C;
-    const std::string VALUE = V;
-    auto WALLPAPER = VALUE;
+    const std::string COMMAND   = C;
+    const std::string VALUE     = V;
+    auto              WALLPAPER = VALUE;
 
     if (WALLPAPER[0] == '~') {
         static const char* const ENVHOME = getenv("HOME");
-        WALLPAPER = std::string(ENVHOME) + WALLPAPER.substr(1);
+        WALLPAPER                        = std::string(ENVHOME) + WALLPAPER.substr(1);
     }
 
     std::error_code ec;
@@ -84,8 +86,8 @@ static Hyprlang::CParseResult handlePreload(const char* C, const char* V) {
 }
 
 static Hyprlang::CParseResult handleUnloadAll(const char* C, const char* V) {
-    const std::string COMMAND = C;
-    const std::string VALUE = V;
+    const std::string        COMMAND = C;
+    const std::string        VALUE   = V;
     std::vector<std::string> toUnload;
 
     for (auto& [name, target] : g_pHyprpaper->m_mWallpaperTargets) {
@@ -112,16 +114,16 @@ static Hyprlang::CParseResult handleUnloadAll(const char* C, const char* V) {
 }
 
 static Hyprlang::CParseResult handleUnload(const char* C, const char* V) {
-    const std::string COMMAND = C;
-    const std::string VALUE = V;
-    auto WALLPAPER = VALUE;
+    const std::string COMMAND   = C;
+    const std::string VALUE     = V;
+    auto              WALLPAPER = VALUE;
 
     if (VALUE == "all" || VALUE == "unused")
         return handleUnloadAll(C, V);
 
     if (WALLPAPER[0] == '~') {
         static const char* const ENVHOME = getenv("HOME");
-        WALLPAPER = std::string(ENVHOME) + WALLPAPER.substr(1);
+        WALLPAPER                        = std::string(ENVHOME) + WALLPAPER.substr(1);
     }
 
     g_pHyprpaper->unloadWallpaper(WALLPAPER);
@@ -131,9 +133,9 @@ static Hyprlang::CParseResult handleUnload(const char* C, const char* V) {
 
 static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
     const std::string COMMAND = C;
-    const std::string VALUE = V;
+    const std::string VALUE   = V;
 
-    auto WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(VALUE.find_first_of(',') + 1));
+    auto              WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(VALUE.find_first_of(',') + 1));
 
     if (WALLPAPER.find("contain:") == 0) {
         WALLPAPER = WALLPAPER.substr(8);
@@ -189,8 +191,7 @@ void CConfigManager::parse() {
     const auto ERROR = config->parse();
 
     if (ERROR.error)
-        std::cout << "Error in config: \n"
-                  << ERROR.getError() << "\n";
+        std::cout << "Error in config: \n" << ERROR.getError() << "\n";
 }
 
 std::string CConfigManager::getMainConfigPath() {
@@ -211,6 +212,6 @@ std::string CConfigManager::trimPath(std::string path) {
 
     // trims whitespaces, tabs and new line feeds
     size_t pathStartIndex = path.find_first_not_of(" \t\r\n");
-    size_t pathEndIndex = path.find_last_not_of(" \t\r\n");
+    size_t pathEndIndex   = path.find_last_not_of(" \t\r\n");
     return path.substr(pathStartIndex, pathEndIndex - pathStartIndex + 1);
 }

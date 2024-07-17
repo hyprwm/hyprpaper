@@ -6,17 +6,16 @@
 #include "../helpers/Webp.hpp"
 
 class CWallpaperTarget {
-public:
-
+  public:
     ~CWallpaperTarget();
 
-    void        create(const std::string& path);
+    void             create(const std::string& path);
 
-    std::string m_szPath;
+    std::string      m_szPath;
 
-    Vector2D    m_vSize;
+    Vector2D         m_vSize;
 
-    bool        m_bHasAlpha = true;
+    bool             m_bHasAlpha = true;
 
     cairo_surface_t* m_pCairoSurface;
 };

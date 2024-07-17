@@ -30,23 +30,22 @@ The development files of these packages need to be installed on the system for `
 - libjpeg-turbo
 - libwebp
 - hyprlang
-
-Please note hyprpaper > 0.5.0 depends on [hyprlang](https://github.com/hyprwm/hyprlang) which is new
-and might not be packaged for your distro yet. If that's the case, build and install it from source.
+- hyprutils
+- hyprwayland-scanner
 
 To install all of these in Fedora, run this command:
 ```
-sudo dnf install wayland-devel wayland-protocols-devel hyprlang-devel pango-devel cairo-devel file-devel libglvnd-devel libglvnd-core-devel libjpeg-turbo-devel libwebp-devel gcc-c++
+sudo dnf install wayland-devel wayland-protocols-devel hyprlang-devel pango-devel cairo-devel file-devel libglvnd-devel libglvnd-core-devel libjpeg-turbo-devel libwebp-devel gcc-c++ hyprutils-devel hyprwayland-scanner
 ```
 
 On Arch:
 ```
-sudo pacman -S ninja gcc wayland-protocols libjpeg-turbo libwebp pango cairo pkgconf cmake libglvnd wayland
+sudo pacman -S ninja gcc wayland-protocols libjpeg-turbo libwebp pango cairo pkgconf cmake libglvnd wayland hyprutils hyprwayland-scanner hyprlang
 ```
 
 On OpenSUSE:
 ```
-sudo zypper install ninja gcc-c++ wayland-protocols-devel Mesa-libGLESv3-devel file-devel
+sudo zypper install ninja gcc-c++ wayland-protocols-devel Mesa-libGLESv3-devel file-devel hyprutils-devel hyprwayland-scanner
 ```
 
 ### Building

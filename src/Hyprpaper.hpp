@@ -2,7 +2,6 @@
 
 #include "config/ConfigManager.hpp"
 #include "defines.hpp"
-#include "events/Events.hpp"
 #include "helpers/MiscFunctions.hpp"
 #include "helpers/Monitor.hpp"
 #include "helpers/PoolBuffer.hpp"
@@ -10,61 +9,72 @@
 #include "render/WallpaperTarget.hpp"
 #include <mutex>
 
+#include "protocols/cursor-shape-v1.hpp"
+#include "protocols/fractional-scale-v1.hpp"
+#include "protocols/linux-dmabuf-v1.hpp"
+#include "protocols/viewporter.hpp"
+#include "protocols/wayland.hpp"
+#include "protocols/wlr-layer-shell-unstable-v1.hpp"
+
 struct SWallpaperRenderData {
     bool contain = false;
 };
 
 class CHyprpaper {
-public:
+  public:
     // important
-    wl_display* m_sDisplay;                                       // assured
-    wl_compositor* m_sCompositor;                                 // assured
-    wl_shm* m_sSHM;                                               // assured
-    zwlr_layer_shell_v1* m_sLayerShell = nullptr;                 // expected
-    wp_fractional_scale_manager_v1* m_sFractionalScale = nullptr; // will remain null if not bound
-    wp_viewporter* m_sViewporter = nullptr;                       // expected
+    wl_display*                      m_sDisplay = nullptr;
+    SP<CCWlCompositor>               m_pCompositor;
+    SP<CCWlShm>                      m_pSHM;
+    SP<CCZwlrLayerShellV1>           m_pLayerShell;
+    SP<CCWpFractionalScaleManagerV1> m_pFractionalScale;
+    SP<CCWpViewporter>               m_pViewporter;
+    SP<CCWlSeat>                     m_pSeat;
+    SP<CCWlPointer>                  m_pSeatPointer;
+    SP<CCWpCursorShapeDeviceV1>      m_pSeatCursorShapeDevice;
+    SP<CCWpCursorShapeManagerV1>     m_pCursorShape;
 
     // init the utility
     CHyprpaper();
-    void init();
-    void tick(bool force);
+    void                                                  init();
+    void                                                  tick(bool force);
 
-    std::unordered_map<std::string, CWallpaperTarget> m_mWallpaperTargets;
-    std::unordered_map<std::string, std::string> m_mMonitorActiveWallpapers;
+    std::unordered_map<std::string, CWallpaperTarget>     m_mWallpaperTargets;
+    std::unordered_map<std::string, std::string>          m_mMonitorActiveWallpapers;
     std::unordered_map<std::string, SWallpaperRenderData> m_mMonitorWallpaperRenderData;
-    std::unordered_map<SMonitor*, CWallpaperTarget*> m_mMonitorActiveWallpaperTargets;
-    std::vector<std::unique_ptr<SPoolBuffer>> m_vBuffers;
-    std::vector<std::unique_ptr<SMonitor>> m_vMonitors;
+    std::unordered_map<SMonitor*, CWallpaperTarget*>      m_mMonitorActiveWallpaperTargets;
+    std::vector<std::unique_ptr<SPoolBuffer>>             m_vBuffers;
+    std::vector<std::unique_ptr<SMonitor>>                m_vMonitors;
 
-    std::string m_szExplicitConfigPath;
-    bool m_bNoFractionalScale = false;
+    std::string                                           m_szExplicitConfigPath;
+    bool                                                  m_bNoFractionalScale = false;
 
-    void removeOldHyprpaperImages();
-    void preloadAllWallpapersFromConfig();
-    void recheckAllMonitors();
-    void ensureMonitorHasActiveWallpaper(SMonitor*);
-    void createLSForMonitor(SMonitor*);
-    void renderWallpaperForMonitor(SMonitor*);
-    void createBuffer(SPoolBuffer*, int32_t, int32_t, uint32_t);
-    void destroyBuffer(SPoolBuffer*);
-    int createPoolFile(size_t, std::string&);
-    bool setCloexec(const int&);
-    void clearWallpaperFromMonitor(const std::string&);
-    SMonitor* getMonitorFromName(const std::string&);
-    bool isPreloaded(const std::string&);
-    void recheckMonitor(SMonitor*);
-    void ensurePoolBuffersPresent();
-    SPoolBuffer* getPoolBuffer(SMonitor*, CWallpaperTarget*);
-    void unloadWallpaper(const std::string&);
-    void createSeat(wl_seat*);
-    bool lockSingleInstance(); // fails on multi-instance
-    void unlockSingleInstance();
+    void                                                  removeOldHyprpaperImages();
+    void                                                  preloadAllWallpapersFromConfig();
+    void                                                  recheckAllMonitors();
+    void                                                  ensureMonitorHasActiveWallpaper(SMonitor*);
+    void                                                  createLSForMonitor(SMonitor*);
+    void                                                  renderWallpaperForMonitor(SMonitor*);
+    void                                                  createBuffer(SPoolBuffer*, int32_t, int32_t, uint32_t);
+    void                                                  destroyBuffer(SPoolBuffer*);
+    int                                                   createPoolFile(size_t, std::string&);
+    bool                                                  setCloexec(const int&);
+    void                                                  clearWallpaperFromMonitor(const std::string&);
+    SMonitor*                                             getMonitorFromName(const std::string&);
+    bool                                                  isPreloaded(const std::string&);
+    void                                                  recheckMonitor(SMonitor*);
+    void                                                  ensurePoolBuffersPresent();
+    SPoolBuffer*                                          getPoolBuffer(SMonitor*, CWallpaperTarget*);
+    void                                                  unloadWallpaper(const std::string&);
+    void                                                  createSeat(SP<CCWlSeat>);
+    bool                                                  lockSingleInstance(); // fails on multi-instance
+    void                                                  unlockSingleInstance();
 
-    std::mutex m_mtTickMutex;
+    std::mutex                                            m_mtTickMutex;
 
-    SMonitor* m_pLastMonitor = nullptr;
+    SMonitor*                                             m_pLastMonitor = nullptr;
 
-private:
+  private:
     bool m_bShouldExit = false;
 };
 

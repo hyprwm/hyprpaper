@@ -6,6 +6,47 @@
 
 CHyprpaper::CHyprpaper() = default;
 
+static void handleGlobal(CCWlRegistry* registry, uint32_t name, const char* interface, uint32_t version) {
+    if (strcmp(interface, wl_compositor_interface.name) == 0) {
+        g_pHyprpaper->m_pCompositor = makeShared<CCWlCompositor>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &wl_compositor_interface, 4));
+    } else if (strcmp(interface, wl_shm_interface.name) == 0) {
+        g_pHyprpaper->m_pSHM = makeShared<CCWlShm>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &wl_shm_interface, 1));
+    } else if (strcmp(interface, wl_output_interface.name) == 0) {
+        g_pHyprpaper->m_mtTickMutex.lock();
+
+        const auto PMONITOR    = g_pHyprpaper->m_vMonitors.emplace_back(std::make_unique<SMonitor>()).get();
+        PMONITOR->wayland_name = name;
+        PMONITOR->name         = "";
+        PMONITOR->output       = makeShared<CCWlOutput>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &wl_output_interface, 4));
+        PMONITOR->registerListeners();
+
+        g_pHyprpaper->m_mtTickMutex.unlock();
+    } else if (strcmp(interface, wl_seat_interface.name) == 0) {
+        g_pHyprpaper->createSeat(makeShared<CCWlSeat>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &wl_seat_interface, 1)));
+    } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
+        g_pHyprpaper->m_pLayerShell = makeShared<CCZwlrLayerShellV1>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &zwlr_layer_shell_v1_interface, 1));
+    } else if (strcmp(interface, wp_fractional_scale_manager_v1_interface.name) == 0 && !g_pHyprpaper->m_bNoFractionalScale) {
+        g_pHyprpaper->m_pFractionalScale =
+            makeShared<CCWpFractionalScaleManagerV1>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &wp_fractional_scale_manager_v1_interface, 1));
+    } else if (strcmp(interface, wp_viewporter_interface.name) == 0) {
+        g_pHyprpaper->m_pViewporter = makeShared<CCWpViewporter>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &wp_viewporter_interface, 1));
+    } else if (strcmp(interface, wp_cursor_shape_manager_v1_interface.name) == 0) {
+        g_pHyprpaper->m_pCursorShape =
+            makeShared<CCWpCursorShapeManagerV1>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &wp_cursor_shape_manager_v1_interface, 1));
+    }
+}
+
+static void handleGlobalRemove(CCWlRegistry* registry, uint32_t name) {
+    for (auto& m : g_pHyprpaper->m_vMonitors) {
+        if (m->wayland_name == name) {
+            Debug::log(LOG, "Destroying output %s", m->name.c_str());
+            g_pHyprpaper->clearWallpaperFromMonitor(m->name);
+            std::erase_if(g_pHyprpaper->m_vMonitors, [&](const auto& other) { return other->wayland_name == name; });
+            return;
+        }
+    }
+}
+
 void CHyprpaper::init() {
 
     if (!lockSingleInstance()) {
@@ -23,8 +64,9 @@ void CHyprpaper::init() {
     }
 
     // run
-    wl_registry* registry = wl_display_get_registry(m_sDisplay);
-    wl_registry_add_listener(registry, &Events::registryListener, nullptr);
+    auto REGISTRY = makeShared<CCWlRegistry>((wl_proxy*)wl_display_get_registry(m_sDisplay));
+    REGISTRY->setGlobal(::handleGlobal);
+    REGISTRY->setGlobalRemove(::handleGlobalRemove);
 
     wl_display_roundtrip(m_sDisplay);
 
@@ -33,7 +75,7 @@ void CHyprpaper::init() {
     }
 
     g_pConfigManager = std::make_unique<CConfigManager>();
-    g_pIPCSocket = std::make_unique<CIPCSocket>();
+    g_pIPCSocket     = std::make_unique<CIPCSocket>();
 
     g_pConfigManager->parse();
 
@@ -130,9 +172,9 @@ void CHyprpaper::preloadAllWallpapersFromConfig() {
 
         m_mWallpaperTargets[wp] = CWallpaperTarget();
         if (std::filesystem::is_symlink(wp)) {
-            auto real_wp = std::filesystem::read_symlink(wp);
+            auto                  real_wp       = std::filesystem::read_symlink(wp);
             std::filesystem::path absolute_path = std::filesystem::path(wp).parent_path() / real_wp;
-            absolute_path = absolute_path.lexically_normal();
+            absolute_path                       = absolute_path.lexically_normal();
             m_mWallpaperTargets[wp].create(absolute_path);
         } else {
             m_mWallpaperTargets[wp].create(wp);
@@ -148,8 +190,28 @@ void CHyprpaper::recheckAllMonitors() {
     }
 }
 
-void CHyprpaper::createSeat(wl_seat* pSeat) {
-    wl_seat_add_listener(pSeat, &Events::seatListener, pSeat);
+void CHyprpaper::createSeat(SP<CCWlSeat> pSeat) {
+    m_pSeat = pSeat;
+
+    pSeat->setCapabilities([this](CCWlSeat* r, wl_seat_capability caps) {
+        if (caps & WL_SEAT_CAPABILITY_POINTER) {
+            m_pSeatPointer = makeShared<CCWlPointer>(m_pSeat->sendGetPointer());
+            if (!m_pCursorShape)
+                Debug::log(WARN, "No cursor-shape-v1 support from the compositor: cursor will be blank");
+            else
+                m_pSeatCursorShapeDevice = makeShared<CCWpCursorShapeDeviceV1>(m_pCursorShape->sendGetPointer(m_pSeatPointer->resource()));
+
+            m_pSeatPointer->setEnter([this](CCWlPointer* r, uint32_t serial, wl_resource* surface, wl_fixed_t x, wl_fixed_t y) {
+                if (!m_pCursorShape) {
+                    m_pSeatPointer->sendSetCursor(serial, nullptr, 0, 0);
+                    return;
+                }
+
+                m_pSeatCursorShapeDevice->sendSetShape(serial, wpCursorShapeDeviceV1Shape::WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
+            });
+        } else
+            Debug::log(LOG, "No pointer capability from the compositor");
+    });
 }
 
 void CHyprpaper::recheckMonitor(SMonitor* pMonitor) {
@@ -157,24 +219,7 @@ void CHyprpaper::recheckMonitor(SMonitor* pMonitor) {
 
     if (pMonitor->wantsACK) {
         pMonitor->wantsACK = false;
-        zwlr_layer_surface_v1_ack_configure(pMonitor->pCurrentLayerSurface->pLayerSurface, pMonitor->configureSerial);
-
-        if (!pMonitor->pCurrentLayerSurface->pCursorImg) {
-            int XCURSOR_SIZE = 24;
-            if (const auto CURSORSIZENV = getenv("XCURSOR_SIZE"); CURSORSIZENV) {
-                try {
-                    if (XCURSOR_SIZE = std::stoi(CURSORSIZENV); XCURSOR_SIZE <= 0) {
-                        throw std::exception();
-                    }
-                } catch (...) {
-                    Debug::log(WARN, "XCURSOR_SIZE environment variable is set incorrectly");
-                    XCURSOR_SIZE = 24;
-                }
-            }
-
-            pMonitor->pCurrentLayerSurface->pCursorTheme = wl_cursor_theme_load(getenv("XCURSOR_THEME"), XCURSOR_SIZE * pMonitor->scale, m_sSHM);
-            pMonitor->pCurrentLayerSurface->pCursorImg = wl_cursor_theme_get_cursor(pMonitor->pCurrentLayerSurface->pCursorTheme, "left_ptr")->images[0];
-        }
+        pMonitor->pCurrentLayerSurface->pLayerSurface->sendAckConfigure(pMonitor->configureSerial);
     }
 
     if (pMonitor->wantsReload) {
@@ -184,7 +229,7 @@ void CHyprpaper::recheckMonitor(SMonitor* pMonitor) {
 }
 
 void CHyprpaper::removeOldHyprpaperImages() {
-    int cleaned = 0;
+    int      cleaned     = 0;
     uint64_t memoryFreed = 0;
 
     for (const auto& entry : std::filesystem::directory_iterator(std::string(getenv("XDG_RUNTIME_DIR")))) {
@@ -209,11 +254,11 @@ void CHyprpaper::removeOldHyprpaperImages() {
 }
 
 SMonitor* CHyprpaper::getMonitorFromName(const std::string& monname) {
-    bool useDesc = false;
-    std::string desc = "";
+    bool        useDesc = false;
+    std::string desc    = "";
     if (monname.find("desc:") == 0) {
         useDesc = true;
-        desc = monname.substr(5);
+        desc    = monname.substr(5);
     }
 
     for (auto& m : m_vMonitors) {
@@ -285,10 +330,10 @@ void CHyprpaper::clearWallpaperFromMonitor(const std::string& monname) {
 
         PMONITOR->pCurrentLayerSurface = nullptr;
 
-        PMONITOR->wantsACK = false;
+        PMONITOR->wantsACK    = false;
         PMONITOR->wantsReload = false;
         PMONITOR->initialized = false;
-        PMONITOR->readyForLS = true;
+        PMONITOR->readyForLS  = true;
     }
 }
 
@@ -300,7 +345,7 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
 
     if (it == m_mMonitorActiveWallpaperTargets.end()) {
         m_mMonitorActiveWallpaperTargets[pMonitor] = nullptr;
-        it = m_mMonitorActiveWallpaperTargets.find(pMonitor);
+        it                                         = m_mMonitorActiveWallpaperTargets.find(pMonitor);
     }
 
     if (it->second)
@@ -411,10 +456,10 @@ int CHyprpaper::createPoolFile(size_t size, std::string& name) {
 
 void CHyprpaper::createBuffer(SPoolBuffer* pBuffer, int32_t w, int32_t h, uint32_t format) {
     const size_t STRIDE = w * 4;
-    const size_t SIZE = STRIDE * h;
+    const size_t SIZE   = STRIDE * h;
 
-    std::string name;
-    const auto FD = createPoolFile(SIZE, name);
+    std::string  name;
+    const auto   FD = createPoolFile(SIZE, name);
 
     if (FD == -1) {
         Debug::log(CRIT, "Unable to create pool file!");
@@ -422,22 +467,22 @@ void CHyprpaper::createBuffer(SPoolBuffer* pBuffer, int32_t w, int32_t h, uint32
     }
 
     const auto DATA = mmap(nullptr, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, FD, 0);
-    const auto POOL = wl_shm_create_pool(g_pHyprpaper->m_sSHM, FD, SIZE);
-    pBuffer->buffer = wl_shm_pool_create_buffer(POOL, 0, w, h, STRIDE, format);
-    wl_shm_pool_destroy(POOL);
+    auto       POOL = makeShared<CCWlShmPool>(g_pHyprpaper->m_pSHM->sendCreatePool(FD, SIZE));
+    pBuffer->buffer = makeShared<CCWlBuffer>(POOL->sendCreateBuffer(0, w, h, STRIDE, format));
+    POOL.reset();
 
     close(FD);
 
-    pBuffer->size = SIZE;
-    pBuffer->data = DATA;
-    pBuffer->surface = cairo_image_surface_create_for_data((unsigned char*)DATA, CAIRO_FORMAT_ARGB32, w, h, STRIDE);
-    pBuffer->cairo = cairo_create(pBuffer->surface);
+    pBuffer->size      = SIZE;
+    pBuffer->data      = DATA;
+    pBuffer->surface   = cairo_image_surface_create_for_data((unsigned char*)DATA, CAIRO_FORMAT_ARGB32, w, h, STRIDE);
+    pBuffer->cairo     = cairo_create(pBuffer->surface);
     pBuffer->pixelSize = Vector2D(w, h);
-    pBuffer->name = name;
+    pBuffer->name      = name;
 }
 
 void CHyprpaper::destroyBuffer(SPoolBuffer* pBuffer) {
-    wl_buffer_destroy(pBuffer->buffer);
+    pBuffer->buffer.reset();
     cairo_destroy(pBuffer->cairo);
     cairo_surface_destroy(pBuffer->surface);
     munmap(pBuffer->data, pBuffer->size);
@@ -447,7 +492,10 @@ void CHyprpaper::destroyBuffer(SPoolBuffer* pBuffer) {
 
 SPoolBuffer* CHyprpaper::getPoolBuffer(SMonitor* pMonitor, CWallpaperTarget* pWallpaperTarget) {
     const auto IT = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
-        auto scale = std::round((pMonitor->pCurrentLayerSurface && pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale) * 120.0) / 120.0;
+        auto scale =
+            std::round((pMonitor->pCurrentLayerSurface && pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale) *
+                       120.0) /
+            120.0;
         return el->target == pWallpaperTarget->m_szPath && vectorDeltaLessThan(el->pixelSize, pMonitor->size * scale, 1);
     });
 
@@ -464,7 +512,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         recheckMonitor(pMonitor);
 
     const auto PWALLPAPERTARGET = m_mMonitorActiveWallpaperTargets[pMonitor];
-    const auto CONTAIN = m_mMonitorWallpaperRenderData[pMonitor->name].contain;
+    const auto CONTAIN          = m_mMonitorWallpaperRenderData[pMonitor->name].contain;
 
     if (!PWALLPAPERTARGET) {
         Debug::log(CRIT, "wallpaper target null in render??");
@@ -485,10 +533,10 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         }
     }
 
-    const double SURFACESCALE = pMonitor->pCurrentLayerSurface && pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale;
-    const Vector2D DIMENSIONS = Vector2D{std::round(pMonitor->size.x * SURFACESCALE), std::round(pMonitor->size.y * SURFACESCALE)};
+    const double   SURFACESCALE = pMonitor->pCurrentLayerSurface && pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale;
+    const Vector2D DIMENSIONS   = Vector2D{std::round(pMonitor->size.x * SURFACESCALE), std::round(pMonitor->size.y * SURFACESCALE)};
 
-    const auto PCAIRO = PBUFFER->cairo;
+    const auto     PCAIRO = PBUFFER->cairo;
     cairo_save(PCAIRO);
     cairo_set_operator(PCAIRO, CAIRO_OPERATOR_CLEAR);
     cairo_paint(PCAIRO);
@@ -502,19 +550,20 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
     // get scale
     // we always do cover
-    double scale;
-    Vector2D origin;
+    double     scale;
+    Vector2D   origin;
 
     const bool LOWASPECTRATIO = pMonitor->size.x / pMonitor->size.y > PWALLPAPERTARGET->m_vSize.x / PWALLPAPERTARGET->m_vSize.y;
     if ((CONTAIN && !LOWASPECTRATIO) || (!CONTAIN && LOWASPECTRATIO)) {
-        scale = DIMENSIONS.x / PWALLPAPERTARGET->m_vSize.x;
+        scale    = DIMENSIONS.x / PWALLPAPERTARGET->m_vSize.x;
         origin.y = -(PWALLPAPERTARGET->m_vSize.y * scale - DIMENSIONS.y) / 2.0 / scale;
     } else {
-        scale = DIMENSIONS.y / PWALLPAPERTARGET->m_vSize.y;
+        scale    = DIMENSIONS.y / PWALLPAPERTARGET->m_vSize.y;
         origin.x = -(PWALLPAPERTARGET->m_vSize.x * scale - DIMENSIONS.x) / 2.0 / scale;
     }
 
-    Debug::log(LOG, "Image data for %s: %s at [%.2f, %.2f], scale: %.2f (original image size: [%i, %i])", pMonitor->name.c_str(), PWALLPAPERTARGET->m_szPath.c_str(), origin.x, origin.y, scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);
+    Debug::log(LOG, "Image data for %s: %s at [%.2f, %.2f], scale: %.2f (original image size: [%i, %i])", pMonitor->name.c_str(), PWALLPAPERTARGET->m_szPath.c_str(), origin.x,
+               origin.y, scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);
 
     cairo_scale(PCAIRO, scale, scale);
     cairo_set_source_surface(PCAIRO, PWALLPAPERTARGET->m_pCairoSurface, origin.x, origin.y);
@@ -533,17 +582,19 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         cairo_set_font_size(PCAIRO, FONTSIZE);
 
         static auto* const PSPLASHCOLOR = reinterpret_cast<Hyprlang::INT* const*>(g_pConfigManager->config->getConfigValuePtr("splash_color")->getDataStaticPtr());
-        
+
         Debug::log(LOG, "Splash color: %x", **PSPLASHCOLOR);
 
-        cairo_set_source_rgba(PCAIRO, ((**PSPLASHCOLOR >> 16) & 0xFF) / 255.0, ((**PSPLASHCOLOR >> 8) & 0xFF) / 255.0, (**PSPLASHCOLOR & 0xFF) / 255.0, ((**PSPLASHCOLOR >> 24) & 0xFF) / 255.0);
+        cairo_set_source_rgba(PCAIRO, ((**PSPLASHCOLOR >> 16) & 0xFF) / 255.0, ((**PSPLASHCOLOR >> 8) & 0xFF) / 255.0, (**PSPLASHCOLOR & 0xFF) / 255.0,
+                              ((**PSPLASHCOLOR >> 24) & 0xFF) / 255.0);
 
         cairo_text_extents_t textExtents;
         cairo_text_extents(PCAIRO, SPLASH.c_str(), &textExtents);
 
         cairo_move_to(PCAIRO, ((DIMENSIONS.x - textExtents.width * scale) / 2.0) / scale, ((DIMENSIONS.y * (100 - **PSPLASHOFFSET)) / 100 - textExtents.height * scale) / scale);
 
-        Debug::log(LOG, "Splash font size: %d, pos: %.2f, %.2f", FONTSIZE, (DIMENSIONS.x - textExtents.width) / 2.0 / scale, ((DIMENSIONS.y * (100 - **PSPLASHOFFSET)) / 100 - textExtents.height * scale) / scale);
+        Debug::log(LOG, "Splash font size: %d, pos: %.2f, %.2f", FONTSIZE, (DIMENSIONS.x - textExtents.width) / 2.0 / scale,
+                   ((DIMENSIONS.y * (100 - **PSPLASHOFFSET)) / 100 - textExtents.height * scale) / scale);
 
         cairo_show_text(PCAIRO, SPLASH.c_str());
 
@@ -553,22 +604,21 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     cairo_restore(PCAIRO);
 
     if (pMonitor->pCurrentLayerSurface) {
-        wl_surface_attach(pMonitor->pCurrentLayerSurface->pSurface, PBUFFER->buffer, 0, 0);
-        wl_surface_set_buffer_scale(pMonitor->pCurrentLayerSurface->pSurface, pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? 1 : pMonitor->scale);
-        wl_surface_damage_buffer(pMonitor->pCurrentLayerSurface->pSurface, 0, 0, 0xFFFF, 0xFFFF);
+        pMonitor->pCurrentLayerSurface->pSurface->sendAttach(PBUFFER->buffer.get(), 0, 0);
+        pMonitor->pCurrentLayerSurface->pSurface->sendSetBufferScale(pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? 1 : pMonitor->scale);
+        pMonitor->pCurrentLayerSurface->pSurface->sendDamageBuffer(0, 0, 0xFFFF, 0xFFFF);
 
         // our wps are always opaque
-        auto opaqueRegion = wl_compositor_create_region(g_pHyprpaper->m_sCompositor);
-        wl_region_add(opaqueRegion, 0, 0, PBUFFER->pixelSize.x, PBUFFER->pixelSize.y);
-        wl_surface_set_opaque_region(pMonitor->pCurrentLayerSurface->pSurface, opaqueRegion);
+        auto opaqueRegion = makeShared<CCWlRegion>(g_pHyprpaper->m_pCompositor->sendCreateRegion());
+        opaqueRegion->sendAdd(0, 0, PBUFFER->pixelSize.x, PBUFFER->pixelSize.y);
+        pMonitor->pCurrentLayerSurface->pSurface->sendSetOpaqueRegion(opaqueRegion.get());
 
         if (pMonitor->pCurrentLayerSurface->pFractionalScaleInfo) {
-            Debug::log(LOG, "Submitting viewport dest size %ix%i for %x", static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)), pMonitor->pCurrentLayerSurface);
-            wp_viewport_set_destination(pMonitor->pCurrentLayerSurface->pViewport, static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)));
+            Debug::log(LOG, "Submitting viewport dest size %ix%i for %x", static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)),
+                       pMonitor->pCurrentLayerSurface);
+            pMonitor->pCurrentLayerSurface->pViewport->sendSetDestination(static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)));
         }
-        wl_surface_commit(pMonitor->pCurrentLayerSurface->pSurface);
-
-        wl_region_destroy(opaqueRegion);
+        pMonitor->pCurrentLayerSurface->pSurface->sendCommit();
     }
 
     // check if we dont need to remove a wallpaper
@@ -585,20 +635,18 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 bool CHyprpaper::lockSingleInstance() {
     const std::string XDG_RUNTIME_DIR = getenv("XDG_RUNTIME_DIR");
 
-    const auto LOCKFILE = XDG_RUNTIME_DIR + "/hyprpaper.lock";
+    const auto        LOCKFILE = XDG_RUNTIME_DIR + "/hyprpaper.lock";
 
     if (std::filesystem::exists(LOCKFILE)) {
         std::ifstream ifs(LOCKFILE);
-        std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+        std::string   content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
 
         try {
             kill(std::stoull(content), 0);
 
             if (errno != ESRCH)
                 return false;
-        } catch (std::exception& e) {
-            ;
-        }
+        } catch (std::exception& e) { ; }
     }
 
     // create lockfile
@@ -613,6 +661,6 @@ bool CHyprpaper::lockSingleInstance() {
 
 void CHyprpaper::unlockSingleInstance() {
     const std::string XDG_RUNTIME_DIR = getenv("XDG_RUNTIME_DIR");
-    const auto LOCKFILE = XDG_RUNTIME_DIR + "/hyprpaper.lock";
+    const auto        LOCKFILE        = XDG_RUNTIME_DIR + "/hyprpaper.lock";
     unlink(LOCKFILE.c_str());
 }

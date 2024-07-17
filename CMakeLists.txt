@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.12)
 project(hyprpaper
     DESCRIPTION "A blazing fast wayland wallpaper utility"
     VERSION 0.7.0
@@ -36,35 +36,6 @@ execute_process(
 #
 #
 
-find_program(WaylandScanner NAMES wayland-scanner)
-message(STATUS "Found WaylandScanner at ${WaylandScanner}")
-execute_process(
-    COMMAND pkg-config --variable=pkgdatadir wayland-protocols
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE WAYLAND_PROTOCOLS_DIR
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
-
-function(protocol protoPath protoName external)
-    if (external)
-        execute_process(
-            COMMAND ${WaylandScanner} client-header ${protoPath} ${protoName}-protocol.h
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-        execute_process(
-            COMMAND ${WaylandScanner} private-code ${protoPath} ${protoName}-protocol.c
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-        target_sources(hyprpaper PRIVATE ${protoName}-protocol.h ${protoName}-protocol.c)
-    else()
-        execute_process(
-            COMMAND ${WaylandScanner} client-header ${WAYLAND_PROTOCOLS_DIR}/${protoPath} ${protoName}-protocol.h
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-        execute_process(
-            COMMAND ${WaylandScanner} private-code ${WAYLAND_PROTOCOLS_DIR}/${protoPath} ${protoName}-protocol.c
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-        target_sources(hyprpaper PRIVATE ${protoName}-protocol.h ${protoName}-protocol.c)
-    endif()
-endfunction()
-
 include_directories(.)
 set(CMAKE_CXX_STANDARD 23)
 add_compile_options(-DWLR_USE_UNSTABLE)
@@ -72,16 +43,50 @@ add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-unused-value -Wno-m
 find_package(Threads REQUIRED)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(deps REQUIRED IMPORTED_TARGET wayland-client wayland-protocols cairo pango pangocairo libjpeg libwebp hyprlang>=0.2.0 hyprutils>=0.2.0)
+pkg_check_modules(deps REQUIRED IMPORTED_TARGET wayland-client wayland-protocols cairo pango pangocairo libjpeg libwebp hyprlang>=0.2.0 hyprutils>=0.2.0 hyprwayland-scanner>=0.4.0)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
 
 add_executable(hyprpaper ${SRCFILES})
 
-protocol("protocols/wlr-layer-shell-unstable-v1.xml" "wlr-layer-shell-unstable-v1" true)
-protocol("stable/xdg-shell/xdg-shell.xml" "xdg-shell" false)
-protocol("stable/viewporter/viewporter.xml" "viewporter" false)
-protocol("staging/fractional-scale/fractional-scale-v1.xml" "fractional-scale-v1" false)
+pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
+message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
+pkg_get_variable(WAYLAND_CLIENT_DIR wayland-client pkgdatadir)
+message(STATUS "Found wayland-client at ${WAYLAND_CLIENT_DIR}")
+
+function(protocolNew protoPath protoName external)
+    if (external)
+        set(path ${CMAKE_SOURCE_DIR}/${protoPath})
+    else()
+        set(path ${WAYLAND_PROTOCOLS_DIR}/${protoPath})
+    endif()
+    add_custom_command(
+        OUTPUT ${CMAKE_SOURCE_DIR}/protocols/${protoName}.cpp
+               ${CMAKE_SOURCE_DIR}/protocols/${protoName}.hpp
+        COMMAND hyprwayland-scanner --client ${path}/${protoName}.xml ${CMAKE_SOURCE_DIR}/protocols/
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+    target_sources(hyprpaper PRIVATE protocols/${protoName}.cpp protocols/${protoName}.hpp)
+endfunction()
+function(protocolWayland)
+    add_custom_command(
+        OUTPUT ${CMAKE_SOURCE_DIR}/protocols/wayland.cpp
+               ${CMAKE_SOURCE_DIR}/protocols/wayland.hpp
+        COMMAND hyprwayland-scanner --wayland-enums --client ${WAYLAND_CLIENT_DIR}/wayland.xml ${CMAKE_SOURCE_DIR}/protocols/
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+    target_sources(hyprpaper PRIVATE protocols/wayland.cpp protocols/wayland.hpp)
+endfunction()
+
+protocolWayland()
+
+protocolNew("protocols" "wlr-layer-shell-unstable-v1" true)
+protocolNew("stable/linux-dmabuf" "linux-dmabuf-v1" false)
+protocolNew("staging/fractional-scale" "fractional-scale-v1" false)
+protocolNew("stable/viewporter" "viewporter" false)
+protocolNew("stable/xdg-shell" "xdg-shell" false)
+protocolNew("staging/cursor-shape" "cursor-shape-v1" false)
+protocolNew("stable/tablet" "tablet-v2" false)
 
 target_compile_definitions(hyprpaper PRIVATE "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
 target_compile_definitions(hyprpaper PRIVATE "-DGIT_BRANCH=\"${GIT_BRANCH}\"")

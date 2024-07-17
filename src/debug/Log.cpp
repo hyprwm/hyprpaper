@@ -9,28 +9,17 @@ void Debug::log(LogLevel level, const char* fmt, ...) {
     std::string levelstr = "";
 
     switch (level) {
-        case LOG:
-            levelstr = "[LOG] ";
-            break;
-        case WARN:
-            levelstr = "[WARN] ";
-            break;
-        case ERR:
-            levelstr = "[ERR] ";
-            break;
-        case CRIT:
-            levelstr = "[CRITICAL] ";
-            break;
-        case INFO:
-            levelstr = "[INFO] ";
-            break;
-        default:
-            break;
+        case LOG: levelstr = "[LOG] "; break;
+        case WARN: levelstr = "[WARN] "; break;
+        case ERR: levelstr = "[ERR] "; break;
+        case CRIT: levelstr = "[CRITICAL] "; break;
+        case INFO: levelstr = "[INFO] "; break;
+        default: break;
     }
 
-    char buf[LOGMESSAGESIZE] = "";
-    char* outputStr;
-    int logLen;
+    char    buf[LOGMESSAGESIZE] = "";
+    char*   outputStr;
+    int     logLen;
 
     va_list args;
     va_start(args, fmt);

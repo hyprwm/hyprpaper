@@ -5,7 +5,7 @@
 
 enum LogLevel {
     NONE = -1,
-    LOG = 0,
+    LOG  = 0,
     WARN,
     ERR,
     CRIT,

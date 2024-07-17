@@ -2,7 +2,6 @@
 
 #include "includes.hpp"
 #include "debug/Log.hpp"
-#include "helpers/Vector2D.hpp"
 
 // git stuff
 #ifndef GIT_COMMIT_HASH
@@ -17,3 +16,11 @@
 #ifndef GIT_DIRTY
 #define GIT_DIRTY "?"
 #endif
+
+#include <hyprutils/math/Vector2D.hpp>
+using namespace Hyprutils::Math;
+
+#include <hyprutils/memory/WeakPtr.hpp>
+using namespace Hyprutils::Memory;
+#define SP Hyprutils::Memory::CSharedPointer
+#define WP Hyprutils::Memory::CWeakPointer

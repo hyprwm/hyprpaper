@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <filesystem>
 
 cairo_surface_t* JPEG::createSurfaceFromJPEG(const std::string& path) {
 
@@ -16,11 +17,11 @@ cairo_surface_t* JPEG::createSurfaceFromJPEG(const std::string& path) {
         exit(1);
     }
 
-    void* imageRawData;
+    void*       imageRawData;
 
     struct stat fileInfo = {};
 
-    const auto FD = open(path.c_str(), O_RDONLY);
+    const auto  FD = open(path.c_str(), O_RDONLY);
 
     fstat(FD, &fileInfo);
 
@@ -33,7 +34,7 @@ cairo_surface_t* JPEG::createSurfaceFromJPEG(const std::string& path) {
     // now the JPEG is in the memory
 
     jpeg_decompress_struct decompressStruct = {};
-    jpeg_error_mgr errorManager = {};
+    jpeg_error_mgr         errorManager     = {};
 
     decompressStruct.err = jpeg_std_error(&errorManager);
     jpeg_create_decompress(&decompressStruct);
@@ -56,13 +57,13 @@ cairo_surface_t* JPEG::createSurfaceFromJPEG(const std::string& path) {
         exit(1);
     }
 
-    const auto CAIRODATA = cairo_image_surface_get_data(cairoSurface);
+    const auto CAIRODATA   = cairo_image_surface_get_data(cairoSurface);
     const auto CAIROSTRIDE = cairo_image_surface_get_stride(cairoSurface);
-    JSAMPROW rowRead;
+    JSAMPROW   rowRead;
 
     while (decompressStruct.output_scanline < decompressStruct.output_height) {
         const auto PROW = CAIRODATA + (decompressStruct.output_scanline * CAIROSTRIDE);
-        rowRead = PROW;
+        rowRead         = PROW;
         jpeg_read_scanlines(&decompressStruct, &rowRead, 1);
     }
 

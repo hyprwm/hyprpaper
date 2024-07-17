@@ -3,25 +3,26 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <filesystem>
 
 class BmpHeader {
-public:
+  public:
     unsigned char format[2];
-    uint32_t sizeOfFile;
-    uint16_t reserved1;
-    uint16_t reserved2;
-    uint32_t dataOffset;
-    uint32_t sizeOfBitmapHeader;
-    uint32_t width;
-    uint32_t height;
-    uint16_t numberOfColors;
-    uint16_t numberOfBitPerPixel;
-    uint32_t compressionMethod;
-    uint32_t imageSize;
-    uint32_t horizontalResolutionPPM;
-    uint32_t verticalResolutionPPM;
-    uint32_t numberOfCollors;
-    uint32_t numberOfImportantCollors;
+    uint32_t      sizeOfFile;
+    uint16_t      reserved1;
+    uint16_t      reserved2;
+    uint32_t      dataOffset;
+    uint32_t      sizeOfBitmapHeader;
+    uint32_t      width;
+    uint32_t      height;
+    uint16_t      numberOfColors;
+    uint16_t      numberOfBitPerPixel;
+    uint32_t      compressionMethod;
+    uint32_t      imageSize;
+    uint32_t      horizontalResolutionPPM;
+    uint32_t      verticalResolutionPPM;
+    uint32_t      numberOfCollors;
+    uint32_t      numberOfImportantCollors;
 
     BmpHeader(std::ifstream& file) {
         file.seekg(0, std::ios::end);
@@ -59,7 +60,7 @@ public:
         if (!imageSize)
             imageSize = sizeOfFile - dataOffset;
 
-        if (imageSize != (width * height * numberOfBitPerPixel/8)) {
+        if (imageSize != (width * height * numberOfBitPerPixel / 8)) {
             Debug::log(ERR, "Unable to parse bitmap header: wrong image size");
             exit(1);
         }
@@ -69,8 +70,8 @@ public:
 };
 
 void reflectImage(unsigned char* image, uint32_t numberOfRows, int stride) {
-    int rowStart = 0;
-    int rowEnd = numberOfRows - 1;
+    int                        rowStart = 0;
+    int                        rowEnd   = numberOfRows - 1;
     std::vector<unsigned char> temp;
     temp.resize(stride);
     while (rowStart < rowEnd) {
@@ -83,8 +84,8 @@ void reflectImage(unsigned char* image, uint32_t numberOfRows, int stride) {
 };
 
 void convertRgbToArgb(std::ifstream& imageStream, unsigned char* outputImage, uint32_t newImageSize) {
-    uint8_t forthBitCounter = 0;
-    unsigned long imgCursor = 0;
+    uint8_t       forthBitCounter = 0;
+    unsigned long imgCursor       = 0;
     while (imgCursor < newImageSize) {
         imageStream.read(reinterpret_cast<char*>(&outputImage[imgCursor]), 1);
         imgCursor++;
@@ -104,12 +105,12 @@ cairo_surface_t* BMP::createSurfaceFromBMP(const std::string& path) {
         exit(1);
     }
 
-    std::ifstream bitmapImageStream(path);
-    BmpHeader bitmapHeader(bitmapImageStream);
+    std::ifstream  bitmapImageStream(path);
+    BmpHeader      bitmapHeader(bitmapImageStream);
 
-    cairo_format_t format = CAIRO_FORMAT_ARGB32;
-    int stride = cairo_format_stride_for_width (format, bitmapHeader.width);
-    unsigned char* imageData = (unsigned char*) malloc(bitmapHeader.height * stride);
+    cairo_format_t format    = CAIRO_FORMAT_ARGB32;
+    int            stride    = cairo_format_stride_for_width(format, bitmapHeader.width);
+    unsigned char* imageData = (unsigned char*)malloc(bitmapHeader.height * stride);
 
     if (bitmapHeader.numberOfBitPerPixel == 24)
         convertRgbToArgb(bitmapImageStream, imageData, bitmapHeader.height * stride);

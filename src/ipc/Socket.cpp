@@ -12,6 +12,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <thread>
 
 void CIPCSocket::initialize() {
     std::thread([&]() {
@@ -22,15 +23,15 @@ void CIPCSocket::initialize() {
             return;
         }
 
-        sockaddr_un SERVERADDRESS = {.sun_family = AF_UNIX};
+        sockaddr_un       SERVERADDRESS = {.sun_family = AF_UNIX};
 
-        const auto HISenv = getenv("HYPRLAND_INSTANCE_SIGNATURE");
-        const auto RUNTIMEdir = getenv("XDG_RUNTIME_DIR");
-        const std::string USERID = std::to_string(getpwuid(getuid())->pw_uid);
+        const auto        HISenv     = getenv("HYPRLAND_INSTANCE_SIGNATURE");
+        const auto        RUNTIMEdir = getenv("XDG_RUNTIME_DIR");
+        const std::string USERID     = std::to_string(getpwuid(getuid())->pw_uid);
 
-        const auto USERDIR = RUNTIMEdir ? RUNTIMEdir + std::string{"/hypr/"} : "/run/user/" + USERID + "/hypr/";
+        const auto        USERDIR = RUNTIMEdir ? RUNTIMEdir + std::string{"/hypr/"} : "/run/user/" + USERID + "/hypr/";
 
-        std::string socketPath = HISenv ? USERDIR + std::string(HISenv) + "/.hyprpaper.sock" : USERDIR + ".hyprpaper.sock";
+        std::string       socketPath = HISenv ? USERDIR + std::string(HISenv) + "/.hyprpaper.sock" : USERDIR + ".hyprpaper.sock";
 
         if (!HISenv)
             mkdir(USERDIR.c_str(), S_IRWXU);
@@ -45,9 +46,9 @@ void CIPCSocket::initialize() {
         listen(SOCKET, 10);
 
         sockaddr_in clientAddress = {};
-        socklen_t clientSize = sizeof(clientAddress);
+        socklen_t   clientSize    = sizeof(clientAddress);
 
-        char readBuffer[1024] = {0};
+        char        readBuffer[1024] = {0};
 
         Debug::log(LOG, "hyprpaper socket started at %s (fd: %i)", socketPath.c_str(), SOCKET);
         while (1) {
@@ -60,13 +61,13 @@ void CIPCSocket::initialize() {
                     Debug::log(LOG, "Accepted incoming socket connection request on fd %i", ACCEPTEDCONNECTION);
                     std::lock_guard<std::mutex> lg(g_pHyprpaper->m_mtTickMutex);
 
-                    auto messageSize = read(ACCEPTEDCONNECTION, readBuffer, 1024);
+                    auto                        messageSize              = read(ACCEPTEDCONNECTION, readBuffer, 1024);
                     readBuffer[messageSize == 1024 ? 1023 : messageSize] = '\0';
                     if (messageSize == 0)
                         break;
                     std::string request(readBuffer);
 
-                    m_szRequest = request;
+                    m_szRequest     = request;
                     m_bRequestReady = true;
 
                     g_pHyprpaper->tick(true);
@@ -75,7 +76,7 @@ void CIPCSocket::initialize() {
                     }
                     write(ACCEPTEDCONNECTION, m_szReply.c_str(), m_szReply.length());
                     m_bReplyReady = false;
-                    m_szReply = "";
+                    m_szReply     = "";
 
                 } while (1);
                 Debug::log(LOG, "Closing Accepted Connection");
@@ -102,8 +103,8 @@ bool CIPCSocket::mainThreadParseRequest() {
     Debug::log(LOG, "Received a request: %s", copy.c_str());
 
     // set default reply
-    m_szReply = "ok";
-    m_bReplyReady = true;
+    m_szReply       = "ok";
+    m_bReplyReady   = true;
     m_bRequestReady = false;
 
     // config commands
@@ -129,7 +130,7 @@ bool CIPCSocket::mainThreadParseRequest() {
             return false;
         }
 
-        m_szReply = "";
+        m_szReply           = "";
         long unsigned int i = 0;
         for (auto& [name, target] : g_pHyprpaper->m_mWallpaperTargets) {
             m_szReply += name;
@@ -151,7 +152,7 @@ bool CIPCSocket::mainThreadParseRequest() {
             return false;
         }
 
-        m_szReply = "";
+        m_szReply           = "";
         long unsigned int i = 0;
         for (auto& [mon, path1] : g_pHyprpaper->m_mMonitorActiveWallpapers) {
             m_szReply += mon + " = " + path1;
