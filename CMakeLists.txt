@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.12)
+
+file(READ "${CMAKE_SOURCE_DIR}/VERSION" VER_RAW)
+string(STRIP ${VER_RAW} VERSION)
+
 project(hyprpaper
     DESCRIPTION "A blazing fast wayland wallpaper utility"
-    VERSION 0.7.0
+    VERSION ${VERSION}
 )
 
 set(CMAKE_MESSAGE_LOG_LEVEL "STATUS")
