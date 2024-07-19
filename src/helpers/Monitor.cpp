@@ -8,7 +8,6 @@ void SMonitor::registerListeners() {
 
     output->setDone([this](CCWlOutput* r) {
         readyForLS = true;
-        std::lock_guard<std::mutex> lg(g_pHyprpaper->m_mtTickMutex);
         if (g_pConfigManager) // don't tick if this is the first roundtrip
             g_pHyprpaper->tick(true);
     });

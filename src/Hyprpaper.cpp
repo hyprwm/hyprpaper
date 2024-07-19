@@ -4,6 +4,7 @@
 #include <fstream>
 #include <signal.h>
 #include <sys/types.h>
+#include <sys/poll.h>
 #include "render/Egl.hpp"
 
 #include "protocols/wayland.hpp"
@@ -21,15 +22,11 @@ static void handleGlobal(CCWlRegistry* registry, uint32_t name, const char* inte
     } else if (strcmp(interface, wl_shm_interface.name) == 0) {
         g_pHyprpaper->m_pSHM = makeShared<CCWlShm>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &wl_shm_interface, 1));
     } else if (strcmp(interface, wl_output_interface.name) == 0) {
-        g_pHyprpaper->m_mtTickMutex.lock();
-
         const auto PMONITOR    = g_pHyprpaper->m_vMonitors.emplace_back(std::make_unique<SMonitor>()).get();
         PMONITOR->wayland_name = name;
         PMONITOR->name         = "";
         PMONITOR->output       = makeShared<CCWlOutput>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &wl_output_interface, 4));
         PMONITOR->registerListeners();
-
-        g_pHyprpaper->m_mtTickMutex.unlock();
     } else if (strcmp(interface, wl_seat_interface.name) == 0) {
         g_pHyprpaper->createSeat(makeShared<CCWlSeat>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &wl_seat_interface, 1)));
     } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
@@ -124,18 +121,66 @@ void CHyprpaper::init() {
     if (std::any_cast<Hyprlang::INT>(g_pConfigManager->config->getConfigValue("ipc")))
         g_pIPCSocket->initialize();
 
-    do {
-        std::lock_guard<std::mutex> lg(m_mtTickMutex);
-        tick(true);
-    } while (wl_display_dispatch(m_sDisplay) != -1);
+    pollfd pollFDs[] = {
+        {
+            .fd     = wl_display_get_fd(m_sDisplay),
+            .events = POLLIN,
+        },
+        {
+            .fd     = g_pIPCSocket->fd,
+            .events = POLLIN,
+        },
+    };
+
+    tick(true);
+
+    while (1) {
+        int ret = poll(pollFDs, 2, 5000 /* 5 seconds, reasonable. Just in case we need to terminate and the signal fails */);
+
+        if (ret < 0) {
+            if (errno == EINTR)
+                continue;
+
+            Debug::log(CRIT, "[core] Polling fds failed with {}", errno);
+            exit(1);
+        }
+
+        for (size_t i = 0; i < 2; ++i) {
+            if (pollFDs[i].revents & POLLHUP) {
+                Debug::log(CRIT, "[core] Disconnected from pollfd id {}", i);
+                exit(1);
+            }
+        }
+
+        if (ret != 0) {
+            if (pollFDs[0].revents & POLLIN) { // wayland
+                wl_display_flush(m_sDisplay);
+                if (wl_display_prepare_read(m_sDisplay) == 0) {
+                    wl_display_read_events(m_sDisplay);
+                    wl_display_dispatch_pending(m_sDisplay);
+                } else
+                    wl_display_dispatch(m_sDisplay);
+            }
+
+            if (pollFDs[1].revents & POLLIN) { // socket
+                if (g_pIPCSocket->parseRequest())
+                    tick(true);
+            }
+
+            // finalize wayland dispatching. Dispatch pending on the queue
+            int ret2 = 0;
+            do {
+                ret2 = wl_display_dispatch_pending(m_sDisplay);
+                wl_display_flush(m_sDisplay);
+            } while (ret2 > 0);
+        }
+    }
 
     unlockSingleInstance();
 }
 
 void CHyprpaper::tick(bool force) {
-    bool reload = g_pIPCSocket && g_pIPCSocket->mainThreadParseRequest();
-
-    if (!reload && !force)
+    if (!force)
         return;
 
     preloadAllWallpapersFromConfig();
@@ -388,7 +433,7 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
 }
 
 void CHyprpaper::createLSForMonitor(SMonitor* pMonitor) {
-    pMonitor->pCurrentLayerSurface = pMonitor->layerSurfaces.emplace_back(std::make_unique<CLayerSurface>(pMonitor)).get();
+    pMonitor->pCurrentLayerSurface = pMonitor->layerSurfaces.emplace_back(makeShared<CLayerSurface>(pMonitor));
 }
 
 bool CHyprpaper::lockSingleInstance() {

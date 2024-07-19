@@ -188,8 +188,8 @@ void CRenderer::renderWallpaperForMonitor(SMonitor* pMonitor) {
         pMonitor->pCurrentLayerSurface->pSurface->sendSetOpaqueRegion(opaqueRegion.get());
 
         if (pMonitor->pCurrentLayerSurface->pFractionalScaleInfo) {
-            Debug::log(LOG, "Submitting viewport dest size %ix%i for %x", static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)),
-                       pMonitor->pCurrentLayerSurface);
+            Debug::log(LOG, "Submitting viewport dest size %ix%i for %lx", static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)),
+                       pMonitor->pCurrentLayerSurface.get());
             pMonitor->pCurrentLayerSurface->pViewport->sendSetDestination(static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)));
         }
         pMonitor->pCurrentLayerSurface->pSurface->sendCommit();
@@ -198,7 +198,7 @@ void CRenderer::renderWallpaperForMonitor(SMonitor* pMonitor) {
     // check if we dont need to remove a wallpaper
     if (pMonitor->layerSurfaces.size() > 1) {
         for (auto it = pMonitor->layerSurfaces.begin(); it != pMonitor->layerSurfaces.end(); it++) {
-            if (pMonitor->pCurrentLayerSurface != it->get()) {
+            if (pMonitor->pCurrentLayerSurface != *it) {
                 pMonitor->layerSurfaces.erase(it);
                 break;
             }
@@ -309,7 +309,7 @@ void CRenderer::renderGpu(SMonitor* pMonitor, SP<CBuffer> buf) {
         origin.x = -(PWALLPAPERTARGET->m_vSize.x * scale - DIMENSIONS.x) / 2.0 / scale;
     }
 
-    renderTexture(PWALLPAPERTARGET->gpu.textureID, CBox{origin, PWALLPAPERTARGET->m_vSize * scale}, buf->pixelSize);
+    renderTexture(PWALLPAPERTARGET->gpu.textureID, CBox{origin * scale, PWALLPAPERTARGET->m_vSize * scale}, buf->pixelSize);
 
     // then, any decoration we got from cairo
     renderTexture(fromTex.texid, {{}, buf->pixelSize}, buf->pixelSize);
@@ -328,7 +328,7 @@ void CRenderer::renderGpu(SMonitor* pMonitor, SP<CBuffer> buf) {
 }
 
 void CRenderer::renderTexture(GLuint texid, const CBox& box, const Vector2D& viewport) {
-    CBox  renderBox = {{}, viewport};
+    CBox  renderBox = box;
 
     float mtx[9];
     float base[9];

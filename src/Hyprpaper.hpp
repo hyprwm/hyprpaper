@@ -74,8 +74,6 @@ class CHyprpaper {
     bool                                                  lockSingleInstance(); // fails on multi-instance
     void                                                  unlockSingleInstance();
 
-    std::mutex                                            m_mtTickMutex;
-
     SMonitor*                                             m_pLastMonitor = nullptr;
 
   private:

@@ -6,6 +6,8 @@
 #include "Renderer.hpp"
 
 CWallpaperTarget::~CWallpaperTarget() {
+    if (g_pEGL)
+        g_pEGL->makeCurrent(EGL_NO_SURFACE);
     if (cpu.cairoSurface)
         cairo_surface_destroy(cpu.cairoSurface);
     if (gpu.textureID)
@@ -68,6 +70,8 @@ void CWallpaperTarget::create(const std::string& path) {
     }
 
     Debug::log(LOG, "GPU mode, uploading the preloaded image into VRAM and deleting from RAM");
+
+    g_pEGL->makeCurrent(EGL_NO_SURFACE);
 
     auto tex = g_pRenderer->glTex(cairo_image_surface_get_data(CAIROSURFACE), m_vSize);
 
