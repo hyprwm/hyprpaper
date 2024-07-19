@@ -1,6 +1,8 @@
 #include "Monitor.hpp"
 #include "../Hyprpaper.hpp"
 
+#include "protocols/wayland.hpp"
+
 void SMonitor::registerListeners() {
     output->setMode([this](CCWlOutput* r, uint32_t flags, int32_t width, int32_t height, int32_t refresh) { size = Vector2D(width, height); });
 

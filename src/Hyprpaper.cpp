@@ -1,8 +1,17 @@
 #include "Hyprpaper.hpp"
+#include "render/Renderer.hpp"
 #include <filesystem>
 #include <fstream>
 #include <signal.h>
 #include <sys/types.h>
+#include "render/Egl.hpp"
+
+#include "protocols/wayland.hpp"
+#include "protocols/linux-dmabuf-v1.hpp"
+#include "protocols/wlr-layer-shell-unstable-v1.hpp"
+#include "protocols/fractional-scale-v1.hpp"
+#include "protocols/viewporter.hpp"
+#include "protocols/cursor-shape-v1.hpp"
 
 CHyprpaper::CHyprpaper() = default;
 
@@ -33,6 +42,18 @@ static void handleGlobal(CCWlRegistry* registry, uint32_t name, const char* inte
     } else if (strcmp(interface, wp_cursor_shape_manager_v1_interface.name) == 0) {
         g_pHyprpaper->m_pCursorShape =
             makeShared<CCWpCursorShapeManagerV1>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &wp_cursor_shape_manager_v1_interface, 1));
+    } else if (strcmp(interface, zwp_linux_dmabuf_v1_interface.name) == 0) {
+        g_pHyprpaper->m_pLinuxDmabuf = makeShared<CCZwpLinuxDmabufV1>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &zwp_linux_dmabuf_v1_interface, 3));
+        g_pHyprpaper->m_pLinuxDmabuf->setModifier([](CCZwpLinuxDmabufV1* r, uint32_t fmt, uint32_t modHi, uint32_t modLo) {
+            g_pHyprpaper->m_vDmabufFormats.emplace_back(SDMABUFFormat{
+                .format   = fmt,
+                .modifier = (((uint64_t)modLo) << 32) | (uint64_t)modLo,
+            });
+        });
+
+        wl_display_roundtrip(g_pHyprpaper->m_sDisplay);
+
+        g_pHyprpaper->m_pLinuxDmabuf = makeShared<CCZwpLinuxDmabufV1>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &zwp_linux_dmabuf_v1_interface, 4));
     }
 }
 
@@ -70,6 +91,25 @@ void CHyprpaper::init() {
 
     wl_display_roundtrip(m_sDisplay);
 
+    g_pRenderer = std::make_unique<CRenderer>(!m_bNoGpu);
+
+    if (!m_bNoGpu) {
+        try {
+            if (m_vDmabufFormats.empty()) {
+                Debug::log(ERR, "No dmabuf support, using cpu rendering");
+                m_bNoGpu = true;
+            }
+        } catch (std::exception& e) {
+            std::cerr << "Failed to create a gpu context: " << e.what() << ", falling back to cpu\n";
+            m_bNoGpu = true;
+        }
+    }
+
+    if (m_bNoGpu && (g_pEGL || g_pRenderer->gbmDevice)) {
+        g_pEGL.reset();
+        g_pRenderer = std::make_unique<CRenderer>(!m_bNoGpu);
+    }
+
     while (m_vMonitors.size() < 1 || m_vMonitors[0]->name.empty()) {
         wl_display_dispatch(m_sDisplay);
     }
@@ -99,7 +139,6 @@ void CHyprpaper::tick(bool force) {
         return;
 
     preloadAllWallpapersFromConfig();
-    ensurePoolBuffersPresent();
 
     recheckAllMonitors();
 }
@@ -127,25 +166,6 @@ void CHyprpaper::unloadWallpaper(const std::string& path) {
     if (!found) {
         Debug::log(LOG, "Cannot unload a target that was not loaded!");
         return;
-    }
-
-    // clean buffers
-    for (auto it = m_vBuffers.begin(); it != m_vBuffers.end();) {
-
-        if (it->get()->target != path) {
-            it++;
-            continue;
-        }
-
-        const auto PRELOADPATH = it->get()->name;
-
-        Debug::log(LOG, "Unloading target %s, preload path %s", path.c_str(), PRELOADPATH.c_str());
-
-        std::filesystem::remove(PRELOADPATH);
-
-        destroyBuffer(it->get());
-
-        it = m_vBuffers.erase(it);
     }
 
     m_mWallpaperTargets.erase(path); // will free the cairo surface
@@ -224,7 +244,7 @@ void CHyprpaper::recheckMonitor(SMonitor* pMonitor) {
 
     if (pMonitor->wantsReload) {
         pMonitor->wantsReload = false;
-        renderWallpaperForMonitor(pMonitor);
+        g_pRenderer->renderWallpaperForMonitor(pMonitor);
     }
 }
 
@@ -270,46 +290,6 @@ SMonitor* CHyprpaper::getMonitorFromName(const std::string& monname) {
     }
 
     return nullptr;
-}
-
-void CHyprpaper::ensurePoolBuffersPresent() {
-    bool anyNewBuffers = false;
-
-    for (auto& [file, wt] : m_mWallpaperTargets) {
-        for (auto& m : m_vMonitors) {
-
-            if (m->size == Vector2D())
-                continue;
-
-            auto it = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [wt = &wt, &m](const std::unique_ptr<SPoolBuffer>& el) {
-                auto scale = std::round((m->pCurrentLayerSurface && m->pCurrentLayerSurface->pFractionalScaleInfo ? m->pCurrentLayerSurface->fScale : m->scale) * 120.0) / 120.0;
-                return el->target == wt->m_szPath && vectorDeltaLessThan(el->pixelSize, m->size * scale, 1);
-            });
-
-            if (it == m_vBuffers.end()) {
-                // create
-                const auto PBUFFER = m_vBuffers.emplace_back(std::make_unique<SPoolBuffer>()).get();
-                auto scale = std::round((m->pCurrentLayerSurface && m->pCurrentLayerSurface->pFractionalScaleInfo ? m->pCurrentLayerSurface->fScale : m->scale) * 120.0) / 120.0;
-                createBuffer(PBUFFER, m->size.x * scale, m->size.y * scale, WL_SHM_FORMAT_ARGB8888);
-
-                PBUFFER->target = wt.m_szPath;
-
-                Debug::log(LOG, "Buffer created for target %s, Shared Memory usage: %.1fMB", wt.m_szPath.c_str(), PBUFFER->size / 1000000.f);
-
-                anyNewBuffers = true;
-            }
-        }
-    }
-
-    if (anyNewBuffers) {
-        uint64_t bytesUsed = 0;
-
-        for (auto& bf : m_vBuffers) {
-            bytesUsed += bf->size;
-        }
-
-        Debug::log(LOG, "Total SM usage for all buffers: %.1fMB", bytesUsed / 1000000.f);
-    }
 }
 
 void CHyprpaper::clearWallpaperFromMonitor(const std::string& monname) {
@@ -409,227 +389,6 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
 
 void CHyprpaper::createLSForMonitor(SMonitor* pMonitor) {
     pMonitor->pCurrentLayerSurface = pMonitor->layerSurfaces.emplace_back(std::make_unique<CLayerSurface>(pMonitor)).get();
-}
-
-bool CHyprpaper::setCloexec(const int& FD) {
-    long flags = fcntl(FD, F_GETFD);
-    if (flags == -1) {
-        return false;
-    }
-
-    if (fcntl(FD, F_SETFD, flags | FD_CLOEXEC) == -1) {
-        return false;
-    }
-
-    return true;
-}
-
-int CHyprpaper::createPoolFile(size_t size, std::string& name) {
-    const auto XDGRUNTIMEDIR = getenv("XDG_RUNTIME_DIR");
-    if (!XDGRUNTIMEDIR) {
-        Debug::log(CRIT, "XDG_RUNTIME_DIR not set!");
-        exit(1);
-    }
-
-    name = std::string(XDGRUNTIMEDIR) + "/.hyprpaper_XXXXXX";
-
-    const auto FD = mkstemp((char*)name.c_str());
-    if (FD < 0) {
-        Debug::log(CRIT, "createPoolFile: fd < 0");
-        exit(1);
-    }
-
-    if (!setCloexec(FD)) {
-        close(FD);
-        Debug::log(CRIT, "createPoolFile: !setCloexec");
-        exit(1);
-    }
-
-    if (ftruncate(FD, size) < 0) {
-        close(FD);
-        Debug::log(CRIT, "createPoolFile: ftruncate < 0");
-        exit(1);
-    }
-
-    return FD;
-}
-
-void CHyprpaper::createBuffer(SPoolBuffer* pBuffer, int32_t w, int32_t h, uint32_t format) {
-    const size_t STRIDE = w * 4;
-    const size_t SIZE   = STRIDE * h;
-
-    std::string  name;
-    const auto   FD = createPoolFile(SIZE, name);
-
-    if (FD == -1) {
-        Debug::log(CRIT, "Unable to create pool file!");
-        exit(1);
-    }
-
-    const auto DATA = mmap(nullptr, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, FD, 0);
-    auto       POOL = makeShared<CCWlShmPool>(g_pHyprpaper->m_pSHM->sendCreatePool(FD, SIZE));
-    pBuffer->buffer = makeShared<CCWlBuffer>(POOL->sendCreateBuffer(0, w, h, STRIDE, format));
-    POOL.reset();
-
-    close(FD);
-
-    pBuffer->size      = SIZE;
-    pBuffer->data      = DATA;
-    pBuffer->surface   = cairo_image_surface_create_for_data((unsigned char*)DATA, CAIRO_FORMAT_ARGB32, w, h, STRIDE);
-    pBuffer->cairo     = cairo_create(pBuffer->surface);
-    pBuffer->pixelSize = Vector2D(w, h);
-    pBuffer->name      = name;
-}
-
-void CHyprpaper::destroyBuffer(SPoolBuffer* pBuffer) {
-    pBuffer->buffer.reset();
-    cairo_destroy(pBuffer->cairo);
-    cairo_surface_destroy(pBuffer->surface);
-    munmap(pBuffer->data, pBuffer->size);
-
-    pBuffer->buffer = nullptr;
-}
-
-SPoolBuffer* CHyprpaper::getPoolBuffer(SMonitor* pMonitor, CWallpaperTarget* pWallpaperTarget) {
-    const auto IT = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
-        auto scale =
-            std::round((pMonitor->pCurrentLayerSurface && pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale) *
-                       120.0) /
-            120.0;
-        return el->target == pWallpaperTarget->m_szPath && vectorDeltaLessThan(el->pixelSize, pMonitor->size * scale, 1);
-    });
-
-    if (IT == m_vBuffers.end())
-        return nullptr;
-    return IT->get();
-}
-
-void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
-    static auto* const PRENDERSPLASH = reinterpret_cast<Hyprlang::INT* const*>(g_pConfigManager->config->getConfigValuePtr("splash")->getDataStaticPtr());
-    static auto* const PSPLASHOFFSET = reinterpret_cast<Hyprlang::FLOAT* const*>(g_pConfigManager->config->getConfigValuePtr("splash_offset")->getDataStaticPtr());
-
-    if (!m_mMonitorActiveWallpaperTargets[pMonitor])
-        recheckMonitor(pMonitor);
-
-    const auto PWALLPAPERTARGET = m_mMonitorActiveWallpaperTargets[pMonitor];
-    const auto CONTAIN          = m_mMonitorWallpaperRenderData[pMonitor->name].contain;
-
-    if (!PWALLPAPERTARGET) {
-        Debug::log(CRIT, "wallpaper target null in render??");
-        exit(1);
-    }
-
-    auto* PBUFFER = getPoolBuffer(pMonitor, PWALLPAPERTARGET);
-
-    if (!PBUFFER) {
-        Debug::log(LOG, "Pool buffer missing for available target??");
-        ensurePoolBuffersPresent();
-
-        PBUFFER = getPoolBuffer(pMonitor, PWALLPAPERTARGET);
-
-        if (!PBUFFER) {
-            Debug::log(LOG, "Pool buffer failed #2. Ignoring WP.");
-            return;
-        }
-    }
-
-    const double   SURFACESCALE = pMonitor->pCurrentLayerSurface && pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? pMonitor->pCurrentLayerSurface->fScale : pMonitor->scale;
-    const Vector2D DIMENSIONS   = Vector2D{std::round(pMonitor->size.x * SURFACESCALE), std::round(pMonitor->size.y * SURFACESCALE)};
-
-    const auto     PCAIRO = PBUFFER->cairo;
-    cairo_save(PCAIRO);
-    cairo_set_operator(PCAIRO, CAIRO_OPERATOR_CLEAR);
-    cairo_paint(PCAIRO);
-    cairo_restore(PCAIRO);
-
-    // always draw a black background behind the wallpaper
-    cairo_set_source_rgb(PCAIRO, 0, 0, 0);
-    cairo_rectangle(PCAIRO, 0, 0, DIMENSIONS.x, DIMENSIONS.y);
-    cairo_fill(PCAIRO);
-    cairo_surface_flush(PBUFFER->surface);
-
-    // get scale
-    // we always do cover
-    double     scale;
-    Vector2D   origin;
-
-    const bool LOWASPECTRATIO = pMonitor->size.x / pMonitor->size.y > PWALLPAPERTARGET->m_vSize.x / PWALLPAPERTARGET->m_vSize.y;
-    if ((CONTAIN && !LOWASPECTRATIO) || (!CONTAIN && LOWASPECTRATIO)) {
-        scale    = DIMENSIONS.x / PWALLPAPERTARGET->m_vSize.x;
-        origin.y = -(PWALLPAPERTARGET->m_vSize.y * scale - DIMENSIONS.y) / 2.0 / scale;
-    } else {
-        scale    = DIMENSIONS.y / PWALLPAPERTARGET->m_vSize.y;
-        origin.x = -(PWALLPAPERTARGET->m_vSize.x * scale - DIMENSIONS.x) / 2.0 / scale;
-    }
-
-    Debug::log(LOG, "Image data for %s: %s at [%.2f, %.2f], scale: %.2f (original image size: [%i, %i])", pMonitor->name.c_str(), PWALLPAPERTARGET->m_szPath.c_str(), origin.x,
-               origin.y, scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);
-
-    cairo_scale(PCAIRO, scale, scale);
-    cairo_set_source_surface(PCAIRO, PWALLPAPERTARGET->m_pCairoSurface, origin.x, origin.y);
-
-    cairo_paint(PCAIRO);
-
-    if (**PRENDERSPLASH && getenv("HYPRLAND_INSTANCE_SIGNATURE")) {
-        auto SPLASH = execAndGet("hyprctl splash");
-        SPLASH.pop_back();
-
-        Debug::log(LOG, "Rendering splash: %s", SPLASH.c_str());
-
-        cairo_select_font_face(PCAIRO, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-
-        const auto FONTSIZE = (int)(DIMENSIONS.y / 76.0 / scale);
-        cairo_set_font_size(PCAIRO, FONTSIZE);
-
-        static auto* const PSPLASHCOLOR = reinterpret_cast<Hyprlang::INT* const*>(g_pConfigManager->config->getConfigValuePtr("splash_color")->getDataStaticPtr());
-
-        Debug::log(LOG, "Splash color: %x", **PSPLASHCOLOR);
-
-        cairo_set_source_rgba(PCAIRO, ((**PSPLASHCOLOR >> 16) & 0xFF) / 255.0, ((**PSPLASHCOLOR >> 8) & 0xFF) / 255.0, (**PSPLASHCOLOR & 0xFF) / 255.0,
-                              ((**PSPLASHCOLOR >> 24) & 0xFF) / 255.0);
-
-        cairo_text_extents_t textExtents;
-        cairo_text_extents(PCAIRO, SPLASH.c_str(), &textExtents);
-
-        cairo_move_to(PCAIRO, ((DIMENSIONS.x - textExtents.width * scale) / 2.0) / scale, ((DIMENSIONS.y * (100 - **PSPLASHOFFSET)) / 100 - textExtents.height * scale) / scale);
-
-        Debug::log(LOG, "Splash font size: %d, pos: %.2f, %.2f", FONTSIZE, (DIMENSIONS.x - textExtents.width) / 2.0 / scale,
-                   ((DIMENSIONS.y * (100 - **PSPLASHOFFSET)) / 100 - textExtents.height * scale) / scale);
-
-        cairo_show_text(PCAIRO, SPLASH.c_str());
-
-        cairo_surface_flush(PWALLPAPERTARGET->m_pCairoSurface);
-    }
-
-    cairo_restore(PCAIRO);
-
-    if (pMonitor->pCurrentLayerSurface) {
-        pMonitor->pCurrentLayerSurface->pSurface->sendAttach(PBUFFER->buffer.get(), 0, 0);
-        pMonitor->pCurrentLayerSurface->pSurface->sendSetBufferScale(pMonitor->pCurrentLayerSurface->pFractionalScaleInfo ? 1 : pMonitor->scale);
-        pMonitor->pCurrentLayerSurface->pSurface->sendDamageBuffer(0, 0, 0xFFFF, 0xFFFF);
-
-        // our wps are always opaque
-        auto opaqueRegion = makeShared<CCWlRegion>(g_pHyprpaper->m_pCompositor->sendCreateRegion());
-        opaqueRegion->sendAdd(0, 0, PBUFFER->pixelSize.x, PBUFFER->pixelSize.y);
-        pMonitor->pCurrentLayerSurface->pSurface->sendSetOpaqueRegion(opaqueRegion.get());
-
-        if (pMonitor->pCurrentLayerSurface->pFractionalScaleInfo) {
-            Debug::log(LOG, "Submitting viewport dest size %ix%i for %x", static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)),
-                       pMonitor->pCurrentLayerSurface);
-            pMonitor->pCurrentLayerSurface->pViewport->sendSetDestination(static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)));
-        }
-        pMonitor->pCurrentLayerSurface->pSurface->sendCommit();
-    }
-
-    // check if we dont need to remove a wallpaper
-    if (pMonitor->layerSurfaces.size() > 1) {
-        for (auto it = pMonitor->layerSurfaces.begin(); it != pMonitor->layerSurfaces.end(); it++) {
-            if (pMonitor->pCurrentLayerSurface != it->get()) {
-                pMonitor->layerSurfaces.erase(it);
-                break;
-            }
-        }
-    }
 }
 
 bool CHyprpaper::lockSingleInstance() {

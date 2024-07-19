@@ -2,8 +2,8 @@
 
 #include "../defines.hpp"
 #include "../render/LayerSurface.hpp"
-#include "PoolBuffer.hpp"
-#include "protocols/wayland.hpp"
+
+class CCWlOutput;
 
 struct SMonitor {
     std::string                                 name        = "";
@@ -19,7 +19,6 @@ struct SMonitor {
     bool                                        wildcard = true;
 
     uint32_t                                    configureSerial = 0;
-    SPoolBuffer                                 buffer;
 
     bool                                        wantsReload = false;
     bool                                        wantsACK    = false;

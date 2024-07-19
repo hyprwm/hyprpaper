@@ -2,9 +2,14 @@
 
 #include <chrono>
 #include <magic.h>
+#include "Egl.hpp"
+#include "Renderer.hpp"
 
 CWallpaperTarget::~CWallpaperTarget() {
-    cairo_surface_destroy(m_pCairoSurface);
+    if (cpu.cairoSurface)
+        cairo_surface_destroy(cpu.cairoSurface);
+    if (gpu.textureID)
+        glDeleteTextures(1, &gpu.textureID);
 }
 
 void CWallpaperTarget::create(const std::string& path) {
@@ -57,5 +62,16 @@ void CWallpaperTarget::create(const std::string& path) {
 
     Debug::log(LOG, "Preloaded target %s in %.2fms -> Pixel size: [%i, %i]", path.c_str(), MS, (int)m_vSize.x, (int)m_vSize.y);
 
-    m_pCairoSurface = CAIROSURFACE;
+    if (!g_pEGL) {
+        cpu.cairoSurface = CAIROSURFACE;
+        return;
+    }
+
+    Debug::log(LOG, "GPU mode, uploading the preloaded image into VRAM and deleting from RAM");
+
+    auto tex = g_pRenderer->glTex(cairo_image_surface_get_data(CAIROSURFACE), m_vSize);
+
+    gpu.textureID = tex.texid;
+
+    cairo_surface_destroy(CAIROSURFACE);
 }

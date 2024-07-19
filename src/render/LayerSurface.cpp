@@ -2,6 +2,11 @@
 
 #include "../Hyprpaper.hpp"
 
+#include "protocols/wlr-layer-shell-unstable-v1.hpp"
+#include "protocols/wayland.hpp"
+#include "protocols/fractional-scale-v1.hpp"
+#include "protocols/viewporter.hpp"
+
 CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
     m_pMonitor = pMonitor;
 
