@@ -4,21 +4,30 @@
 #include "defines.hpp"
 #include "helpers/MiscFunctions.hpp"
 #include "helpers/Monitor.hpp"
-#include "helpers/PoolBuffer.hpp"
 #include "ipc/Socket.hpp"
 #include "render/WallpaperTarget.hpp"
 #include <mutex>
-
-#include "protocols/cursor-shape-v1.hpp"
-#include "protocols/fractional-scale-v1.hpp"
-#include "protocols/linux-dmabuf-v1.hpp"
-#include "protocols/viewporter.hpp"
-#include "protocols/wayland.hpp"
-#include "protocols/wlr-layer-shell-unstable-v1.hpp"
+#include <unordered_map>
 
 struct SWallpaperRenderData {
     bool contain = false;
 };
+
+struct SDMABUFFormat {
+    uint32_t format   = 0; // invalid
+    uint64_t modifier = 0; // linear
+};
+
+class CCWlCompositor;
+class CCWlShm;
+class CCZwlrLayerShellV1;
+class CCWpFractionalScaleManagerV1;
+class CCWpViewporter;
+class CCWlSeat;
+class CCWlPointer;
+class CCWpCursorShapeDeviceV1;
+class CCWpCursorShapeManagerV1;
+class CCZwpLinuxDmabufV1;
 
 class CHyprpaper {
   public:
@@ -33,6 +42,7 @@ class CHyprpaper {
     SP<CCWlPointer>                  m_pSeatPointer;
     SP<CCWpCursorShapeDeviceV1>      m_pSeatCursorShapeDevice;
     SP<CCWpCursorShapeManagerV1>     m_pCursorShape;
+    SP<CCZwpLinuxDmabufV1>           m_pLinuxDmabuf;
 
     // init the utility
     CHyprpaper();
@@ -43,34 +53,26 @@ class CHyprpaper {
     std::unordered_map<std::string, std::string>          m_mMonitorActiveWallpapers;
     std::unordered_map<std::string, SWallpaperRenderData> m_mMonitorWallpaperRenderData;
     std::unordered_map<SMonitor*, CWallpaperTarget*>      m_mMonitorActiveWallpaperTargets;
-    std::vector<std::unique_ptr<SPoolBuffer>>             m_vBuffers;
     std::vector<std::unique_ptr<SMonitor>>                m_vMonitors;
+    std::vector<SDMABUFFormat>                            m_vDmabufFormats;
 
     std::string                                           m_szExplicitConfigPath;
     bool                                                  m_bNoFractionalScale = false;
+    bool                                                  m_bNoGpu             = false;
 
     void                                                  removeOldHyprpaperImages();
     void                                                  preloadAllWallpapersFromConfig();
     void                                                  recheckAllMonitors();
     void                                                  ensureMonitorHasActiveWallpaper(SMonitor*);
     void                                                  createLSForMonitor(SMonitor*);
-    void                                                  renderWallpaperForMonitor(SMonitor*);
-    void                                                  createBuffer(SPoolBuffer*, int32_t, int32_t, uint32_t);
-    void                                                  destroyBuffer(SPoolBuffer*);
-    int                                                   createPoolFile(size_t, std::string&);
-    bool                                                  setCloexec(const int&);
     void                                                  clearWallpaperFromMonitor(const std::string&);
     SMonitor*                                             getMonitorFromName(const std::string&);
     bool                                                  isPreloaded(const std::string&);
     void                                                  recheckMonitor(SMonitor*);
-    void                                                  ensurePoolBuffersPresent();
-    SPoolBuffer*                                          getPoolBuffer(SMonitor*, CWallpaperTarget*);
     void                                                  unloadWallpaper(const std::string&);
     void                                                  createSeat(SP<CCWlSeat>);
     bool                                                  lockSingleInstance(); // fails on multi-instance
     void                                                  unlockSingleInstance();
-
-    std::mutex                                            m_mtTickMutex;
 
     SMonitor*                                             m_pLastMonitor = nullptr;
 

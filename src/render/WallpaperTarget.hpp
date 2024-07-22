@@ -9,13 +9,19 @@ class CWallpaperTarget {
   public:
     ~CWallpaperTarget();
 
-    void             create(const std::string& path);
+    void        create(const std::string& path);
 
-    std::string      m_szPath;
+    std::string m_szPath;
 
-    Vector2D         m_vSize;
+    Vector2D    m_vSize;
 
-    bool             m_bHasAlpha = true;
+    bool        m_bHasAlpha = true;
 
-    cairo_surface_t* m_pCairoSurface;
+    struct {
+        cairo_surface_t* cairoSurface = nullptr;
+    } cpu;
+
+    struct {
+        uint32_t textureID = 0;
+    } gpu;
 };

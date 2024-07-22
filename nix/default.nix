@@ -17,6 +17,7 @@
   libsepol,
   libthai,
   libwebp,
+  mesa,
   pango,
   pcre,
   pcre2,
@@ -65,6 +66,7 @@ stdenv.mkDerivation {
     libsepol
     libthai
     libwebp
+    mesa
     pango
     pcre
     pcre2

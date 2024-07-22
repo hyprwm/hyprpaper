@@ -2,31 +2,30 @@
 
 #include "../defines.hpp"
 #include "../render/LayerSurface.hpp"
-#include "PoolBuffer.hpp"
-#include "protocols/wayland.hpp"
+
+class CCWlOutput;
 
 struct SMonitor {
-    std::string                                 name        = "";
-    std::string                                 description = "";
-    SP<CCWlOutput>                              output;
-    uint32_t                                    wayland_name = 0;
-    Vector2D                                    size;
-    int                                         scale;
+    std::string                    name        = "";
+    std::string                    description = "";
+    SP<CCWlOutput>                 output;
+    uint32_t                       wayland_name = 0;
+    Vector2D                       size;
+    int                            scale;
 
-    bool                                        readyForLS = false;
-    bool                                        hasATarget = true;
+    bool                           readyForLS = false;
+    bool                           hasATarget = true;
 
-    bool                                        wildcard = true;
+    bool                           wildcard = true;
 
-    uint32_t                                    configureSerial = 0;
-    SPoolBuffer                                 buffer;
+    uint32_t                       configureSerial = 0;
 
-    bool                                        wantsReload = false;
-    bool                                        wantsACK    = false;
-    bool                                        initialized = false;
+    bool                           wantsReload = false;
+    bool                           wantsACK    = false;
+    bool                           initialized = false;
 
-    std::vector<std::unique_ptr<CLayerSurface>> layerSurfaces;
-    CLayerSurface*                              pCurrentLayerSurface = nullptr;
+    std::vector<SP<CLayerSurface>> layerSurfaces;
+    SP<CLayerSurface>              pCurrentLayerSurface = nullptr;
 
-    void                                        registerListeners();
+    void                           registerListeners();
 };

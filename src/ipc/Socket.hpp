@@ -5,17 +5,16 @@
 
 class CIPCSocket {
   public:
+    ~CIPCSocket();
+
     void initialize();
 
-    bool mainThreadParseRequest();
+    bool parseRequest();
+
+    int  fd = -1;
 
   private:
-    std::mutex  m_mtRequestMutex;
-    std::string m_szRequest = "";
-    std::string m_szReply   = "";
-
-    bool        m_bRequestReady = false;
-    bool        m_bReplyReady   = false;
+    std::string processRequest(const std::string& body);
 };
 
 inline std::unique_ptr<CIPCSocket> g_pIPCSocket;

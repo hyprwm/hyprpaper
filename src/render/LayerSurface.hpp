@@ -1,10 +1,11 @@
 #pragma once
 
 #include "../defines.hpp"
-#include "protocols/fractional-scale-v1.hpp"
-#include "protocols/viewporter.hpp"
-#include "protocols/wayland.hpp"
-#include "protocols/wlr-layer-shell-unstable-v1.hpp"
+
+class CCZwlrLayerSurfaceV1;
+class CCWlSurface;
+class CCWpFractionalScaleV1;
+class CCWpViewport;
 
 struct SMonitor;
 
