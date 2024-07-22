@@ -22,7 +22,7 @@ static void handleGlobal(CCWlRegistry* registry, uint32_t name, const char* inte
 
         g_pHyprpaper->m_mtTickMutex.unlock();
     } else if (strcmp(interface, wl_seat_interface.name) == 0) {
-        g_pHyprpaper->createSeat(makeShared<CCWlSeat>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &wl_seat_interface, 1)));
+        g_pHyprpaper->createSeat(makeShared<CCWlSeat>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &wl_seat_interface, 7)));
     } else if (strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
         g_pHyprpaper->m_pLayerShell = makeShared<CCZwlrLayerShellV1>((wl_proxy*)wl_registry_bind((wl_registry*)registry->resource(), name, &zwlr_layer_shell_v1_interface, 1));
     } else if (strcmp(interface, wp_fractional_scale_manager_v1_interface.name) == 0 && !g_pHyprpaper->m_bNoFractionalScale) {
