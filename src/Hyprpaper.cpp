@@ -367,15 +367,17 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
         }
     }
 
-    for (auto& [mon, path1] : m_mMonitorActiveWallpapers) {
-        if (mon == pMonitor->name) {
-            for (auto& [path2, target] : m_mWallpaperTargets) {
-                if (path1 == path2) {
-                    it->second = &target;
-                    break;
+    if (!it->second) {
+        for (auto& [mon, path1] : m_mMonitorActiveWallpapers) {
+            if (mon == pMonitor->name) {
+                for (auto& [path2, target] : m_mWallpaperTargets) {
+                    if (path1 == path2) {
+                        it->second = &target;
+                        break;
+                    }
                 }
+                break;
             }
-            break;
         }
     }
 
