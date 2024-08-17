@@ -45,6 +45,7 @@ add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-unused-value
 
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
+find_package(hyprwayland-scanner 0.4.0 REQUIRED)
 
 pkg_check_modules(
   deps
@@ -58,8 +59,7 @@ pkg_check_modules(
   libjpeg
   libwebp
   hyprlang>=0.2.0
-  hyprutils>=0.2.0
-  hyprwayland-scanner>=0.4.0)
+  hyprutils>=0.2.0)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
 
