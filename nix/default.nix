@@ -49,6 +49,7 @@ stdenv.mkDerivation {
     cmake
     hyprwayland-scanner
     pkg-config
+    wayland-scanner
   ];
 
   buildInputs = [
@@ -70,7 +71,6 @@ stdenv.mkDerivation {
     pcre2
     wayland
     wayland-protocols
-    wayland-scanner
     xorg.libXdmcp
     util-linux
   ];
