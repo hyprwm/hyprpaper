@@ -51,6 +51,9 @@ pkg_check_modules(
   deps
   REQUIRED
   IMPORTED_TARGET
+  gbm
+  egl
+  libdrm
   wayland-client
   wayland-protocols
   cairo

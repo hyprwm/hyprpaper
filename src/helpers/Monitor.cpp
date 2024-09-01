@@ -1,12 +1,13 @@
 #include "Monitor.hpp"
 #include "../Hyprpaper.hpp"
 
+#include "protocols/wayland.hpp"
+
 void SMonitor::registerListeners() {
     output->setMode([this](CCWlOutput* r, uint32_t flags, int32_t width, int32_t height, int32_t refresh) { size = Vector2D(width, height); });
 
     output->setDone([this](CCWlOutput* r) {
         readyForLS = true;
-        std::lock_guard<std::mutex> lg(g_pHyprpaper->m_mtTickMutex);
         if (g_pConfigManager) // don't tick if this is the first roundtrip
             g_pHyprpaper->tick(true);
     });

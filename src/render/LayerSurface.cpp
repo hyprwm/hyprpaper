@@ -2,6 +2,11 @@
 
 #include "../Hyprpaper.hpp"
 
+#include "protocols/wlr-layer-shell-unstable-v1.hpp"
+#include "protocols/wayland.hpp"
+#include "protocols/fractional-scale-v1.hpp"
+#include "protocols/viewporter.hpp"
+
 CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
     m_pMonitor = pMonitor;
 
@@ -42,16 +47,18 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
         m_pMonitor->initialized     = true;
 
         Debug::log(LOG, "configure for %s", m_pMonitor->name.c_str());
+
+        g_pHyprpaper->tick(true);
     });
 
     pLayerSurface->setClosed([this](CCZwlrLayerSurfaceV1* r) {
         for (auto& m : g_pHyprpaper->m_vMonitors) {
             std::erase_if(m->layerSurfaces, [&](const auto& other) { return other.get() == this; });
-            if (m->pCurrentLayerSurface == this) {
+            if (m->pCurrentLayerSurface.get() == this) {
                 if (m->layerSurfaces.empty()) {
                     m->pCurrentLayerSurface = nullptr;
                 } else {
-                    m->pCurrentLayerSurface = m->layerSurfaces.begin()->get();
+                    m->pCurrentLayerSurface = *m->layerSurfaces.begin();
                     g_pHyprpaper->recheckMonitor(m.get());
                 }
             }
@@ -70,7 +77,6 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
 
             if (fScale != SCALE) {
                 fScale = SCALE;
-                std::lock_guard<std::mutex> lg(g_pHyprpaper->m_mtTickMutex);
                 m_pMonitor->wantsReload = true;
                 g_pHyprpaper->tick(true);
             }
@@ -87,6 +93,8 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
 
 CLayerSurface::~CLayerSurface() {
     // hyprwayland-scanner will send the destructors automatically. Neat.
+    pLayerSurface->sendDestroy();
+
     pLayerSurface.reset();
     pFractionalScaleInfo.reset();
     pViewport.reset();
