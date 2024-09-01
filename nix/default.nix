@@ -40,6 +40,10 @@ stdenv.mkDerivation {
       --replace GIT_COMMIT_HASH '"${commit}"'
   '';
 
+  depsBuildBuild = [
+    pkg-config
+  ];
+
   cmakeBuildType =
     if debug
     then "Debug"
