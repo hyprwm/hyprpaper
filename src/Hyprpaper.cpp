@@ -515,6 +515,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
     const auto PWALLPAPERTARGET = m_mMonitorActiveWallpaperTargets[pMonitor];
     const auto CONTAIN          = m_mMonitorWallpaperRenderData[pMonitor->name].contain;
+    const auto TILE          = m_mMonitorWallpaperRenderData[pMonitor->name].tile;
 
     if (!PWALLPAPERTARGET) {
         Debug::log(CRIT, "wallpaper target null in render??");
@@ -567,7 +568,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     Debug::log(LOG, "Image data for %s: %s at [%.2f, %.2f], scale: %.2f (original image size: [%i, %i])", pMonitor->name.c_str(), PWALLPAPERTARGET->m_szPath.c_str(), origin.x,
                origin.y, scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);
 
-    if (g_pHyprpaper->m_bTileWallpaper) {
+    if (TILE) {
         cairo_pattern_t* pattern = cairo_pattern_create_for_surface(PWALLPAPERTARGET->m_pCairoSurface);
         cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
         cairo_set_source(PCAIRO, pattern);

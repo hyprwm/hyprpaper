@@ -23,6 +23,13 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
         contain   = true;
     }
 
+    bool tile = false;
+
+    if (WALLPAPER.find("tile:") == 0) {
+        WALLPAPER = WALLPAPER.substr(5);
+        tile   = true;
+    }
+
     if (WALLPAPER[0] == '~') {
         static const char* const ENVHOME = getenv("HOME");
         WALLPAPER                        = std::string(ENVHOME) + WALLPAPER.substr(1);
@@ -44,6 +51,7 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     g_pHyprpaper->clearWallpaperFromMonitor(MONITOR);
     g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR]            = WALLPAPER;
     g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
+    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].tile = tile;
 
     if (MONITOR.empty()) {
         for (auto& m : g_pHyprpaper->m_vMonitors) {
@@ -51,6 +59,7 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
                 g_pHyprpaper->clearWallpaperFromMonitor(m->name);
                 g_pHyprpaper->m_mMonitorActiveWallpapers[m->name]            = WALLPAPER;
                 g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].contain = contain;
+                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].tile = tile;
             }
         }
     } else {
@@ -138,6 +147,10 @@ static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
     auto              WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(VALUE.find_first_of(',') + 1));
 
     if (WALLPAPER.find("contain:") == 0) {
+        WALLPAPER = WALLPAPER.substr(8);
+    }
+
+    if (WALLPAPER.find("tile:") == 0) {
         WALLPAPER = WALLPAPER.substr(8);
     }
 

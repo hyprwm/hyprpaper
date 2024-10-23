@@ -18,6 +18,7 @@
 
 struct SWallpaperRenderData {
     bool contain = false;
+    bool tile = false;
 };
 
 class CHyprpaper {
@@ -48,7 +49,6 @@ class CHyprpaper {
 
     std::string                                           m_szExplicitConfigPath;
     bool                                                  m_bNoFractionalScale = false;
-    bool                                                  m_bTileWallpaper= false;
 
     void                                                  removeOldHyprpaperImages();
     void                                                  preloadAllWallpapersFromConfig();
