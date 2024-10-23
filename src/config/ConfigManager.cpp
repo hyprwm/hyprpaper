@@ -59,7 +59,7 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
                 g_pHyprpaper->clearWallpaperFromMonitor(m->name);
                 g_pHyprpaper->m_mMonitorActiveWallpapers[m->name]            = WALLPAPER;
                 g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].contain = contain;
-                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].tile = tile;
+                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].tile    = tile;
             }
         }
     } else {

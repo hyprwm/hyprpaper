@@ -515,7 +515,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
     const auto PWALLPAPERTARGET = m_mMonitorActiveWallpaperTargets[pMonitor];
     const auto CONTAIN          = m_mMonitorWallpaperRenderData[pMonitor->name].contain;
-    const auto TILE          = m_mMonitorWallpaperRenderData[pMonitor->name].tile;
+    const auto TILE             = m_mMonitorWallpaperRenderData[pMonitor->name].tile;
 
     if (!PWALLPAPERTARGET) {
         Debug::log(CRIT, "wallpaper target null in render??");
