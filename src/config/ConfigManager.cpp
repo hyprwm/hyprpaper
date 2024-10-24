@@ -4,8 +4,8 @@
 #include <filesystem>
 
 static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
-    const std::string COMMAND = C;
-    const std::string VALUE = V;
+    const std::string      COMMAND = C;
+    const std::string      VALUE   = V;
     Hyprlang::CParseResult result;
 
     if (VALUE.find_first_of(',') == std::string::npos) {
@@ -27,7 +27,7 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
 
     if (WALLPAPER.find("tile:") == 0) {
         WALLPAPER = WALLPAPER.substr(5);
-        tile   = true;
+        tile      = true;
     }
 
     if (WALLPAPER[0] == '~') {
@@ -51,7 +51,7 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     g_pHyprpaper->clearWallpaperFromMonitor(MONITOR);
     g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR]            = WALLPAPER;
     g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
-    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].tile = tile;
+    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].tile    = tile;
 
     if (MONITOR.empty()) {
         for (auto& m : g_pHyprpaper->m_vMonitors) {
@@ -151,7 +151,7 @@ static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
     }
 
     if (WALLPAPER.find("tile:") == 0) {
-        WALLPAPER = WALLPAPER.substr(8);
+        WALLPAPER = WALLPAPER.substr(5);
     }
 
     auto preloadResult = handlePreload(C, WALLPAPER.c_str());
