@@ -4,7 +4,7 @@ Hyprpaper is a blazing fast wallpaper utility for Hyprland with the ability to d
 
 # Features
  - Per-output wallpapers
- - fill or contain modes
+ - fill, tile or contain modes
  - fractional scaling support
  - IPC for blazing fast wallpaper switches
  - preloading targets into memory
