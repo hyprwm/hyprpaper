@@ -150,9 +150,8 @@ static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
         WALLPAPER = WALLPAPER.substr(8);
     }
 
-    if (WALLPAPER.find("tile:") == 0) {
+    if (WALLPAPER.find("tile:") == 0)
         WALLPAPER = WALLPAPER.substr(5);
-    }
 
     auto preloadResult = handlePreload(C, WALLPAPER.c_str());
     if (preloadResult.error)

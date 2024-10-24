@@ -91,7 +91,7 @@ splash = true
 
 Preload will tell Hyprland to load a particular image (supported formats: png, jpg, jpeg, webp). Wallpaper will apply the wallpaper to the selected output (`monitor` is the monitor's name, easily can be retrieved with `hyprctl monitors`. You can leave it empty to set all monitors without an active wallpaper. You can also use `desc:` followed by the monitor's description without the (PORT) at the end)
 
-You may add `contain:` before the file path in `wallpaper=` to set the mode to contain instead of cover:
+You may add `contain:` or `tile:` before the file path in `wallpaper=` to set the mode to either contain or tile, respectively, instead of cover:
 
 ```
 wallpaper = monitor,contain:/path/to/image.jpg
