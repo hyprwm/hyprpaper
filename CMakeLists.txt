@@ -12,6 +12,8 @@ set(CMAKE_MESSAGE_LOG_LEVEL "STATUS")
 
 message(STATUS "Configuring hyprpaper!")
 
+configure_file(systemd/hyprpaper.service.in systemd/hyprpaper.service @ONLY)
+
 # Get git info hash and branch
 execute_process(
   COMMAND git rev-parse --abbrev-ref HEAD
@@ -139,3 +141,4 @@ if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES DEBUG)
 endif(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES DEBUG)
 
 install(TARGETS hyprpaper)
+install(FILES ${CMAKE_BINARY_DIR}/systemd/hyprpaper.service DESTINATION "lib/systemd/user")
