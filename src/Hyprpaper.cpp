@@ -572,9 +572,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         cairo_pattern_t* pattern = cairo_pattern_create_for_surface(PWALLPAPERTARGET->m_pCairoSurface);
         cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
         cairo_set_source(PCAIRO, pattern);
-    }
-    else
-    {
+    } else {
         cairo_scale(PCAIRO, scale, scale);
         cairo_set_source_surface(PCAIRO, PWALLPAPERTARGET->m_pCairoSurface, origin.x, origin.y);
     }
