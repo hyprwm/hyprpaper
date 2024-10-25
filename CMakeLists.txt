@@ -143,4 +143,4 @@ endif(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES DEBUG)
 include(GNUInstallDirs)
 
 install(TARGETS hyprpaper)
-install(FILES ${CMAKE_BINARY_DIR}/systemd/hyprpaper.service DESTINATION ${CMAKE_INSTALL_LIBDIR}/systemd/user)
+install(FILES ${CMAKE_BINARY_DIR}/systemd/hyprpaper.service DESTINATION "lib/systemd/user")
