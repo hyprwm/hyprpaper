@@ -4,8 +4,8 @@
 #include <filesystem>
 
 static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
-    const std::string COMMAND = C;
-    const std::string VALUE = V;
+    const std::string      COMMAND = C;
+    const std::string      VALUE   = V;
     Hyprlang::CParseResult result;
 
     if (VALUE.find_first_of(',') == std::string::npos) {
@@ -21,6 +21,13 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     if (WALLPAPER.find("contain:") == 0) {
         WALLPAPER = WALLPAPER.substr(8);
         contain   = true;
+    }
+
+    bool tile = false;
+
+    if (WALLPAPER.find("tile:") == 0) {
+        WALLPAPER = WALLPAPER.substr(5);
+        tile      = true;
     }
 
     if (WALLPAPER[0] == '~') {
@@ -44,6 +51,7 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     g_pHyprpaper->clearWallpaperFromMonitor(MONITOR);
     g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR]            = WALLPAPER;
     g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
+    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].tile    = tile;
 
     if (MONITOR.empty()) {
         for (auto& m : g_pHyprpaper->m_vMonitors) {
@@ -51,6 +59,7 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
                 g_pHyprpaper->clearWallpaperFromMonitor(m->name);
                 g_pHyprpaper->m_mMonitorActiveWallpapers[m->name]            = WALLPAPER;
                 g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].contain = contain;
+                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].tile    = tile;
             }
         }
     } else {
@@ -140,6 +149,9 @@ static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
     if (WALLPAPER.find("contain:") == 0) {
         WALLPAPER = WALLPAPER.substr(8);
     }
+
+    if (WALLPAPER.find("tile:") == 0)
+        WALLPAPER = WALLPAPER.substr(5);
 
     auto preloadResult = handlePreload(C, WALLPAPER.c_str());
     if (preloadResult.error)

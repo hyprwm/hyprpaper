@@ -18,6 +18,7 @@
 
 struct SWallpaperRenderData {
     bool contain = false;
+    bool tile = false;
 };
 
 class CHyprpaper {
