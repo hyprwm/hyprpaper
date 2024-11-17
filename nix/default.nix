@@ -13,6 +13,7 @@
   libdatrie,
   libGL,
   libjpeg,
+  libjxl,
   libselinux,
   libsepol,
   libthai,
@@ -66,6 +67,7 @@ stdenv.mkDerivation {
     libdatrie
     libGL
     libjpeg
+    libjxl
     libselinux
     libsepol
     libthai

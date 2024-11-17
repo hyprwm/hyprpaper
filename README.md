@@ -29,18 +29,19 @@ The development files of these packages need to be installed on the system for `
 - libglvnd-core
 - libjpeg-turbo
 - libwebp
+- libjxl
 - hyprlang
 - hyprutils
 - hyprwayland-scanner
 
 To install all of these in Fedora, run this command:
 ```
-sudo dnf install wayland-devel wayland-protocols-devel hyprlang-devel pango-devel cairo-devel file-devel libglvnd-devel libglvnd-core-devel libjpeg-turbo-devel libwebp-devel gcc-c++ hyprutils-devel hyprwayland-scanner
+sudo dnf install wayland-devel wayland-protocols-devel hyprlang-devel pango-devel cairo-devel file-devel libglvnd-devel libglvnd-core-devel libjpeg-turbo-devel libwebp-devel libjxl-devel gcc-c++ hyprutils-devel hyprwayland-scanner
 ```
 
 On Arch:
 ```
-sudo pacman -S ninja gcc wayland-protocols libjpeg-turbo libwebp pango cairo pkgconf cmake libglvnd wayland hyprutils hyprwayland-scanner hyprlang
+sudo pacman -S ninja gcc wayland-protocols libjpeg-turbo libwebp libjxl pango cairo pkgconf cmake libglvnd wayland hyprutils hyprwayland-scanner hyprlang
 ```
 
 On OpenSUSE:
@@ -89,7 +90,7 @@ splash = true
 
 ```
 
-Preload will tell Hyprland to load a particular image (supported formats: png, jpg, jpeg, webp). Wallpaper will apply the wallpaper to the selected output (`monitor` is the monitor's name, easily can be retrieved with `hyprctl monitors`. You can leave it empty to set all monitors without an active wallpaper. You can also use `desc:` followed by the monitor's description without the (PORT) at the end)
+Preload will tell Hyprland to load a particular image (supported formats: png, jpg, jpeg, jpeg xl, webp). Wallpaper will apply the wallpaper to the selected output (`monitor` is the monitor's name, easily can be retrieved with `hyprctl monitors`. You can leave it empty to set all monitors without an active wallpaper. You can also use `desc:` followed by the monitor's description without the (PORT) at the end)
 
 You may add `contain:` or `tile:` before the file path in `wallpaper=` to set the mode to either contain or tile, respectively, instead of cover:
 

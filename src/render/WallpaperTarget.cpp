@@ -24,6 +24,8 @@ void CWallpaperTarget::create(const std::string& path) {
         m_bHasAlpha  = false;
     } else if (path.find(".webp") == len - 5 || path.find(".WEBP") == len - 5) {
         CAIROSURFACE = WEBP::createSurfaceFromWEBP(path);
+    } else if (path.find(".jxl") == len - 4 || path.find(".JXL") == len - 4) {
+        CAIROSURFACE = JXL::createSurfaceFromJXL(path);
     } else {
         // magic is slow, so only use it when no recognized extension is found
         auto handle = magic_open(MAGIC_NONE | MAGIC_COMPRESS);
