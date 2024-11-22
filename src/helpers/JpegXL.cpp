@@ -56,7 +56,7 @@ cairo_surface_t* JXL::createSurfaceFromJXL(const std::string& path) {
         exit(1);
     }
 
-    const auto     cairoData = cairo_image_surface_get_data(cairoSurface);
+    const auto     CAIRODATA = cairo_image_surface_get_data(cairoSurface);
 
     JxlPixelFormat format = {
         .num_channels = 4,
@@ -65,7 +65,7 @@ cairo_surface_t* JXL::createSurfaceFromJXL(const std::string& path) {
         .align        = cairo_image_surface_get_stride(cairoSurface),
     };
 
-    const auto outputSize = basicInfo.xsize * basicInfo.ysize * format.num_channels;
+    const auto OUTPUTSIZE = basicInfo.xsize * basicInfo.ysize * format.num_channels;
 
     for (;;) {
         JxlDecoderStatus status = JxlDecoderProcessInput(dec.get());
@@ -85,19 +85,19 @@ cairo_surface_t* JXL::createSurfaceFromJXL(const std::string& path) {
                 cairo_surface_destroy(cairoSurface);
                 exit(1);
             }
-            if (bufferSize != outputSize) {
+            if (bufferSize != OUTPUTSIZE) {
                 Debug::log(ERR, "createSurfaceFromJXL: invalid output buffer size");
                 cairo_surface_destroy(cairoSurface);
                 exit(1);
             }
-            if (JXL_DEC_SUCCESS != JxlDecoderSetImageOutBuffer(dec.get(), &format, cairoData, bufferSize)) {
+            if (JXL_DEC_SUCCESS != JxlDecoderSetImageOutBuffer(dec.get(), &format, CAIRODATA, bufferSize)) {
                 Debug::log(ERR, "createSurfaceFromJXL: JxlDecoderSetImageOutBuffer failed");
                 cairo_surface_destroy(cairoSurface);
                 exit(1);
             }
         } else if (status == JXL_DEC_FULL_IMAGE) {
-            for (size_t i = 0; i < outputSize - 2; i += format.num_channels) {
-                std::swap(cairoData[i + 0], cairoData[i + 2]);
+            for (size_t i = 0; i < OUTPUTSIZE - 2; i += format.num_channels) {
+                std::swap(CAIRODATA[i + 0], CAIRODATA[i + 2]);
             }
             cairo_surface_mark_dirty(cairoSurface);
             cairo_surface_set_mime_data(cairoSurface, "image/jxl", bytes.data(), bytes.size(), nullptr, nullptr);
