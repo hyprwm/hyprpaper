@@ -61,7 +61,7 @@ cairo_surface_t* JXL::createSurfaceFromJXL(const std::string& path) {
     JxlPixelFormat format = {
         .num_channels = 4,
         .data_type    = JXL_TYPE_UINT8,
-        .endianness   = JXL_BIG_ENDIAN,
+        .endianness   = JXL_LITTLE_ENDIAN,
         .align        = cairo_image_surface_get_stride(cairoSurface),
     };
 
