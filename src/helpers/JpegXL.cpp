@@ -43,20 +43,20 @@ cairo_surface_t* JXL::createSurfaceFromJXL(const std::string& path) {
         exit(1);
     }
 
-    JxlBasicInfo basic_info;
-    if (JXL_DEC_SUCCESS != JxlDecoderGetBasicInfo(dec.get(), &basic_info)) {
+    JxlBasicInfo basicInfo;
+    if (JXL_DEC_SUCCESS != JxlDecoderGetBasicInfo(dec.get(), &basicInfo)) {
         Debug::log(ERR, "createSurfaceFromJXL: JxlDecoderGetBasicInfo failed");
         exit(1);
     }
 
-    auto cairoSurface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, basic_info.xsize, basic_info.ysize);
+    auto cairoSurface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, basicInfo.xsize, basicInfo.ysize);
     if (cairo_surface_status(cairoSurface) != CAIRO_STATUS_SUCCESS) {
         Debug::log(ERR, "createSurfaceFromJXL: Cairo Failed (?)");
         cairo_surface_destroy(cairoSurface);
         exit(1);
     }
 
-    const auto     CAIRODATA = cairo_image_surface_get_data(cairoSurface);
+    const auto     cairoData = cairo_image_surface_get_data(cairoSurface);
 
     JxlPixelFormat format = {
         .num_channels = 4,
@@ -65,7 +65,7 @@ cairo_surface_t* JXL::createSurfaceFromJXL(const std::string& path) {
         .align        = cairo_image_surface_get_stride(cairoSurface),
     };
 
-    const auto output_size = basic_info.xsize * basic_info.ysize * format.num_channels;
+    const auto outputSize = basicInfo.xsize * basicInfo.ysize * format.num_channels;
 
     for (;;) {
         JxlDecoderStatus status = JxlDecoderProcessInput(dec.get());
@@ -78,26 +78,26 @@ cairo_surface_t* JXL::createSurfaceFromJXL(const std::string& path) {
             cairo_surface_destroy(cairoSurface);
             exit(1);
         } else if (status == JXL_DEC_NEED_IMAGE_OUT_BUFFER) {
-            JxlResizableParallelRunnerSetThreads(runner.get(), JxlResizableParallelRunnerSuggestThreads(basic_info.xsize, basic_info.ysize));
-            size_t buffer_size;
-            if (JXL_DEC_SUCCESS != JxlDecoderImageOutBufferSize(dec.get(), &format, &buffer_size)) {
+            JxlResizableParallelRunnerSetThreads(runner.get(), JxlResizableParallelRunnerSuggestThreads(basicInfo.xsize, basicInfo.ysize));
+            size_t bufferSize;
+            if (JXL_DEC_SUCCESS != JxlDecoderImageOutBufferSize(dec.get(), &format, &bufferSize)) {
                 Debug::log(ERR, "createSurfaceFromJXL: JxlDecoderImageOutBufferSize failed");
                 cairo_surface_destroy(cairoSurface);
                 exit(1);
             }
-            if (buffer_size != output_size) {
+            if (bufferSize != outputSize) {
                 Debug::log(ERR, "createSurfaceFromJXL: invalid output buffer size");
                 cairo_surface_destroy(cairoSurface);
                 exit(1);
             }
-            if (JXL_DEC_SUCCESS != JxlDecoderSetImageOutBuffer(dec.get(), &format, CAIRODATA, buffer_size)) {
+            if (JXL_DEC_SUCCESS != JxlDecoderSetImageOutBuffer(dec.get(), &format, cairoData, bufferSize)) {
                 Debug::log(ERR, "createSurfaceFromJXL: JxlDecoderSetImageOutBuffer failed");
                 cairo_surface_destroy(cairoSurface);
                 exit(1);
             }
         } else if (status == JXL_DEC_FULL_IMAGE) {
-            for (size_t i = 0; i < output_size - 2; i += format.num_channels) {
-                std::swap(CAIRODATA[i + 0], CAIRODATA[i + 2]);
+            for (size_t i = 0; i < outputSize - 2; i += format.num_channels) {
+                std::swap(cairoData[i + 0], cairoData[i + 2]);
             }
             cairo_surface_mark_dirty(cairoSurface);
             cairo_surface_set_mime_data(cairoSurface, "image/jxl", bytes.data(), bytes.size(), nullptr, nullptr);
