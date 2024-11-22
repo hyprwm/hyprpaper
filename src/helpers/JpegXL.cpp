@@ -12,11 +12,11 @@ cairo_surface_t* JXL::createSurfaceFromJXL(const std::string& path) {
         exit(1);
     }
 
-    std::ifstream stream(path, std::ios::binary | std::ios::ate);
-    stream.exceptions(std::ifstream::failbit | std::ifstream::badbit | std::ifstream::eofbit);
-    std::vector<uint8_t> bytes(stream.tellg());
-    stream.seekg(0);
-    stream.read(reinterpret_cast<char*>(bytes.data()), bytes.size());
+    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    file.exceptions(std::ifstream::failbit | std::ifstream::badbit | std::ifstream::eofbit);
+    std::vector<uint8_t> bytes(file.tellg());
+    file.seekg(0);
+    file.read(reinterpret_cast<char*>(bytes.data()), bytes.size());
 
     JxlSignature signature = JxlSignatureCheck(bytes.data(), bytes.size());
     if (signature != JXL_SIG_CODESTREAM && signature != JXL_SIG_CONTAINER) {
