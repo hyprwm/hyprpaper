@@ -1,10 +1,7 @@
 #include "Webp.hpp"
 
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 #include <filesystem>
+#include <fstream>
 #include <webp/decode.h>
 
 cairo_surface_t* WEBP::createSurfaceFromWEBP(const std::string& path) {
@@ -14,19 +11,11 @@ cairo_surface_t* WEBP::createSurfaceFromWEBP(const std::string& path) {
         exit(1);
     }
 
-    void*       imageRawData;
-
-    struct stat fileInfo = {};
-
-    const auto  FD = open(path.c_str(), O_RDONLY);
-
-    fstat(FD, &fileInfo);
-
-    imageRawData = malloc(fileInfo.st_size);
-
-    read(FD, imageRawData, fileInfo.st_size);
-
-    close(FD);
+    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    file.exceptions(std::ifstream::failbit | std::ifstream::badbit | std::ifstream::eofbit);
+    std::vector<uint8_t> bytes(file.tellg());
+    file.seekg(0);
+    file.read(reinterpret_cast<char*>(bytes.data()), bytes.size());
 
     // now the WebP is in the memory
 
@@ -36,9 +25,8 @@ cairo_surface_t* WEBP::createSurfaceFromWEBP(const std::string& path) {
         exit(1);
     }
 
-    if (WebPGetFeatures((const unsigned char*)imageRawData, fileInfo.st_size, &config.input) != VP8_STATUS_OK) {
+    if (WebPGetFeatures(bytes.data(), bytes.size(), &config.input) != VP8_STATUS_OK) {
         Debug::log(ERR, "createSurfaceFromWEBP: file is not webp format");
-        free(imageRawData);
         exit(1);
     }
 
@@ -69,13 +57,13 @@ cairo_surface_t* WEBP::createSurfaceFromWEBP(const std::string& path) {
     config.output.width                = WIDTH;
     config.output.height               = HEIGHT;
 
-    if (WebPDecode((const unsigned char*)imageRawData, fileInfo.st_size, &config) != VP8_STATUS_OK) {
+    if (WebPDecode(bytes.data(), bytes.size(), &config) != VP8_STATUS_OK) {
         Debug::log(CRIT, "createSurfaceFromWEBP: WebP Decode Failed (?)");
         exit(1);
     }
 
     cairo_surface_mark_dirty(cairoSurface);
-    cairo_surface_set_mime_data(cairoSurface, CAIRO_MIME_TYPE_PNG, (const unsigned char*)imageRawData, fileInfo.st_size, free, imageRawData);
+    cairo_surface_set_mime_data(cairoSurface, "image/webp", bytes.data(), bytes.size(), nullptr, nullptr);
 
     WebPFreeDecBuffer(&config.output);
 
