@@ -1,9 +1,7 @@
 #include "Jpeg.hpp"
 
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <filesystem>
+#include <fstream>
 
 cairo_surface_t* JPEG::createSurfaceFromJPEG(const std::string& path) {
 
@@ -17,19 +15,11 @@ cairo_surface_t* JPEG::createSurfaceFromJPEG(const std::string& path) {
         exit(1);
     }
 
-    void*       imageRawData;
-
-    struct stat fileInfo = {};
-
-    const auto  FD = open(path.c_str(), O_RDONLY);
-
-    fstat(FD, &fileInfo);
-
-    imageRawData = malloc(fileInfo.st_size);
-
-    read(FD, imageRawData, fileInfo.st_size);
-
-    close(FD);
+    std::ifstream file(path, std::ios::binary | std::ios::ate);
+    file.exceptions(std::ifstream::failbit | std::ifstream::badbit | std::ifstream::eofbit);
+    std::vector<uint8_t> bytes(file.tellg());
+    file.seekg(0);
+    file.read(reinterpret_cast<char*>(bytes.data()), bytes.size());
 
     // now the JPEG is in the memory
 
@@ -38,7 +28,7 @@ cairo_surface_t* JPEG::createSurfaceFromJPEG(const std::string& path) {
 
     decompressStruct.err = jpeg_std_error(&errorManager);
     jpeg_create_decompress(&decompressStruct);
-    jpeg_mem_src(&decompressStruct, (const unsigned char*)imageRawData, fileInfo.st_size);
+    jpeg_mem_src(&decompressStruct, bytes.data(), bytes.size());
     jpeg_read_header(&decompressStruct, true);
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
@@ -68,7 +58,7 @@ cairo_surface_t* JPEG::createSurfaceFromJPEG(const std::string& path) {
     }
 
     cairo_surface_mark_dirty(cairoSurface);
-    cairo_surface_set_mime_data(cairoSurface, CAIRO_MIME_TYPE_JPEG, (const unsigned char*)imageRawData, fileInfo.st_size, free, imageRawData);
+    cairo_surface_set_mime_data(cairoSurface, CAIRO_MIME_TYPE_JPEG, bytes.data(), bytes.size(), nullptr, nullptr);
     jpeg_finish_decompress(&decompressStruct);
     jpeg_destroy_decompress(&decompressStruct);
 
