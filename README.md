@@ -33,6 +33,7 @@ The development files of these packages need to be installed on the system for `
 - hyprlang
 - hyprutils
 - hyprwayland-scanner
+- hyprgraphics
 
 To install all of these in Fedora, run this command:
 ```
