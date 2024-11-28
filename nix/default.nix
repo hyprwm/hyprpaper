@@ -7,6 +7,7 @@
   expat,
   file,
   fribidi,
+  hyprgraphics,
   hyprlang,
   hyprutils,
   hyprwayland-scanner,
@@ -62,6 +63,7 @@ stdenv.mkDerivation {
     expat
     file
     fribidi
+    hyprgraphics
     hyprlang
     hyprutils
     libdatrie
