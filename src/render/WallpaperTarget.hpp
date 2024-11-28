@@ -1,22 +1,19 @@
 #pragma once
 
 #include "../defines.hpp"
-#include "../helpers/Jpeg.hpp"
-#include "../helpers/Bmp.hpp"
-#include "../helpers/Webp.hpp"
-#include "../helpers/JpegXL.hpp"
+#include <hyprgraphics/cairo/CairoSurface.hpp>
 
 class CWallpaperTarget {
   public:
     ~CWallpaperTarget();
 
-    void             create(const std::string& path);
+    void                            create(const std::string& path);
 
-    std::string      m_szPath;
+    std::string                     m_szPath;
 
-    Vector2D         m_vSize;
+    Vector2D                        m_vSize;
 
-    bool             m_bHasAlpha = true;
+    bool                            m_bHasAlpha = true;
 
-    cairo_surface_t* m_pCairoSurface;
+    SP<Hyprgraphics::CCairoSurface> m_pCairoSurface;
 };
