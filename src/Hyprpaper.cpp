@@ -569,12 +569,12 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
                origin.y, scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);
 
     if (TILE) {
-        cairo_pattern_t* pattern = cairo_pattern_create_for_surface(PWALLPAPERTARGET->m_pCairoSurface);
+        cairo_pattern_t* pattern = cairo_pattern_create_for_surface(PWALLPAPERTARGET->m_pCairoSurface->cairo());
         cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
         cairo_set_source(PCAIRO, pattern);
     } else {
         cairo_scale(PCAIRO, scale, scale);
-        cairo_set_source_surface(PCAIRO, PWALLPAPERTARGET->m_pCairoSurface, origin.x, origin.y);
+        cairo_set_source_surface(PCAIRO, PWALLPAPERTARGET->m_pCairoSurface->cairo(), origin.x, origin.y);
     }
 
     cairo_paint(PCAIRO);
@@ -607,7 +607,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
         cairo_show_text(PCAIRO, SPLASH.c_str());
 
-        cairo_surface_flush(PWALLPAPERTARGET->m_pCairoSurface);
+        cairo_surface_flush(PWALLPAPERTARGET->m_pCairoSurface->cairo());
     }
 
     cairo_restore(PCAIRO);

@@ -5,6 +5,13 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     systems.url = "github:nix-systems/default-linux";
 
+    hyprgraphics = {
+      url = "github:hyprwm/hyprgraphics";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
+      inputs.hyprutils.follows = "hyprutils";
+    };
+
     hyprutils = {
       url = "github:hyprwm/hyprutils";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -49,6 +56,7 @@
     overlays = {
       default = self.overlays.hyprpaper;
       hyprpaper = lib.composeManyExtensions [
+        inputs.hyprgraphics.overlays.default
         inputs.hyprlang.overlays.default
         inputs.hyprutils.overlays.default
         inputs.hyprwayland-scanner.overlays.default
