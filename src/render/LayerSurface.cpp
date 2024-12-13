@@ -66,7 +66,7 @@ CLayerSurface::CLayerSurface(SMonitor* pMonitor) {
         pFractionalScaleInfo->setPreferredScale([this](CCWpFractionalScaleV1* r, uint32_t sc120) {
             const double SCALE = sc120 / 120.0;
 
-            Debug::log(LOG, "handlePreferredScale: %.2lf for %lx", SCALE, this);
+            Debug::log(LOG, "handlePreferredScale: {:.2f} for {:x}", SCALE, (uintptr_t)this);
 
             if (fScale != SCALE) {
                 fScale = SCALE;
