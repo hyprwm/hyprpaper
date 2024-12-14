@@ -39,7 +39,7 @@ static void handleGlobal(CCWlRegistry* registry, uint32_t name, const char* inte
 static void handleGlobalRemove(CCWlRegistry* registry, uint32_t name) {
     for (auto& m : g_pHyprpaper->m_vMonitors) {
         if (m->wayland_name == name) {
-            Debug::log(LOG, "Destroying output %s", m->name.c_str());
+            Debug::log(LOG, "Destroying output {}", m->name);
             g_pHyprpaper->clearWallpaperFromMonitor(m->name);
             std::erase_if(g_pHyprpaper->m_vMonitors, [&](const auto& other) { return other->wayland_name == name; });
             return;
@@ -139,7 +139,7 @@ void CHyprpaper::unloadWallpaper(const std::string& path) {
 
         const auto PRELOADPATH = it->get()->name;
 
-        Debug::log(LOG, "Unloading target %s, preload path %s", path.c_str(), PRELOADPATH.c_str());
+        Debug::log(LOG, "Unloading target {}, preload path {}", path, PRELOADPATH);
 
         std::filesystem::remove(PRELOADPATH);
 
@@ -161,7 +161,7 @@ void CHyprpaper::preloadAllWallpapersFromConfig() {
         bool exists = false;
         for (auto& [ewp, cls] : m_mWallpaperTargets) {
             if (ewp == wp) {
-                Debug::log(LOG, "Ignoring request to preload %s as it already is preloaded!", ewp.c_str());
+                Debug::log(LOG, "Ignoring request to preload {} as it already is preloaded!", ewp);
                 exists = true;
                 break;
             }
@@ -243,14 +243,13 @@ void CHyprpaper::removeOldHyprpaperImages() {
 
             memoryFreed += entry.file_size();
             if (!std::filesystem::remove(entry.path()))
-                Debug::log(LOG, "Couldn't remove %s", entry.path().string().c_str());
+                Debug::log(LOG, "Couldn't remove {}", entry.path().string());
             cleaned++;
         }
     }
 
-    if (cleaned != 0) {
-        Debug::log(LOG, "Cleaned old hyprpaper preloads (%i), removing %.1fMB", cleaned, ((float)memoryFreed) / 1000000.f);
-    }
+    if (cleaned != 0)
+        Debug::log(LOG, "Cleaned old hyprpaper preloads ({}), removing {:.1f}MB", cleaned, ((float)memoryFreed) / 1000000.f);
 }
 
 SMonitor* CHyprpaper::getMonitorFromName(const std::string& monname) {
@@ -294,7 +293,7 @@ void CHyprpaper::ensurePoolBuffersPresent() {
 
                 PBUFFER->target = wt.m_szPath;
 
-                Debug::log(LOG, "Buffer created for target %s, Shared Memory usage: %.1fMB", wt.m_szPath.c_str(), PBUFFER->size / 1000000.f);
+                Debug::log(LOG, "Buffer created for target {}, Shared Memory usage: {:.1f}MB", wt.m_szPath, PBUFFER->size / 1000000.f);
 
                 anyNewBuffers = true;
             }
@@ -308,7 +307,7 @@ void CHyprpaper::ensurePoolBuffersPresent() {
             bytesUsed += bf->size;
         }
 
-        Debug::log(LOG, "Total SM usage for all buffers: %.1fMB", bytesUsed / 1000000.f);
+        Debug::log(LOG, "Total SM usage for all buffers: {:.1f}MB", bytesUsed / 1000000.f);
     }
 }
 
@@ -398,7 +397,7 @@ void CHyprpaper::ensureMonitorHasActiveWallpaper(SMonitor* pMonitor) {
 
     if (!it->second) {
         pMonitor->hasATarget = false;
-        Debug::log(WARN, "Monitor %s does not have a target! A wallpaper will not be created.", pMonitor->name.c_str());
+        Debug::log(WARN, "Monitor {} does not have a target! A wallpaper will not be created.", pMonitor->name);
         return;
     }
 
@@ -507,8 +506,8 @@ SPoolBuffer* CHyprpaper::getPoolBuffer(SMonitor* pMonitor, CWallpaperTarget* pWa
 }
 
 void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
-    static auto* const PRENDERSPLASH = reinterpret_cast<Hyprlang::INT* const*>(g_pConfigManager->config->getConfigValuePtr("splash")->getDataStaticPtr());
-    static auto* const PSPLASHOFFSET = reinterpret_cast<Hyprlang::FLOAT* const*>(g_pConfigManager->config->getConfigValuePtr("splash_offset")->getDataStaticPtr());
+    static auto PRENDERSPLASH = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(g_pConfigManager->config.get(), "splash");
+    static auto PSPLASHOFFSET = Hyprlang::CSimpleConfigValue<Hyprlang::FLOAT>(g_pConfigManager->config.get(), "splash_offset");
 
     if (!m_mMonitorActiveWallpaperTargets[pMonitor])
         recheckMonitor(pMonitor);
@@ -565,8 +564,8 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         origin.x = -(PWALLPAPERTARGET->m_vSize.x * scale - DIMENSIONS.x) / 2.0 / scale;
     }
 
-    Debug::log(LOG, "Image data for %s: %s at [%.2f, %.2f], scale: %.2f (original image size: [%i, %i])", pMonitor->name.c_str(), PWALLPAPERTARGET->m_szPath.c_str(), origin.x,
-               origin.y, scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);
+    Debug::log(LOG, "Image data for {}: {} at [{:.2f}, {:.2f}], scale: {:.2f} (original image size: [{}, {}])", pMonitor->name, PWALLPAPERTARGET->m_szPath, origin.x, origin.y,
+               scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);
 
     if (TILE) {
         cairo_pattern_t* pattern = cairo_pattern_create_for_surface(PWALLPAPERTARGET->m_pCairoSurface->cairo());
@@ -579,7 +578,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
     cairo_paint(PCAIRO);
 
-    if (**PRENDERSPLASH && getenv("HYPRLAND_INSTANCE_SIGNATURE")) {
+    if (*PRENDERSPLASH && getenv("HYPRLAND_INSTANCE_SIGNATURE")) {
         auto SPLASH = execAndGet("hyprctl splash");
         SPLASH.pop_back();
 
@@ -590,20 +589,20 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         const auto FONTSIZE = (int)(DIMENSIONS.y / 76.0 / scale);
         cairo_set_font_size(PCAIRO, FONTSIZE);
 
-        static auto* const PSPLASHCOLOR = reinterpret_cast<Hyprlang::INT* const*>(g_pConfigManager->config->getConfigValuePtr("splash_color")->getDataStaticPtr());
+        static auto PSPLASHCOLOR = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(g_pConfigManager->config.get(), "splash_color");
 
-        Debug::log(LOG, "Splash color: %x", **PSPLASHCOLOR);
+        Debug::log(LOG, "Splash color: {:x}", *PSPLASHCOLOR);
 
-        cairo_set_source_rgba(PCAIRO, ((**PSPLASHCOLOR >> 16) & 0xFF) / 255.0, ((**PSPLASHCOLOR >> 8) & 0xFF) / 255.0, (**PSPLASHCOLOR & 0xFF) / 255.0,
-                              ((**PSPLASHCOLOR >> 24) & 0xFF) / 255.0);
+        cairo_set_source_rgba(PCAIRO, ((*PSPLASHCOLOR >> 16) & 0xFF) / 255.0, ((*PSPLASHCOLOR >> 8) & 0xFF) / 255.0, (*PSPLASHCOLOR & 0xFF) / 255.0,
+                              ((*PSPLASHCOLOR >> 24) & 0xFF) / 255.0);
 
         cairo_text_extents_t textExtents;
         cairo_text_extents(PCAIRO, SPLASH.c_str(), &textExtents);
 
-        cairo_move_to(PCAIRO, ((DIMENSIONS.x - textExtents.width * scale) / 2.0) / scale, ((DIMENSIONS.y * (100 - **PSPLASHOFFSET)) / 100 - textExtents.height * scale) / scale);
+        cairo_move_to(PCAIRO, ((DIMENSIONS.x - textExtents.width * scale) / 2.0) / scale, ((DIMENSIONS.y * (100 - *PSPLASHOFFSET)) / 100 - textExtents.height * scale) / scale);
 
-        Debug::log(LOG, "Splash font size: %d, pos: %.2f, %.2f", FONTSIZE, (DIMENSIONS.x - textExtents.width) / 2.0 / scale,
-                   ((DIMENSIONS.y * (100 - **PSPLASHOFFSET)) / 100 - textExtents.height * scale) / scale);
+        Debug::log(LOG, "Splash font size: {}, pos: {:.2f}, {:.2f}", FONTSIZE, (DIMENSIONS.x - textExtents.width) / 2.0 / scale,
+                   ((DIMENSIONS.y * (100 - *PSPLASHOFFSET)) / 100 - textExtents.height * scale) / scale);
 
         cairo_show_text(PCAIRO, SPLASH.c_str());
 
@@ -623,8 +622,8 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         pMonitor->pCurrentLayerSurface->pSurface->sendSetOpaqueRegion(opaqueRegion.get());
 
         if (pMonitor->pCurrentLayerSurface->pFractionalScaleInfo) {
-            Debug::log(LOG, "Submitting viewport dest size %ix%i for %x", static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)),
-                       pMonitor->pCurrentLayerSurface);
+            Debug::log(LOG, "Submitting viewport dest size {}x{} for {:x}", static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)),
+                       (uintptr_t)pMonitor->pCurrentLayerSurface);
             pMonitor->pCurrentLayerSurface->pViewport->sendSetDestination(static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)));
         }
         pMonitor->pCurrentLayerSurface->pSurface->sendCommit();

@@ -3,7 +3,7 @@
 #include "Hyprpaper.hpp"
 
 int main(int argc, char** argv, char** envp) {
-    Debug::log(LOG, "Welcome to hyprpaper!\nbuilt from commit %s (%s)", GIT_COMMIT_HASH, GIT_COMMIT_MESSAGE);
+    Debug::log(LOG, "Welcome to hyprpaper!\nbuilt from commit {} ({})", GIT_COMMIT_HASH, GIT_COMMIT_MESSAGE);
 
     // parse some args
     std::string configPath;
@@ -11,7 +11,7 @@ int main(int argc, char** argv, char** envp) {
     for (int i = 1; i < argc; ++i) {
         if ((!strcmp(argv[i], "-c") || !strcmp(argv[i], "--config")) && argc >= i + 2) {
             configPath = std::string(argv[++i]);
-            Debug::log(LOG, "Using config location %s.", configPath.c_str());
+            Debug::log(LOG, "Using config location {}.", configPath);
         } else if (!strcmp(argv[i], "--no-fractional") || !strcmp(argv[i], "-n")) {
             noFractional = true;
             Debug::log(LOG, "Disabling fractional scaling support!");

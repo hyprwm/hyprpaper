@@ -50,7 +50,7 @@ void CIPCSocket::initialize() {
 
         char        readBuffer[1024] = {0};
 
-        Debug::log(LOG, "hyprpaper socket started at %s (fd: %i)", socketPath.c_str(), SOCKET);
+        Debug::log(LOG, "hyprpaper socket started at {} (fd: {})", socketPath, SOCKET);
         while (1) {
             const auto ACCEPTEDCONNECTION = accept(SOCKET, (sockaddr*)&clientAddress, &clientSize);
             if (ACCEPTEDCONNECTION < 0) {
@@ -58,7 +58,7 @@ void CIPCSocket::initialize() {
                 break;
             } else {
                 do {
-                    Debug::log(LOG, "Accepted incoming socket connection request on fd %i", ACCEPTEDCONNECTION);
+                    Debug::log(LOG, "Accepted incoming socket connection request on fd {}", ACCEPTEDCONNECTION);
                     std::lock_guard<std::mutex> lg(g_pHyprpaper->m_mtTickMutex);
 
                     auto                        messageSize              = read(ACCEPTEDCONNECTION, readBuffer, 1024);
@@ -100,7 +100,7 @@ bool CIPCSocket::mainThreadParseRequest() {
 
     // now we can work on the copy
 
-    Debug::log(LOG, "Received a request: %s", copy.c_str());
+    Debug::log(LOG, "Received a request: {}", copy);
 
     // set default reply
     m_szReply       = "ok";
@@ -123,7 +123,7 @@ bool CIPCSocket::mainThreadParseRequest() {
     if (copy.find("listloaded") == 0) {
 
         const auto numWallpapersLoaded = g_pHyprpaper->m_mWallpaperTargets.size();
-        Debug::log(LOG, "numWallpapersLoaded: %d", numWallpapersLoaded);
+        Debug::log(LOG, "numWallpapersLoaded: {}", numWallpapersLoaded);
 
         if (numWallpapersLoaded == 0) {
             m_szReply = "no wallpapers loaded";
@@ -145,7 +145,7 @@ bool CIPCSocket::mainThreadParseRequest() {
     if (copy.find("listactive") == 0) {
 
         const auto numWallpapersActive = g_pHyprpaper->m_mMonitorActiveWallpapers.size();
-        Debug::log(LOG, "numWallpapersActive: %d", numWallpapersActive);
+        Debug::log(LOG, "numWallpapersActive: {}", numWallpapersActive);
 
         if (numWallpapersActive == 0) {
             m_szReply = "no wallpapers active";

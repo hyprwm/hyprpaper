@@ -63,8 +63,8 @@ pkg_check_modules(
   libjxl
   libjxl_cms
   libjxl_threads
-  hyprlang>=0.2.0
-  hyprutils>=0.2.0
+  hyprlang>=0.6.0
+  hyprutils>=0.2.4
   hyprgraphics)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
