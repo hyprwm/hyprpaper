@@ -593,7 +593,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
         Debug::log(LOG, "Splash color: {:x}", *PSPLASHCOLOR);
 
-        cairo_set_source_rgba(PCAIRO, ((*PSPLASHCOLOR >> 16) & 0xFF) / 255.0, ((**PSPLASHCOLOR >> 8) & 0xFF) / 255.0, (*PSPLASHCOLOR & 0xFF) / 255.0,
+        cairo_set_source_rgba(PCAIRO, ((*PSPLASHCOLOR >> 16) & 0xFF) / 255.0, ((*PSPLASHCOLOR >> 8) & 0xFF) / 255.0, (*PSPLASHCOLOR & 0xFF) / 255.0,
                               ((*PSPLASHCOLOR >> 24) & 0xFF) / 255.0);
 
         cairo_text_extents_t textExtents;
@@ -623,7 +623,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
         if (pMonitor->pCurrentLayerSurface->pFractionalScaleInfo) {
             Debug::log(LOG, "Submitting viewport dest size {}x{} for {:x}", static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)),
-                       pMonitor->pCurrentLayerSurface);
+                       (uintptr_t)pMonitor->pCurrentLayerSurface);
             pMonitor->pCurrentLayerSurface->pViewport->sendSetDestination(static_cast<int>(std::round(pMonitor->size.x)), static_cast<int>(std::round(pMonitor->size.y)));
         }
         pMonitor->pCurrentLayerSurface->pSurface->sendCommit();
