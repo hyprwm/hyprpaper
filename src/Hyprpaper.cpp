@@ -582,7 +582,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         auto SPLASH = execAndGet("hyprctl splash");
         SPLASH.pop_back();
 
-        Debug::log(LOG, "Rendering splash: %s", SPLASH.c_str());
+        Debug::log(LOG, "Rendering splash: {}", SPLASH);
 
         cairo_select_font_face(PCAIRO, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 
