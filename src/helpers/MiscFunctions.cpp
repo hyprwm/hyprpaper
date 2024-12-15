@@ -15,7 +15,7 @@ bool vectorDeltaLessThan(const Vector2D& a, const Vector2D& b, const Vector2D& d
 }
 
 std::string execAndGet(const char* cmd) {
-    CProcess proc("/bin/bash", {cmd});
+    CProcess proc("/bin/bash", {"-c", cmd});
     if (!proc.runSync())
         return "";
     return proc.stdOut();
