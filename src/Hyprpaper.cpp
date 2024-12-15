@@ -580,7 +580,8 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
     if (*PRENDERSPLASH && getenv("HYPRLAND_INSTANCE_SIGNATURE")) {
         auto SPLASH = execAndGet("hyprctl splash");
-        SPLASH.pop_back();
+        if (!SPLASH.empty())
+            SPLASH.pop_back();
 
         Debug::log(LOG, "Rendering splash: {}", SPLASH);
 
