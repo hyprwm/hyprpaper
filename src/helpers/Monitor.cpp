@@ -21,4 +21,11 @@ void SMonitor::registerListeners() {
 
         description = desc;
     });
+
+    output->setGeometry([this](CCWlOutput* r, int32_t x, int32_t y, int32_t width_mm, int32_t height_mm, int32_t subpixel, const char* make, const char* model,
+                               int32_t transform_) { //
+        transform = (wl_output_transform)transform_;
+        if (transform == WL_OUTPUT_TRANSFORM_90 || transform == WL_OUTPUT_TRANSFORM_270)
+            std::swap(size.x, size.y);
+    });
 }
