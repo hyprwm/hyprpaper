@@ -22,10 +22,9 @@ struct SMonitor {
     uint32_t                                    configureSerial = 0;
     SPoolBuffer                                 buffer;
 
-    bool                                        wantsReload        = false;
-    bool                                        wantsACK           = false;
-    bool                                        initialized        = false;
-    bool                                        newModeForGeometry = false; //used to ensure mode has been set/changed before handling new geometry events
+    bool                                        wantsReload = false;
+    bool                                        wantsACK    = false;
+    bool                                        initialized = false;
 
     std::vector<std::unique_ptr<CLayerSurface>> layerSurfaces;
     CLayerSurface*                              pCurrentLayerSurface = nullptr;
