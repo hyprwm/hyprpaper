@@ -201,7 +201,7 @@ void CHyprpaper::createSeat(SP<CCWlSeat> pSeat) {
             else
                 m_pSeatCursorShapeDevice = makeShared<CCWpCursorShapeDeviceV1>(m_pCursorShape->sendGetPointer(m_pSeatPointer->resource()));
 
-            m_pSeatPointer->setEnter([this](CCWlPointer* r, uint32_t serial, wl_resource* surface, wl_fixed_t x, wl_fixed_t y) {
+            m_pSeatPointer->setEnter([this](CCWlPointer* r, uint32_t serial, wl_proxy* surface, wl_fixed_t x, wl_fixed_t y) {
                 if (!m_pCursorShape) {
                     m_pSeatPointer->sendSetCursor(serial, nullptr, 0, 0);
                     return;
