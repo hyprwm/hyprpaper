@@ -58,11 +58,6 @@ pkg_check_modules(
   cairo
   pango
   pangocairo
-  libjpeg
-  libwebp
-  libjxl
-  libjxl_cms
-  libjxl_threads
   hyprlang>=0.6.0
   hyprutils>=0.2.4
   hyprgraphics)
