@@ -3,6 +3,7 @@
 #include <fstream>
 #include <signal.h>
 #include <sys/types.h>
+#include <random>
 
 CHyprpaper::CHyprpaper() = default;
 
@@ -152,35 +153,74 @@ void CHyprpaper::unloadWallpaper(const std::string& path) {
 }
 
 void CHyprpaper::preloadAllWallpapersFromConfig() {
+    if (std::any_cast<Hyprlang::INT>(g_pConfigManager->config->getConfigValue("defer_preload"))) {
+        g_pConfigManager->m_dRequestedPreloads.clear();
+        return;
+    }
+
     if (g_pConfigManager->m_dRequestedPreloads.empty())
         return;
 
     for (auto& wp : g_pConfigManager->m_dRequestedPreloads) {
+        // For directory-based preloads, always reselect a random file.
+        // For files, we'll skip if already loaded.
+        bool shouldSkip = !std::filesystem::is_directory(wp);
 
-        // check if it doesnt exist
-        bool exists = false;
-        for (auto& [ewp, cls] : m_mWallpaperTargets) {
-            if (ewp == wp) {
-                Debug::log(LOG, "Ignoring request to preload {} as it already is preloaded!", ewp);
-                exists = true;
-                break;
+        if (std::filesystem::is_directory(wp)) {
+            // Always unload previous wallpaper from this directory
+            std::vector<std::string> toUnload;
+            for (auto& [loadedPath, target] : m_mWallpaperTargets) {
+                std::filesystem::path pLoaded(loadedPath);
+                if (pLoaded.parent_path() == std::filesystem::path(wp)) {
+                    toUnload.push_back(loadedPath);
+                    break; // Only unload one wallpaper per directory
+                }
+            }
+            for (auto& path : toUnload) {
+                unloadWallpaper(path);
+            }
+
+            std::vector<std::filesystem::path> images;
+            for (auto& entry : std::filesystem::directory_iterator(wp)) {
+                if (entry.is_regular_file()) {
+                    auto ext = entry.path().extension().string();
+                    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".webp" || ext == ".jxl")
+                        images.push_back(entry.path());
+                }
+            }
+            if (!images.empty()) {
+                // Use CRandomGenerator instead
+                wp = images[CRandomGenerator::get().getRandomIndex(images.size())].string();
+            } else {
+                Debug::log(LOG, "No valid images in directory {}", wp);
+                continue;
             }
         }
 
-        if (exists)
-            continue;
+        // For non-directory requests, skip if already loaded.
+        if (shouldSkip) {
+            bool exists = false;
+            for (auto& [ewp, cls] : m_mWallpaperTargets) {
+                if (ewp == wp) {
+                    Debug::log(LOG, "Ignoring request to preload {} as it already is preloaded!", ewp);
+                    exists = true;
+                    break;
+                }
+            }
+            if (exists)
+                continue;
+        }
 
         m_mWallpaperTargets[wp] = CWallpaperTarget();
         if (std::filesystem::is_symlink(wp)) {
-            auto                  real_wp       = std::filesystem::read_symlink(wp);
+            auto real_wp = std::filesystem::read_symlink(wp);
             std::filesystem::path absolute_path = std::filesystem::path(wp).parent_path() / real_wp;
-            absolute_path                       = absolute_path.lexically_normal();
-            m_mWallpaperTargets[wp].create(absolute_path);
+            absolute_path = absolute_path.lexically_normal();
+            m_mWallpaperTargets[wp].create(absolute_path.string());
         } else {
             m_mWallpaperTargets[wp].create(wp);
         }
     }
-
     g_pConfigManager->m_dRequestedPreloads.clear();
 }
 
