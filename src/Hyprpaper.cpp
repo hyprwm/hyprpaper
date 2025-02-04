@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include "helpers/RandomGenerator.hpp"
+#include "helpers/ImagePicker.hpp"
 
 CHyprpaper::CHyprpaper() = default;
 
@@ -180,21 +181,13 @@ void CHyprpaper::preloadAllWallpapersFromConfig() {
                 unloadWallpaper(path);
             }
 
-            std::vector<std::filesystem::path> images;
-            for (auto& entry : std::filesystem::directory_iterator(wp)) {
-                if (entry.is_regular_file()) {
-                    auto ext = entry.path().extension().string();
-                    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".webp" || ext == ".jxl")
-                        images.push_back(entry.path());
-                }
-            }
-            if (!images.empty()) {
-                // Use CRandomGenerator instead
-                wp = images[CRandomGenerator::get().getRandomIndex(images.size())].string();
-            } else {
+            // Use our helper to pick a random image.
+            std::string randomImage = getRandomImageFromDirectory(wp);
+            if (randomImage.empty()) {
                 Debug::log(LOG, "No valid images in directory {}", wp);
                 continue;
             }
+            wp = randomImage;
         }
 
         // For non-directory requests, skip if already loaded.

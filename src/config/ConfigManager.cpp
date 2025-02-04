@@ -3,6 +3,7 @@
 #include <hyprutils/path/Path.hpp>
 #include <filesystem>
 #include "../helpers/RandomGenerator.hpp"
+#include "../helpers/ImagePicker.hpp"
 
 // Utility function to safely expand a tilde at the beginning of a path.
 static std::string expandTilde(const std::string& path) {
@@ -61,28 +62,13 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
             }
         }
 
-        std::vector<std::filesystem::path> images;
-        for (auto& entry : std::filesystem::directory_iterator(WALLPAPER)) {
-            if (entry.is_regular_file()) {
-                auto ext = entry.path().extension().string();
-                if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".webp" || ext == ".jxl") {
-                    if (entry.path().string() != currentWallpaper) {
-                        images.push_back(entry.path());
-                    }
-                }
-            }
+        // Use our helper with an exclusion to avoid reselecting the same image.
+        std::string randomImage = getRandomImageFromDirectory(WALLPAPER, currentWallpaper);
+        if (randomImage.empty()) {
+            result.setError("No valid images in directory");
+            return result;
         }
-        
-        if (images.empty()) {
-            if (!currentWallpaper.empty()) {
-                images.push_back(currentWallpaper);
-            } else {
-                result.setError("No valid images in directory");
-                return result;
-            }
-        }
-
-        WALLPAPER = images[CRandomGenerator::get().getRandomIndex(images.size())].string();
+        WALLPAPER = randomImage;
     }
 
     if (!g_pHyprpaper->isPreloaded(WALLPAPER)) {
