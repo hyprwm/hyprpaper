@@ -3,7 +3,7 @@
 #include <fstream>
 #include <signal.h>
 #include <sys/types.h>
-#include <random>
+#include "helpers/RandomGenerator.hpp"
 
 CHyprpaper::CHyprpaper() = default;
 
@@ -314,15 +314,15 @@ SMonitor* CHyprpaper::getMonitorFromName(const std::string& monname) {
 void CHyprpaper::ensurePoolBuffersPresent() {
     bool anyNewBuffers = false;
 
-    for (auto& [file, wt] : m_mWallpaperTargets) {
+    for (auto& [path, wt] : m_mWallpaperTargets) {
         for (auto& m : m_vMonitors) {
 
             if (m->size == Vector2D())
                 continue;
 
-            auto it = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [wt = &wt, &m](const std::unique_ptr<SPoolBuffer>& el) {
+            auto it = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
                 auto scale = std::round((m->pCurrentLayerSurface && m->pCurrentLayerSurface->pFractionalScaleInfo ? m->pCurrentLayerSurface->fScale : m->scale) * 120.0) / 120.0;
-                return el->target == wt->m_szPath && vectorDeltaLessThan(el->pixelSize, m->size * scale, 1);
+                return el->target == path && vectorDeltaLessThan(el->pixelSize, m->size * scale, 1);
             });
 
             if (it == m_vBuffers.end()) {
@@ -331,9 +331,9 @@ void CHyprpaper::ensurePoolBuffersPresent() {
                 auto scale = std::round((m->pCurrentLayerSurface && m->pCurrentLayerSurface->pFractionalScaleInfo ? m->pCurrentLayerSurface->fScale : m->scale) * 120.0) / 120.0;
                 createBuffer(PBUFFER, m->size.x * scale, m->size.y * scale, WL_SHM_FORMAT_ARGB8888);
 
-                PBUFFER->target = wt.m_szPath;
+                PBUFFER->target = path;
 
-                Debug::log(LOG, "Buffer created for target {}, Shared Memory usage: {:.1f}MB", wt.m_szPath, PBUFFER->size / 1000000.f);
+                Debug::log(LOG, "Buffer created for target {}, Shared Memory usage: {:.1f}MB", path, PBUFFER->size / 1000000.f);
 
                 anyNewBuffers = true;
             }

@@ -2,7 +2,7 @@
 #include "../Hyprpaper.hpp"
 #include <hyprutils/path/Path.hpp>
 #include <filesystem>
-#include <random>
+#include "../helpers/RandomGenerator.hpp"
 
 // Utility function to safely expand a tilde at the beginning of a path.
 static std::string expandTilde(const std::string& path) {
