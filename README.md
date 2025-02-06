@@ -80,6 +80,8 @@ preload = /path/to/next_image.png
 wallpaper = monitor1,/path/to/image.png
 #if more than one monitor in use, can load a 2nd image
 wallpaper = monitor2,/path/to/next_image.png
+# you can also specify a directory path to randomly select a wallpaper from
+wallpaper = monitor3,/path/to/directory
 # .. more monitors
 
 #enable splash text rendering over the wallpaper
@@ -87,6 +89,9 @@ splash = true
 
 #fully disable ipc
 # ipc = off
+
+#enable deferred preloading (reduces memory usage but may cause slight delay when switching wallpapers)
+# defer_preload = 1
 
 
 ```

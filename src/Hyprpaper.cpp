@@ -3,6 +3,8 @@
 #include <fstream>
 #include <signal.h>
 #include <sys/types.h>
+#include "helpers/RandomGenerator.hpp"
+#include "helpers/ImagePicker.hpp"
 
 CHyprpaper::CHyprpaper() = default;
 
@@ -152,35 +154,66 @@ void CHyprpaper::unloadWallpaper(const std::string& path) {
 }
 
 void CHyprpaper::preloadAllWallpapersFromConfig() {
+    if (std::any_cast<Hyprlang::INT>(g_pConfigManager->config->getConfigValue("defer_preload"))) {
+        g_pConfigManager->m_dRequestedPreloads.clear();
+        return;
+    }
+
     if (g_pConfigManager->m_dRequestedPreloads.empty())
         return;
 
     for (auto& wp : g_pConfigManager->m_dRequestedPreloads) {
+        // For directory-based preloads, always reselect a random file.
+        // For files, we'll skip if already loaded.
+        bool shouldSkip = !std::filesystem::is_directory(wp);
 
-        // check if it doesnt exist
-        bool exists = false;
-        for (auto& [ewp, cls] : m_mWallpaperTargets) {
-            if (ewp == wp) {
-                Debug::log(LOG, "Ignoring request to preload {} as it already is preloaded!", ewp);
-                exists = true;
-                break;
+        if (std::filesystem::is_directory(wp)) {
+            // Always unload previous wallpaper from this directory
+            std::vector<std::string> toUnload;
+            for (auto& [loadedPath, target] : m_mWallpaperTargets) {
+                std::filesystem::path pLoaded(loadedPath);
+                if (pLoaded.parent_path() == std::filesystem::path(wp)) {
+                    toUnload.push_back(loadedPath);
+                    break; // Only unload one wallpaper per directory
+                }
             }
+            for (auto& path : toUnload) {
+                unloadWallpaper(path);
+            }
+
+            // Use our helper to pick a random image.
+            std::string randomImage = getRandomImageFromDirectory(wp);
+            if (randomImage.empty()) {
+                Debug::log(LOG, "No valid images in directory {}", wp);
+                continue;
+            }
+            wp = randomImage;
         }
 
-        if (exists)
-            continue;
+        // For non-directory requests, skip if already loaded.
+        if (shouldSkip) {
+            bool exists = false;
+            for (auto& [ewp, cls] : m_mWallpaperTargets) {
+                if (ewp == wp) {
+                    Debug::log(LOG, "Ignoring request to preload {} as it already is preloaded!", ewp);
+                    exists = true;
+                    break;
+                }
+            }
+            if (exists)
+                continue;
+        }
 
         m_mWallpaperTargets[wp] = CWallpaperTarget();
         if (std::filesystem::is_symlink(wp)) {
-            auto                  real_wp       = std::filesystem::read_symlink(wp);
+            auto real_wp = std::filesystem::read_symlink(wp);
             std::filesystem::path absolute_path = std::filesystem::path(wp).parent_path() / real_wp;
-            absolute_path                       = absolute_path.lexically_normal();
-            m_mWallpaperTargets[wp].create(absolute_path);
+            absolute_path = absolute_path.lexically_normal();
+            m_mWallpaperTargets[wp].create(absolute_path.string());
         } else {
             m_mWallpaperTargets[wp].create(wp);
         }
     }
-
     g_pConfigManager->m_dRequestedPreloads.clear();
 }
 
@@ -274,15 +307,15 @@ SMonitor* CHyprpaper::getMonitorFromName(const std::string& monname) {
 void CHyprpaper::ensurePoolBuffersPresent() {
     bool anyNewBuffers = false;
 
-    for (auto& [file, wt] : m_mWallpaperTargets) {
+    for (auto& [path, wt] : m_mWallpaperTargets) {
         for (auto& m : m_vMonitors) {
 
             if (m->size == Vector2D())
                 continue;
 
-            auto it = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [wt = &wt, &m](const std::unique_ptr<SPoolBuffer>& el) {
+            auto it = std::find_if(m_vBuffers.begin(), m_vBuffers.end(), [&](const std::unique_ptr<SPoolBuffer>& el) {
                 auto scale = std::round((m->pCurrentLayerSurface && m->pCurrentLayerSurface->pFractionalScaleInfo ? m->pCurrentLayerSurface->fScale : m->scale) * 120.0) / 120.0;
-                return el->target == wt->m_szPath && vectorDeltaLessThan(el->pixelSize, m->size * scale, 1);
+                return el->target == path && vectorDeltaLessThan(el->pixelSize, m->size * scale, 1);
             });
 
             if (it == m_vBuffers.end()) {
@@ -291,9 +324,9 @@ void CHyprpaper::ensurePoolBuffersPresent() {
                 auto scale = std::round((m->pCurrentLayerSurface && m->pCurrentLayerSurface->pFractionalScaleInfo ? m->pCurrentLayerSurface->fScale : m->scale) * 120.0) / 120.0;
                 createBuffer(PBUFFER, m->size.x * scale, m->size.y * scale, WL_SHM_FORMAT_ARGB8888);
 
-                PBUFFER->target = wt.m_szPath;
+                PBUFFER->target = path;
 
-                Debug::log(LOG, "Buffer created for target {}, Shared Memory usage: {:.1f}MB", wt.m_szPath, PBUFFER->size / 1000000.f);
+                Debug::log(LOG, "Buffer created for target {}, Shared Memory usage: {:.1f}MB", path, PBUFFER->size / 1000000.f);
 
                 anyNewBuffers = true;
             }
