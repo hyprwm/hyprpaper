@@ -3,8 +3,22 @@
 #include <fstream>
 #include <signal.h>
 #include <sys/types.h>
+#include <malloc.h>
+#include <unistd.h>
 
-CHyprpaper::CHyprpaper() = default;
+static void setMallocThreshold() {
+#ifdef M_TRIM_THRESHOLD
+    // The default is 128 pages,
+    // which is very large and can lead to a lot of memory used for no reason
+    // because trimming hasn't happened
+    static const int PAGESIZE = sysconf(_SC_PAGESIZE);
+    mallopt(M_TRIM_THRESHOLD, 6 * PAGESIZE);
+#endif
+}
+
+CHyprpaper::CHyprpaper() {
+    setMallocThreshold();
+}
 
 static void handleGlobal(CCWlRegistry* registry, uint32_t name, const char* interface, uint32_t version) {
     if (strcmp(interface, wl_compositor_interface.name) == 0) {
