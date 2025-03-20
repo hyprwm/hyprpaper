@@ -54,7 +54,7 @@ pkg_check_modules(
   REQUIRED
   IMPORTED_TARGET
   wayland-client
-  wayland-protocols
+  wayland-protocols>=1.35
   cairo
   pango
   pangocairo
