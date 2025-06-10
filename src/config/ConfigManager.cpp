@@ -214,7 +214,7 @@ std::string CConfigManager::getMainConfigPath() {
     if (paths.first.has_value())
         return paths.first.value();
     else
-        throw std::runtime_error("Could not find config in HOME, XDG_CONFIG_HOME, XDG_CONFIG_DIRS or /etc/hypr.");
+        return "";
 }
 
 // trim from both ends
