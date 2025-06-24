@@ -71,6 +71,9 @@ void CIPCSocket::initialize() {
                     m_bRequestReady = true;
 
                     g_pHyprpaper->tick(true);
+                    
+                    wl_display_roundtrip(g_pHyprpaper->m_sDisplay);
+                    
                     while (!m_bReplyReady) { // wait for Hyprpaper to finish processing the request
                         std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     }
