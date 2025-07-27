@@ -204,6 +204,22 @@ static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
     return Hyprlang::CParseResult{};
 }
 
+static Hyprlang::CParseResult handleSource(const char* C, const char* V) {
+    Hyprlang::CParseResult result;
+
+    const std::string      path = g_pConfigManager->absolutePath(V);
+
+    std::error_code        ec;
+    if (!std::filesystem::exists(path, ec)) {
+        result.setError((ec ? ec.message() : "no such file").c_str());
+        return result;
+    }
+
+    g_pConfigManager->config->parseFile(path.c_str());
+
+    return result;
+}
+
 CConfigManager::CConfigManager() {
     // Initialize the configuration
     // Read file from default location
@@ -224,6 +240,7 @@ CConfigManager::CConfigManager() {
     config->registerHandler(&handlePreload, "preload", {.allowFlags = false});
     config->registerHandler(&handleUnloadAll, "unloadAll", {.allowFlags = false});
     config->registerHandler(&handleReload, "reload", {.allowFlags = false});
+    config->registerHandler(&handleSource, "source", {.allowFlags = false});
 
     config->commence();
 }
@@ -255,4 +272,19 @@ std::string CConfigManager::trimPath(std::string path) {
     size_t pathStartIndex = path.find_first_not_of(" \t\r\n");
     size_t pathEndIndex   = path.find_last_not_of(" \t\r\n");
     return path.substr(pathStartIndex, pathEndIndex - pathStartIndex + 1);
+}
+
+std::string CConfigManager::absolutePath(const std::string& path) {
+    if (path.empty())
+        return "";
+
+    std::string result = path;
+
+    if (result[0] == '~') {
+        const char* home = getenv("HOME");
+        if (home)
+            result = std::string(home) + result.substr(1);
+    }
+
+    return std::filesystem::absolute(result).string();
 }
