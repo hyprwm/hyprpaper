@@ -179,9 +179,9 @@ static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
 static Hyprlang::CParseResult handleSource(const char* C, const char* V) {
     Hyprlang::CParseResult result;
 
-    const std::string path = g_pConfigManager->absolutePath(V);
+    const std::string      path = g_pConfigManager->absolutePath(V);
 
-    std::error_code ec;
+    std::error_code        ec;
     if (!std::filesystem::exists(path, ec)) {
         result.setError((ec ? ec.message() : "no such file").c_str());
         return result;

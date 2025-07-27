@@ -13,7 +13,7 @@ class CConfigManager {
     std::deque<std::string>            m_dRequestedPreloads;
     std::string                        getMainConfigPath();
     std::string                        trimPath(std::string path);
-    std::string                 absolutePath(const std::string& path);
+    std::string                        absolutePath(const std::string& path);
 
     std::unique_ptr<Hyprlang::CConfig> config;
 
