@@ -107,11 +107,12 @@ protocolnew("stable/xdg-shell" "xdg-shell" false)
 protocolnew("staging/cursor-shape" "cursor-shape-v1" false)
 protocolnew("stable/tablet" "tablet-v2" false)
 
+string(REPLACE "\"" "\\\"" GIT_COMMIT_MESSAGE_ESCAPED "${GIT_COMMIT_MESSAGE}")
 target_compile_definitions(hyprpaper
                            PRIVATE "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
 target_compile_definitions(hyprpaper PRIVATE "-DGIT_BRANCH=\"${GIT_BRANCH}\"")
-target_compile_definitions(
-  hyprpaper PRIVATE "-DGIT_COMMIT_MESSAGE=\"${GIT_COMMIT_MESSAGE}\"")
+target_compile_definitions(hyprpaper
+                           PRIVATE "-DGIT_COMMIT_MESSAGE=\"${GIT_COMMIT_MESSAGE_ESCAPED}\"")
 target_compile_definitions(hyprpaper PRIVATE "-DGIT_DIRTY=\"${GIT_DIRTY}\"")
 
 target_link_libraries(hyprpaper rt)
