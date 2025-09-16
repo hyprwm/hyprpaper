@@ -77,6 +77,7 @@ preload = /path/to/next_image.png
 # .. more preloads
 
 #set the default wallpaper(s) seen on initial workspace(s) --depending on the number of monitors used
+#
 wallpaper = monitor1,/path/to/image.png
 #if more than one monitor in use, can load a 2nd image
 wallpaper = monitor2,/path/to/next_image.png
@@ -98,6 +99,16 @@ You may add `contain:` or `tile:` before the file path in `wallpaper=` to set th
 ```
 wallpaper = monitor,contain:/path/to/image.jpg
 ```
+
+You can also specify an optional rotation (in degrees) for the wallpaper:
+
+```
+wallpaper = monitor,/path/to/image.jpg,90
+wallpaper = monitor,contain:/path/to/image.jpg,180
+wallpaper = monitor,tile:/path/to/image.jpg,270
+```
+
+Supported rotation values are 0, 90, 180, and 270 degrees. If no rotation is specified, it defaults to 0 (no rotation).
 
 A Wallpaper ***cannot*** be applied without preloading. The config is ***not*** reloaded dynamically.
 
