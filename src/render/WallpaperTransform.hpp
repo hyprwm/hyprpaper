@@ -2,9 +2,9 @@
 #include <cairo/cairo.h>
 #include <hyprutils/math/Vector2D.hpp>
 
-// Applies robust rotation, scaling, and centering for wallpaper rendering
-// Always fills the monitor (cover mode), centers image, and handles all rotations correctly
-inline void applyWallpaperTransform(cairo_t* cr, const Vector2D& imgSize, const Vector2D& monSize, int rotation) {
+// Applies rotation, scaling, and centering for wallpaper rendering
+// Supports cover, contain, and tile modes with proper rotation handling
+inline void applyWallpaperTransform(cairo_t* cr, const Vector2D& imgSize, const Vector2D& monSize, int rotation, bool contain = false, bool tile = false) {
     double imgW = imgSize.x;
     double imgH = imgSize.y;
     double monW = monSize.x;
@@ -19,10 +19,21 @@ inline void applyWallpaperTransform(cairo_t* cr, const Vector2D& imgSize, const 
     double effectiveImgW = isRotated90or270 ? imgH : imgW;
     double effectiveImgH = isRotated90or270 ? imgW : imgH;
     
-    // Calculate scale to cover the monitor (larger scale wins)
+    // Calculate scale based on mode
     double scaleX = monW / effectiveImgW;
     double scaleY = monH / effectiveImgH;
-    double scale = std::max(scaleX, scaleY);
+    double scale;
+    
+    if (contain) {
+        // Contain mode: fit entire image (smaller scale wins)
+        scale = std::min(scaleX, scaleY);
+    } else if (tile) {
+        // Tile mode: use 1:1 scale
+        scale = 1.0;
+    } else {
+        // Cover mode: fill monitor (larger scale wins)
+        scale = std::max(scaleX, scaleY);
+    }
     
     // Debug output
     printf("DEBUG Transform: rotation=%d, imgSize=[%.1f,%.1f], monSize=[%.1f,%.1f]\n", 

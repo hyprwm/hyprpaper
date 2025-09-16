@@ -71,11 +71,18 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].tile    = tile;
 
     // Set wallpaper rotation for the monitor
+    printf("DEBUG: Setting rotation %d for monitor '%s'\n", rotation, MONITOR.c_str());
+    bool rotationSet = false;
     for (auto& m : g_pHyprpaper->m_vMonitors) {
         if (m->name == MONITOR) {
             m->wallpaperRotation = rotation;
+            printf("DEBUG: Applied rotation %d to monitor %s\n", rotation, m->name.c_str());
+            rotationSet = true;
             break;
         }
+    }
+    if (!rotationSet && !MONITOR.empty()) {
+        printf("DEBUG: Monitor '%s' not found, rotation not applied\n", MONITOR.c_str());
     }
 
     if (MONITOR.empty()) {
@@ -85,6 +92,7 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
                 g_pHyprpaper->m_mMonitorActiveWallpapers[m->name]            = WALLPAPER;
                 g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].contain = contain;
                 g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].tile    = tile;
+                m->wallpaperRotation = rotation; // Apply rotation to wildcard monitors too
             }
         }
     } else {

@@ -571,7 +571,9 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         PCAIRO,
         Vector2D(PWALLPAPERTARGET->m_vSize.x, PWALLPAPERTARGET->m_vSize.y),
         DIMENSIONS,
-        pMonitor->wallpaperRotation
+        pMonitor->wallpaperRotation,
+        CONTAIN,
+        TILE
     );
 
     if (TILE) {
