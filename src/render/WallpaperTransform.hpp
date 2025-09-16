@@ -2,56 +2,53 @@
 #include <cairo/cairo.h>
 #include <hyprutils/math/Vector2D.hpp>
 
-// Applies rotation, scaling, and centering for wallpaper rendering
-// Supports cover, contain, and tile modes with proper rotation handling
-inline void applyWallpaperTransform(cairo_t* cr, const Vector2D& imgSize, const Vector2D& monSize, int rotation, bool contain = false, bool tile = false) {
-    double imgW = imgSize.x;
-    double imgH = imgSize.y;
-    double monW = monSize.x;
-    double monH = monSize.y;
+enum class WallpaperMode {
+    COVER,   // Fill monitor, may crop image (default)
+    CONTAIN, // Fit entire image, may leave empty space
+    TILE     // Use 1:1 scale with tiling
+};
+
+/**
+ * Applies wallpaper transformation with rotation, scaling, and centering
+ * 
+ * @param cr Cairo context for rendering
+ * @param imgSize Original image dimensions
+ * @param monSize Monitor dimensions  
+ * @param rotation Rotation angle in degrees (0, 90, 180, 270)
+ * @param contain Use contain mode (fit entire image)
+ * @param tile Use tile mode (1:1 scale)
+ */
+inline void applyWallpaperTransform(cairo_t* cr, const Vector2D& imgSize, const Vector2D& monSize, 
+                                   int rotation, bool contain = false, bool tile = false) {
+    const double imgW = imgSize.x;
+    const double imgH = imgSize.y;
+    const double monW = monSize.x;
+    const double monH = monSize.y;
     
-    // Normalize rotation
-    int rot = rotation % 360;
-    if (rot < 0) rot += 360;
+    // Normalize rotation to 0-359 range
+    const int normalizedRotation = ((rotation % 360) + 360) % 360;
     
-    // For 90/270 degrees, the image dimensions are effectively swapped
-    bool isRotated90or270 = (rot == 90 || rot == 270);
-    double effectiveImgW = isRotated90or270 ? imgH : imgW;
-    double effectiveImgH = isRotated90or270 ? imgW : imgH;
+    // Calculate effective image dimensions after rotation
+    const bool isDimensionSwapped = (normalizedRotation == 90 || normalizedRotation == 270);
+    const double effectiveImgW = isDimensionSwapped ? imgH : imgW;
+    const double effectiveImgH = isDimensionSwapped ? imgW : imgH;
     
-    // Calculate scale based on mode
-    double scaleX = monW / effectiveImgW;
-    double scaleY = monH / effectiveImgH;
+    // Calculate scale factor based on wallpaper mode
+    const double scaleX = monW / effectiveImgW;
+    const double scaleY = monH / effectiveImgH;
+    
     double scale;
-    
     if (contain) {
-        // Contain mode: fit entire image (smaller scale wins)
-        scale = std::min(scaleX, scaleY);
+        scale = std::min(scaleX, scaleY);  // Fit entire image
     } else if (tile) {
-        // Tile mode: use 1:1 scale
-        scale = 1.0;
+        scale = 1.0;                       // Original size
     } else {
-        // Cover mode: fill monitor (larger scale wins)
-        scale = std::max(scaleX, scaleY);
+        scale = std::max(scaleX, scaleY);  // Fill monitor (cover mode)
     }
     
-    // Debug output
-    printf("DEBUG Transform: rotation=%d, imgSize=[%.1f,%.1f], monSize=[%.1f,%.1f]\n", 
-           rot, imgW, imgH, monW, monH);
-    printf("DEBUG effective=[%.1f,%.1f], scales=[%.3f,%.3f], final_scale=%.3f\n", 
-           effectiveImgW, effectiveImgH, scaleX, scaleY, scale);
-    printf("DEBUG transforms: translate=[%.1f,%.1f], rotate=%.1f°, scale=%.3f, img_center=[%.1f,%.1f]\n",
-           monW/2.0, monH/2.0, (double)rot, scale, imgW/2.0, imgH/2.0);
-    
-    // Move to center of monitor
-    cairo_translate(cr, monW / 2.0, monH / 2.0);
-    
-    // Rotate around center
-    cairo_rotate(cr, rot * M_PI / 180.0);
-    
-    // Scale the image
-    cairo_scale(cr, scale, scale);
-    
-    // Move to center of image (so image center aligns with rotation center)
-    cairo_translate(cr, -imgW / 2.0, -imgH / 2.0);
+    // Apply Cairo transformations
+    cairo_translate(cr, monW / 2.0, monH / 2.0);                    // Move to monitor center
+    cairo_rotate(cr, normalizedRotation * M_PI / 180.0);            // Rotate around center
+    cairo_scale(cr, scale, scale);                                  // Scale image
+    cairo_translate(cr, -imgW / 2.0, -imgH / 2.0);                 // Center image on rotation point
 }
