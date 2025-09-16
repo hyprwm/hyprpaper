@@ -1,4 +1,5 @@
 #include "Hyprpaper.hpp"
+#include "render/WallpaperTransform.hpp"
 #include <filesystem>
 #include <fstream>
 #include <signal.h>
@@ -520,6 +521,7 @@ SPoolBuffer* CHyprpaper::getPoolBuffer(SMonitor* pMonitor, CWallpaperTarget* pWa
 }
 
 void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
+#include "render/WallpaperTransform.hpp"
     static auto PRENDERSPLASH = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(g_pConfigManager->config.get(), "splash");
     static auto PSPLASHOFFSET = Hyprlang::CSimpleConfigValue<Hyprlang::FLOAT>(g_pConfigManager->config.get(), "splash_offset");
 
@@ -564,30 +566,21 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     cairo_fill(PCAIRO);
     cairo_surface_flush(PBUFFER->surface);
 
-    // get scale
-    // we always do cover
-    double     scale;
-    Vector2D   origin;
-
-    const bool LOWASPECTRATIO = pMonitor->size.x / pMonitor->size.y > PWALLPAPERTARGET->m_vSize.x / PWALLPAPERTARGET->m_vSize.y;
-    if ((CONTAIN && !LOWASPECTRATIO) || (!CONTAIN && LOWASPECTRATIO)) {
-        scale    = DIMENSIONS.x / PWALLPAPERTARGET->m_vSize.x;
-        origin.y = -(PWALLPAPERTARGET->m_vSize.y * scale - DIMENSIONS.y) / 2.0 / scale;
-    } else {
-        scale    = DIMENSIONS.y / PWALLPAPERTARGET->m_vSize.y;
-        origin.x = -(PWALLPAPERTARGET->m_vSize.x * scale - DIMENSIONS.x) / 2.0 / scale;
-    }
-
-    Debug::log(LOG, "Image data for {}: {} at [{:.2f}, {:.2f}], scale: {:.2f} (original image size: [{}, {}])", pMonitor->name, PWALLPAPERTARGET->m_szPath, origin.x, origin.y,
-               scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);
+    // Apply wallpaper transform (handles scaling, rotation, and centering)
+    applyWallpaperTransform(
+        PCAIRO,
+        Vector2D(PWALLPAPERTARGET->m_vSize.x, PWALLPAPERTARGET->m_vSize.y),
+        DIMENSIONS,
+        pMonitor->wallpaperRotation
+    );
 
     if (TILE) {
         cairo_pattern_t* pattern = cairo_pattern_create_for_surface(PWALLPAPERTARGET->m_pCairoSurface->cairo());
         cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
         cairo_set_source(PCAIRO, pattern);
     } else {
-        cairo_scale(PCAIRO, scale, scale);
-        cairo_set_source_surface(PCAIRO, PWALLPAPERTARGET->m_pCairoSurface->cairo(), origin.x, origin.y);
+        // No additional scaling/positioning - the transform handles it all
+        cairo_set_source_surface(PCAIRO, PWALLPAPERTARGET->m_pCairoSurface->cairo(), 0, 0);
     }
 
     cairo_paint(PCAIRO);
@@ -600,6 +593,15 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         Debug::log(LOG, "Rendering splash: {}", SPLASH);
 
         cairo_select_font_face(PCAIRO, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+
+        // Calculate scale for splash text (same logic as transform function)
+        int rot = pMonitor->wallpaperRotation % 360;
+        bool swapWH = (rot == 90 || rot == 270);
+        double imgW = swapWH ? PWALLPAPERTARGET->m_vSize.y : PWALLPAPERTARGET->m_vSize.x;
+        double imgH = swapWH ? PWALLPAPERTARGET->m_vSize.x : PWALLPAPERTARGET->m_vSize.y;
+        double scaleX = DIMENSIONS.x / imgW;
+        double scaleY = DIMENSIONS.y / imgH;
+        double scale = std::max(scaleX, scaleY);
 
         const auto FONTSIZE = (int)(DIMENSIONS.y / 76.0 / scale);
         cairo_set_font_size(PCAIRO, FONTSIZE);

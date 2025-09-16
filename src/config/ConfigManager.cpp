@@ -8,13 +8,29 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     const std::string      VALUE   = V;
     Hyprlang::CParseResult result;
 
-    if (VALUE.find_first_of(',') == std::string::npos) {
+
+    // Support syntax: monitor_name,wallpaper_path[,rotation]
+    size_t firstComma = VALUE.find_first_of(',');
+    if (firstComma == std::string::npos) {
         result.setError("wallpaper failed (syntax)");
         return result;
     }
 
-    auto MONITOR   = VALUE.substr(0, VALUE.find_first_of(','));
-    auto WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(VALUE.find_first_of(',') + 1));
+    size_t secondComma = VALUE.find_first_of(',', firstComma + 1);
+    auto MONITOR   = VALUE.substr(0, firstComma);
+    std::string WALLPAPER;
+    int rotation = 0;
+    if (secondComma == std::string::npos) {
+        WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(firstComma + 1));
+    } else {
+        WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(firstComma + 1, secondComma - firstComma - 1));
+        std::string rotationStr = VALUE.substr(secondComma + 1);
+        try {
+            rotation = std::stoi(rotationStr);
+        } catch (...) {
+            rotation = 0;
+        }
+    }
 
     bool contain = false;
 
@@ -48,10 +64,19 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
         return result;
     }
 
+
     g_pHyprpaper->clearWallpaperFromMonitor(MONITOR);
     g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR]            = WALLPAPER;
     g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
     g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].tile    = tile;
+
+    // Set wallpaper rotation for the monitor
+    for (auto& m : g_pHyprpaper->m_vMonitors) {
+        if (m->name == MONITOR) {
+            m->wallpaperRotation = rotation;
+            break;
+        }
+    }
 
     if (MONITOR.empty()) {
         for (auto& m : g_pHyprpaper->m_vMonitors) {

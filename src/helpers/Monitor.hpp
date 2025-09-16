@@ -26,6 +26,9 @@ struct SMonitor {
     bool                                        wantsACK    = false;
     bool                                        initialized = false;
 
+    // Wallpaper rotation in degrees (0, 90, 180, 270)
+    int                                         wallpaperRotation = 0;
+
     std::vector<std::unique_ptr<CLayerSurface>> layerSurfaces;
     CLayerSurface*                              pCurrentLayerSurface = nullptr;
 
