@@ -42,11 +42,10 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
         WALLPAPER                        = std::string(ENVHOME) + WALLPAPER.substr(1);
     }
 
-    int rotation = 0;
+    uint32_t rotation = 0;
     if (secondComma != std::string::npos) {
-        std::string rotationStr = VALUE.substr(secondComma + 1);
         try {
-            rotation = std::stoi(rotationStr);
+            rotation = std::stoi(VALUE.substr(secondComma + 1));
             if (rotation < 0 || rotation > 7) {
                 result.setError("wallpaper failed (invalid rotation input: must be 0-7)");
                 return result;
