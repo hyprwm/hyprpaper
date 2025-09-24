@@ -19,6 +19,7 @@
 struct SWallpaperRenderData {
     bool contain = false;
     bool tile    = false;
+    uint32_t rotation = 0;
 };
 
 class CHyprpaper {

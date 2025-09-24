@@ -13,8 +13,15 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
         return result;
     }
 
-    auto MONITOR   = VALUE.substr(0, VALUE.find_first_of(','));
-    auto WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(VALUE.find_first_of(',') + 1));
+    auto firstComma = VALUE.find_first_of(',');
+    auto secondComma = VALUE.find_first_of(',', firstComma + 1);
+
+    auto MONITOR = VALUE.substr(0, firstComma);
+
+    auto WALLPAPER = g_pConfigManager->trimPath(
+        VALUE.substr(firstComma + 1, 
+            (secondComma == std::string::npos ? std::string::npos : secondComma - firstComma - 1))
+    );
 
     bool contain = false;
 
@@ -35,6 +42,21 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
         WALLPAPER                        = std::string(ENVHOME) + WALLPAPER.substr(1);
     }
 
+    int rotation = 0;
+    if (secondComma != std::string::npos) {
+        std::string rotationStr = VALUE.substr(secondComma + 1);
+        try {
+            rotation = std::stoi(rotationStr);
+            if (rotation < 0 || rotation > 7) {
+                result.setError("wallpaper failed (invalid rotation input: must be 0-7)");
+                return result;
+            }
+        } catch (...) {
+            result.setError("wallpaper failed (invalid rotation: not a number)");
+            return result;
+        }
+    }
+
     std::error_code ec;
 
     if (!std::filesystem::exists(WALLPAPER, ec)) {
@@ -52,6 +74,7 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR]            = WALLPAPER;
     g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
     g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].tile    = tile;
+    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].rotation = rotation;
 
     if (MONITOR.empty()) {
         for (auto& m : g_pHyprpaper->m_vMonitors) {
@@ -60,6 +83,7 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
                 g_pHyprpaper->m_mMonitorActiveWallpapers[m->name]            = WALLPAPER;
                 g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].contain = contain;
                 g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].tile    = tile;
+                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].rotation = rotation;
             }
         }
     } else {
