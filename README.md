@@ -99,6 +99,25 @@ You may add `contain:` or `tile:` before the file path in `wallpaper=` to set th
 wallpaper = monitor,contain:/path/to/image.jpg
 ```
 
+If you want to rotate a wallpaper, add a ```, X``` at then end of the wallpaper rule, where ```X``` corresponds to a transform number, e.g.:
+
+```
+wallpaper = monitor,/path/to/image.jpg, 1
+```
+
+Transform list:
+
+```
+0 -> normal (no transforms)
+1 -> 90 degrees
+2 -> 180 degrees
+3 -> 270 degrees
+4 -> flipped
+5 -> flipped + 90 degrees
+6 -> flipped + 180 degrees
+7 -> flipped + 270 degrees
+```
+
 A Wallpaper ***cannot*** be applied without preloading. The config is ***not*** reloaded dynamically.
 
 ## Important note to the inner workings
