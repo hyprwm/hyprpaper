@@ -581,13 +581,11 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     if (ROTATION != 0) {
         cairo_translate(PCAIRO, DIMENSIONS.x / 2.0, DIMENSIONS.y / 2.0);
 
-        if (ROTATION % 4 != 0) {
+        if (ROTATION % 4 != 0)
             cairo_rotate(PCAIRO, (ROTATION % 4) * M_PI_2);
-        }
 
-        if (ROTATION >= 4) {
+        if (ROTATION >= 4)
             cairo_scale(PCAIRO, -1, 1);
-        }
 
         cairo_translate(PCAIRO, -DIMENSIONS.x / 2.0, -DIMENSIONS.y / 2.0);
     }
