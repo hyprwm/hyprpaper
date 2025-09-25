@@ -13,15 +13,12 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
         return result;
     }
 
-    auto firstComma = VALUE.find_first_of(',');
+    auto firstComma  = VALUE.find_first_of(',');
     auto secondComma = VALUE.find_first_of(',', firstComma + 1);
 
     auto MONITOR = VALUE.substr(0, firstComma);
 
-    auto WALLPAPER = g_pConfigManager->trimPath(
-        VALUE.substr(firstComma + 1, 
-            (secondComma == std::string::npos ? std::string::npos : secondComma - firstComma - 1))
-    );
+    auto WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(firstComma + 1, (secondComma == std::string::npos ? std::string::npos : secondComma - firstComma - 1)));
 
     bool contain = false;
 
@@ -70,18 +67,18 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     }
 
     g_pHyprpaper->clearWallpaperFromMonitor(MONITOR);
-    g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR]            = WALLPAPER;
-    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
-    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].tile    = tile;
+    g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR]             = WALLPAPER;
+    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain  = contain;
+    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].tile     = tile;
     g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].rotation = rotation;
 
     if (MONITOR.empty()) {
         for (auto& m : g_pHyprpaper->m_vMonitors) {
             if (!m->hasATarget || m->wildcard) {
                 g_pHyprpaper->clearWallpaperFromMonitor(m->name);
-                g_pHyprpaper->m_mMonitorActiveWallpapers[m->name]            = WALLPAPER;
-                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].contain = contain;
-                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].tile    = tile;
+                g_pHyprpaper->m_mMonitorActiveWallpapers[m->name]             = WALLPAPER;
+                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].contain  = contain;
+                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].tile     = tile;
                 g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].rotation = rotation;
             }
         }

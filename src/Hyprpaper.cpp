@@ -567,13 +567,14 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
     // get scale
     // we always do cover
-    double     scale = 1.0;
-    Vector2D   origin;
-    
-    double imgW = PWALLPAPERTARGET->m_vSize.x;
-    double imgH = PWALLPAPERTARGET->m_vSize.y;
+    double   scale = 1.0;
+    Vector2D origin;
 
-    if ((ROTATION % 4 == 1) || (ROTATION % 4 == 3)) std::swap(imgW, imgH);
+    double   imgW = PWALLPAPERTARGET->m_vSize.x;
+    double   imgH = PWALLPAPERTARGET->m_vSize.y;
+
+    if ((ROTATION % 4 == 1) || (ROTATION % 4 == 3))
+        std::swap(imgW, imgH);
 
     cairo_save(PCAIRO);
 
@@ -591,17 +592,16 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         cairo_translate(PCAIRO, -DIMENSIONS.x / 2.0, -DIMENSIONS.y / 2.0);
     }
 
-
     if (TILE) {
         cairo_pattern_t* pattern = cairo_pattern_create_for_surface(PWALLPAPERTARGET->m_pCairoSurface->cairo());
         cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
         cairo_set_source(PCAIRO, pattern);
         cairo_pattern_destroy(pattern);
     } else {
-        
-        if (CONTAIN){
+
+        if (CONTAIN) {
             scale = std::min(DIMENSIONS.x / imgW, DIMENSIONS.y / imgH);
-        }else{
+        } else {
             scale = std::max(DIMENSIONS.x / imgW, DIMENSIONS.y / imgH);
         }
 
