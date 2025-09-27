@@ -597,11 +597,10 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
         cairo_pattern_destroy(pattern);
     } else {
 
-        if (CONTAIN) {
+        if (CONTAIN)
             scale = std::min(DIMENSIONS.x / imgW, DIMENSIONS.y / imgH);
-        } else {
+        else
             scale = std::max(DIMENSIONS.x / imgW, DIMENSIONS.y / imgH);
-        }
 
         origin.x = (DIMENSIONS.x / scale - PWALLPAPERTARGET->m_vSize.x) / 2.0;
         origin.y = (DIMENSIONS.y / scale - PWALLPAPERTARGET->m_vSize.y) / 2.0;

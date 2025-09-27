@@ -4,21 +4,18 @@
 #include <filesystem>
 
 static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
-    const std::string      COMMAND = C;
-    const std::string      VALUE   = V;
-    Hyprlang::CParseResult result;
+    const std::string           COMMAND = C;
+    const std::string           VALUE   = V;
+    Hyprlang::CParseResult      result;
+    Hyprutils::String::CVarList args(VALUE, 3, ',', true);
 
-    if (VALUE.find_first_of(',') == std::string::npos) {
+    if (args.size() < 2) {
         result.setError("wallpaper failed (syntax)");
         return result;
     }
 
-    auto firstComma  = VALUE.find_first_of(',');
-    auto secondComma = VALUE.find_first_of(',', firstComma + 1);
-
-    auto MONITOR = VALUE.substr(0, firstComma);
-
-    auto WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(firstComma + 1, (secondComma == std::string::npos ? std::string::npos : secondComma - firstComma - 1)));
+    auto MONITOR   = args[0];
+    auto WALLPAPER = g_pConfigManager->trimPath(args[1]);
 
     bool contain = false;
 
@@ -40,10 +37,10 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     }
 
     uint32_t rotation = 0;
-    if (secondComma != std::string::npos) {
+    if (args.size() >= 3) {
         try {
-            rotation = std::stoi(VALUE.substr(secondComma + 1));
-            if (rotation < 0 || rotation > 7) {
+            rotation = std::stoi(args[2]);
+            if (rotation > 7) {
                 result.setError("wallpaper failed (invalid rotation input: must be 0-7)");
                 return result;
             }
@@ -161,10 +158,18 @@ static Hyprlang::CParseResult handleUnload(const char* C, const char* V) {
 }
 
 static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
-    const std::string COMMAND = C;
-    const std::string VALUE   = V;
+    const std::string           COMMAND = C;
+    const std::string           VALUE   = V;
+    Hyprutils::String::CVarList args(VALUE, 3, ',', true);
 
-    auto              WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(VALUE.find_first_of(',') + 1));
+    if (args.size() < 2) {
+        Hyprlang::CParseResult result;
+        result.setError("reload failed (syntax)");
+        return result;
+    }
+
+    auto MONITOR   = args[0];
+    auto WALLPAPER = g_pConfigManager->trimPath(args[1]);
 
     if (WALLPAPER.find("contain:") == 0) {
         WALLPAPER = WALLPAPER.substr(8);
@@ -176,8 +181,6 @@ static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
     auto preloadResult = handlePreload(C, WALLPAPER.c_str());
     if (preloadResult.error)
         return preloadResult;
-
-    auto MONITOR = VALUE.substr(0, VALUE.find_first_of(','));
 
     if (MONITOR.empty()) {
         for (auto& m : g_pHyprpaper->m_vMonitors) {
