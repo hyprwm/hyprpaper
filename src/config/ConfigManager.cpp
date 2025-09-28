@@ -7,7 +7,7 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     const std::string           COMMAND = C;
     const std::string           VALUE   = V;
     Hyprlang::CParseResult      result;
-    Hyprutils::String::CVarList args(VALUE, 3, ',', true);
+    Hyprutils::String::CVarList args(VALUE, 3, ',', false);
 
     if (args.size() < 2) {
         result.setError("wallpaper failed (syntax)");
@@ -160,7 +160,7 @@ static Hyprlang::CParseResult handleUnload(const char* C, const char* V) {
 static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
     const std::string           COMMAND = C;
     const std::string           VALUE   = V;
-    Hyprutils::String::CVarList args(VALUE, 3, ',', true);
+    Hyprutils::String::CVarList args(VALUE, 3, ',', false);
 
     if (args.size() < 2) {
         Hyprlang::CParseResult result;
