@@ -17,8 +17,9 @@
 #include "protocols/wlr-layer-shell-unstable-v1.hpp"
 
 struct SWallpaperRenderData {
-    bool contain = false;
-    bool tile    = false;
+    bool     contain  = false;
+    bool     tile     = false;
+    uint32_t rotation = 0;
 };
 
 class CHyprpaper {

@@ -4,17 +4,18 @@
 #include <filesystem>
 
 static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
-    const std::string      COMMAND = C;
-    const std::string      VALUE   = V;
-    Hyprlang::CParseResult result;
+    const std::string           COMMAND = C;
+    const std::string           VALUE   = V;
+    Hyprlang::CParseResult      result;
+    Hyprutils::String::CVarList args(VALUE, 3, ',', false);
 
-    if (VALUE.find_first_of(',') == std::string::npos) {
+    if (args.size() < 2) {
         result.setError("wallpaper failed (syntax)");
         return result;
     }
 
-    auto MONITOR   = VALUE.substr(0, VALUE.find_first_of(','));
-    auto WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(VALUE.find_first_of(',') + 1));
+    auto MONITOR   = args[0];
+    auto WALLPAPER = g_pConfigManager->trimPath(args[1]);
 
     bool contain = false;
 
@@ -35,6 +36,20 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
         WALLPAPER                        = std::string(ENVHOME) + WALLPAPER.substr(1);
     }
 
+    uint32_t rotation = 0;
+    if (args.size() >= 3) {
+        try {
+            rotation = std::stoi(args[2]);
+            if (rotation > 7) {
+                result.setError("wallpaper failed (invalid rotation input: must be 0-7)");
+                return result;
+            }
+        } catch (...) {
+            result.setError("wallpaper failed (invalid rotation: not a number)");
+            return result;
+        }
+    }
+
     std::error_code ec;
 
     if (!std::filesystem::exists(WALLPAPER, ec)) {
@@ -49,17 +64,19 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     }
 
     g_pHyprpaper->clearWallpaperFromMonitor(MONITOR);
-    g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR]            = WALLPAPER;
-    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
-    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].tile    = tile;
+    g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR]             = WALLPAPER;
+    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain  = contain;
+    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].tile     = tile;
+    g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].rotation = rotation;
 
     if (MONITOR.empty()) {
         for (auto& m : g_pHyprpaper->m_vMonitors) {
             if (!m->hasATarget || m->wildcard) {
                 g_pHyprpaper->clearWallpaperFromMonitor(m->name);
-                g_pHyprpaper->m_mMonitorActiveWallpapers[m->name]            = WALLPAPER;
-                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].contain = contain;
-                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].tile    = tile;
+                g_pHyprpaper->m_mMonitorActiveWallpapers[m->name]             = WALLPAPER;
+                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].contain  = contain;
+                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].tile     = tile;
+                g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].rotation = rotation;
             }
         }
     } else {
@@ -141,10 +158,18 @@ static Hyprlang::CParseResult handleUnload(const char* C, const char* V) {
 }
 
 static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
-    const std::string COMMAND = C;
-    const std::string VALUE   = V;
+    const std::string           COMMAND = C;
+    const std::string           VALUE   = V;
+    Hyprutils::String::CVarList args(VALUE, 3, ',', false);
 
-    auto              WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(VALUE.find_first_of(',') + 1));
+    if (args.size() < 2) {
+        Hyprlang::CParseResult result;
+        result.setError("reload failed (syntax)");
+        return result;
+    }
+
+    auto MONITOR   = args[0];
+    auto WALLPAPER = g_pConfigManager->trimPath(args[1]);
 
     if (WALLPAPER.find("contain:") == 0) {
         WALLPAPER = WALLPAPER.substr(8);
@@ -156,8 +181,6 @@ static Hyprlang::CParseResult handleReload(const char* C, const char* V) {
     auto preloadResult = handlePreload(C, WALLPAPER.c_str());
     if (preloadResult.error)
         return preloadResult;
-
-    auto MONITOR = VALUE.substr(0, VALUE.find_first_of(','));
 
     if (MONITOR.empty()) {
         for (auto& m : g_pHyprpaper->m_vMonitors) {

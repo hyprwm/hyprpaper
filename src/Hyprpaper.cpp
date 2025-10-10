@@ -529,6 +529,7 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
     const auto PWALLPAPERTARGET = m_mMonitorActiveWallpaperTargets[pMonitor];
     const auto CONTAIN          = m_mMonitorWallpaperRenderData[pMonitor->name].contain;
     const auto TILE             = m_mMonitorWallpaperRenderData[pMonitor->name].tile;
+    const auto ROTATION         = m_mMonitorWallpaperRenderData[pMonitor->name].rotation;
 
     if (!PWALLPAPERTARGET) {
         Debug::log(CRIT, "wallpaper target null in render??");
@@ -566,31 +567,54 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
     // get scale
     // we always do cover
-    double     scale;
-    Vector2D   origin;
+    double   scale = 1.0;
+    Vector2D origin;
 
-    const bool LOWASPECTRATIO = pMonitor->size.x / pMonitor->size.y > PWALLPAPERTARGET->m_vSize.x / PWALLPAPERTARGET->m_vSize.y;
-    if ((CONTAIN && !LOWASPECTRATIO) || (!CONTAIN && LOWASPECTRATIO)) {
-        scale    = DIMENSIONS.x / PWALLPAPERTARGET->m_vSize.x;
-        origin.y = -(PWALLPAPERTARGET->m_vSize.y * scale - DIMENSIONS.y) / 2.0 / scale;
-    } else {
-        scale    = DIMENSIONS.y / PWALLPAPERTARGET->m_vSize.y;
-        origin.x = -(PWALLPAPERTARGET->m_vSize.x * scale - DIMENSIONS.x) / 2.0 / scale;
+    double   imgW = PWALLPAPERTARGET->m_vSize.x;
+    double   imgH = PWALLPAPERTARGET->m_vSize.y;
+
+    if ((ROTATION % 4 == 1) || (ROTATION % 4 == 3))
+        std::swap(imgW, imgH);
+
+    cairo_save(PCAIRO);
+
+    if (ROTATION != 0) {
+        cairo_translate(PCAIRO, DIMENSIONS.x / 2.0, DIMENSIONS.y / 2.0);
+
+        if (ROTATION % 4 != 0)
+            cairo_rotate(PCAIRO, (ROTATION % 4) * M_PI_2);
+
+        if (ROTATION >= 4)
+            cairo_scale(PCAIRO, -1, 1);
+
+        cairo_translate(PCAIRO, -DIMENSIONS.x / 2.0, -DIMENSIONS.y / 2.0);
     }
-
-    Debug::log(LOG, "Image data for {}: {} at [{:.2f}, {:.2f}], scale: {:.2f} (original image size: [{}, {}])", pMonitor->name, PWALLPAPERTARGET->m_szPath, origin.x, origin.y,
-               scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);
 
     if (TILE) {
         cairo_pattern_t* pattern = cairo_pattern_create_for_surface(PWALLPAPERTARGET->m_pCairoSurface->cairo());
         cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
         cairo_set_source(PCAIRO, pattern);
+        cairo_pattern_destroy(pattern);
     } else {
+
+        if (CONTAIN)
+            scale = std::min(DIMENSIONS.x / imgW, DIMENSIONS.y / imgH);
+        else
+            scale = std::max(DIMENSIONS.x / imgW, DIMENSIONS.y / imgH);
+
+        origin.x = (DIMENSIONS.x / scale - PWALLPAPERTARGET->m_vSize.x) / 2.0;
+        origin.y = (DIMENSIONS.y / scale - PWALLPAPERTARGET->m_vSize.y) / 2.0;
+
         cairo_scale(PCAIRO, scale, scale);
         cairo_set_source_surface(PCAIRO, PWALLPAPERTARGET->m_pCairoSurface->cairo(), origin.x, origin.y);
     }
 
+    Debug::log(LOG, "Image data for {}: {} at [{:.2f}, {:.2f}], scale: {:.2f} (original image size: [{}, {}])", pMonitor->name, PWALLPAPERTARGET->m_szPath, origin.x, origin.y,
+               scale, (int)PWALLPAPERTARGET->m_vSize.x, (int)PWALLPAPERTARGET->m_vSize.y);
+
     cairo_paint(PCAIRO);
+
+    cairo_restore(PCAIRO);
 
     if (*PRENDERSPLASH && getenv("HYPRLAND_INSTANCE_SIGNATURE")) {
         auto SPLASH = execAndGet("hyprctl splash");
@@ -623,8 +647,6 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
         cairo_surface_flush(PWALLPAPERTARGET->m_pCairoSurface->cairo());
     }
-
-    cairo_restore(PCAIRO);
 
     if (pMonitor->pCurrentLayerSurface) {
         pMonitor->pCurrentLayerSurface->pSurface->sendAttach(PBUFFER->buffer.get(), 0, 0);
