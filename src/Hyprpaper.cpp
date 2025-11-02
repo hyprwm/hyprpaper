@@ -599,7 +599,12 @@ void CHyprpaper::renderWallpaperForMonitor(SMonitor* pMonitor) {
 
         Debug::log(LOG, "Rendering splash: {}", SPLASH);
 
-        cairo_select_font_face(PCAIRO, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+        // Vaxry... why does your style include uppercase characters for stack variable names? - OgloTheNerd
+        const auto FONT = Hyprlang::CSimpleConfigValue<Hyprlang::STRING>(g_pConfigManager->config.get(), "splash_font_family");
+
+        Debug::log(LOG, "Splash font family: {}", *FONT);
+
+        cairo_select_font_face(PCAIRO, *FONT, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 
         const auto FONTSIZE = (int)(DIMENSIONS.y / 76.0 / scale);
         cairo_set_font_size(PCAIRO, FONTSIZE);

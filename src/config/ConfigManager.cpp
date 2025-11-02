@@ -205,6 +205,7 @@ CConfigManager::CConfigManager() {
     config->addConfigValue("splash", Hyprlang::INT{0L});
     config->addConfigValue("splash_offset", Hyprlang::FLOAT{2.F});
     config->addConfigValue("splash_color", Hyprlang::INT{0x55ffffff});
+    config->addConfigValue("splash_font_family", Hyprlang::STRING{"Sans"});
 
     config->registerHandler(&handleWallpaper, "wallpaper", {.allowFlags = false});
     config->registerHandler(&handleUnload, "unload", {.allowFlags = false});
