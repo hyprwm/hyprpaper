@@ -8,6 +8,8 @@ project(
   DESCRIPTION "A blazing fast wayland wallpaper utility"
   VERSION ${VERSION})
 
+add_compile_definitions(HYPRPAPER_VERSION="${VERSION}")
+
 set(CMAKE_MESSAGE_LOG_LEVEL "STATUS")
 
 message(STATUS "Configuring hyprpaper!")
@@ -53,14 +55,12 @@ pkg_check_modules(
   deps
   REQUIRED
   IMPORTED_TARGET
-  wayland-client
-  wayland-protocols>=1.35
-  cairo
-  pango
-  pangocairo
   hyprlang>=0.6.0
   hyprutils>=0.2.4
-  hyprgraphics)
+  wayland-client
+  hyprtoolkit
+  pixman-1
+  libdrm)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
 

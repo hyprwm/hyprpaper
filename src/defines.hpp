@@ -1,7 +1,8 @@
 #pragma once
 
-#include "includes.hpp"
-#include "debug/Log.hpp"
+#include <cstdlib>
+#include <string>
+#include "helpers/Logger.hpp"
 
 // git stuff
 #ifndef GIT_COMMIT_HASH
@@ -17,10 +18,9 @@
 #define GIT_DIRTY "?"
 #endif
 
-#include <hyprutils/math/Vector2D.hpp>
-using namespace Hyprutils::Math;
-
-#include <hyprutils/memory/WeakPtr.hpp>
-using namespace Hyprutils::Memory;
-#define SP Hyprutils::Memory::CSharedPointer
-#define WP Hyprutils::Memory::CWeakPointer
+#define ASSERT(expr)                                                                                                                                                               \
+    if (!(expr)) {                                                                                                                                                                 \
+        g_logger->log(LOG_CRIT, "Failed assertion at line {} in {}: {} was false", __LINE__,                                                                                       \
+                      ([]() constexpr -> std::string { return std::string(__FILE__).substr(std::string(__FILE__).find("/src/") + 1); })(), #expr);                                 \
+        std::abort();                                                                                                                                                              \
+    }

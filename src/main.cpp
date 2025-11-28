@@ -1,34 +1,40 @@
-#include <iostream>
 #include "defines.hpp"
-#include "Hyprpaper.hpp"
+#include "helpers/Logger.hpp"
+#include "ui/UI.hpp"
+#include "config/ConfigManager.hpp"
 
-int main(int argc, char** argv, char** envp) {
-    Debug::log(LOG, "Welcome to hyprpaper!\nbuilt from commit {} ({})", GIT_COMMIT_HASH, GIT_COMMIT_MESSAGE);
+#include <hyprutils/cli/ArgumentParser.hpp>
 
-    // parse some args
-    std::string configPath;
-    bool        noFractional = false;
-    for (int i = 1; i < argc; ++i) {
-        if ((!strcmp(argv[i], "-c") || !strcmp(argv[i], "--config")) && argc >= i + 2) {
-            configPath = std::string(argv[++i]);
-            Debug::log(LOG, "Using config location {}.", configPath);
-        } else if (!strcmp(argv[i], "--no-fractional") || !strcmp(argv[i], "-n")) {
-            noFractional = true;
-            Debug::log(LOG, "Disabling fractional scaling support!");
-        } else {
-            std::cout << "Hyprpaper usage: hyprpaper [arg [...]].\n\nArguments:\n"
-                      << "--help          -h | Show this help message\n"
-                      << "--config        -c | Specify config file to use\n"
-                      << "--no-fractional -n | Disable fractional scaling support\n";
-            return 1;
-        }
+using namespace Hyprutils::CLI;
+
+int main(int argc, const char** argv, const char** envp) {
+
+    CArgumentParser parser({argv, argc});
+
+    ASSERT(parser.registerStringOption("config", "c", "Set a custom config path"));
+    ASSERT(parser.registerBoolOption("verbose", "", "Enable more logging"));
+    ASSERT(parser.registerBoolOption("help", "h", "Show the help menu"));
+
+    if (const auto ret = parser.parse(); !ret) {
+        g_logger->log(LOG_ERR, "Failed parsing arguments: {}", ret.error());
+        return 1;
     }
 
-    // starts
-    g_pHyprpaper                         = std::make_unique<CHyprpaper>();
-    g_pHyprpaper->m_szExplicitConfigPath = configPath;
-    g_pHyprpaper->m_bNoFractionalScale   = noFractional;
-    g_pHyprpaper->init();
+    if (parser.getBool("help").value_or(false)) {
+        std::println("{}", parser.getDescription(std::format("hyprpaper v{}", HYPRPAPER_VERSION)));
+        return 0;
+    }
+
+    if (parser.getBool("verbose").value_or(false))
+        g_logger->setLogLevel(LOG_TRACE);
+
+    g_logger->log(LOG_DEBUG, "Welcome to hyprpaper!\nbuilt from commit {} ({})", GIT_COMMIT_HASH, GIT_COMMIT_MESSAGE);
+
+    g_config = makeUnique<CConfigManager>(std::string{parser.getString("config").value_or("")});
+    g_config->init();
+
+    g_ui = makeUnique<CUI>();
+    g_ui->run();
 
     return 0;
 }

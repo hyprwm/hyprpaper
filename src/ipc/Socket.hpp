@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../defines.hpp"
+#include "../helpers/Memory.hpp"
 #include <mutex>
+#include <string>
 
 class CIPCSocket {
   public:
@@ -18,4 +19,4 @@ class CIPCSocket {
     bool        m_bReplyReady   = false;
 };
 
-inline std::unique_ptr<CIPCSocket> g_pIPCSocket;
+inline UP<CIPCSocket> g_pIPCSocket;
