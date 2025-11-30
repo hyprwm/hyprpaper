@@ -7,6 +7,8 @@
 #include "../helpers/Logger.hpp"
 #include "WallpaperMatcher.hpp"
 
+using namespace std::string_literals;
+
 static std::string getMainConfigPath() {
     static const auto paths = Hyprutils::Path::findConfig("hyprpaper");
 
@@ -42,6 +44,31 @@ Hyprlang::CConfig* CConfigManager::hyprlang() {
     return &m_config;
 }
 
+static std::expected<std::string, std::string> resolvePath(const std::string_view& sv) {
+    std::error_code ec;
+    const auto      CAN = std::filesystem::canonical(sv, ec);
+
+    if (ec)
+        return std::unexpected(std::format("invalid path: {}", ec.message()));
+
+    return CAN;
+}
+
+static std::expected<std::string, std::string> getFullPath(const std::string_view& sv) {
+    if (sv.empty())
+        return std::unexpected("empty path");
+
+    if (sv[0] == '~') {
+        static auto HOME = getenv("HOME");
+        if (!HOME || HOME[0] == '\0')
+            return std::unexpected("home path but no $HOME");
+
+        return resolvePath(std::string{HOME} + "/"s + std::string{sv.substr(1)});
+    }
+
+    return resolvePath(sv);
+}
+
 std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
     std::vector<CConfigManager::SSetting> result;
 
@@ -60,14 +87,14 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
             continue;
         }
 
-        std::error_code ec;
-        auto            canonical = std::filesystem::canonical(path, ec);
-        if (ec) {
-            g_logger->log(LOG_ERR, "Failed parsing wallpaper for key {}: path {} is not valid", key, path);
+        const auto RESOLVE_PATH = getFullPath(path);
+
+        if (!RESOLVE_PATH) {
+            g_logger->log(LOG_ERR, "Failed to resolve path {}: {}", path, RESOLVE_PATH.error());
             continue;
         }
 
-        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .path = std::move(canonical), .id = ++m_maxId});
+        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .path = RESOLVE_PATH.value(), .id = ++m_maxId});
     }
 
     return result;
