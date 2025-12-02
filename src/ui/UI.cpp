@@ -36,7 +36,7 @@ CWallpaperTarget::CWallpaperTarget(SP<Hyprtoolkit::IOutput> output, const std::s
                   ->path(std::string{path})
                   ->size({Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
                   ->sync(true)
-                  ->fitMode(Hyprtoolkit::IMAGE_FIT_MODE_COVER)
+                  ->fitMode(fitMode)
                   ->commence();
 
     m_image->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_ABSOLUTE);

@@ -21,6 +21,7 @@ void CWallpaperMatcher::registerOutput(const std::string_view& s) {
 
 void CWallpaperMatcher::unregisterOutput(const std::string_view& s) {
     std::erase(m_monitorNames, s);
+    std::erase_if(m_monitorStates, [&s](const auto& e) { return e.name == s; });
     recalcStates();
 }
 
