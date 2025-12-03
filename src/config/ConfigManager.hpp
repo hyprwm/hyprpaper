@@ -29,7 +29,6 @@ class CConfigManager {
     Hyprlang::CConfig m_config;
 
     std::string       m_currentConfigPath;
-    uint32_t          m_maxId = 0;
 };
 
 inline UP<CConfigManager> g_config;

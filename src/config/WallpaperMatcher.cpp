@@ -3,12 +3,18 @@
 #include <algorithm>
 
 void CWallpaperMatcher::addState(CConfigManager::SSetting&& s) {
+    s.id = ++m_maxId;
+
     std::erase_if(m_settings, [&s](const auto& e) { return e.monitor == s.monitor; });
     m_settings.emplace_back(std::move(s));
     recalcStates();
 }
 
 void CWallpaperMatcher::addStates(std::vector<CConfigManager::SSetting>&& s) {
+    for (auto& ss : s) {
+        ss.id = ++m_maxId;
+    }
+
     std::erase_if(m_settings, [&s](const auto& e) { return std::ranges::any_of(s, [&e](const auto& el) { return el.monitor == e.monitor; }); });
     m_settings.append_range(std::move(s));
     recalcStates();
@@ -23,6 +29,10 @@ void CWallpaperMatcher::unregisterOutput(const std::string_view& s) {
     std::erase(m_monitorNames, s);
     std::erase_if(m_monitorStates, [&s](const auto& e) { return e.name == s; });
     recalcStates();
+}
+
+bool CWallpaperMatcher::outputExists(const std::string_view& s) {
+    return std::ranges::contains(m_monitorNames, s);
 }
 
 std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperMatcher::getSetting(const std::string_view& monName) {

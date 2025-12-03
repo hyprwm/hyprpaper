@@ -94,7 +94,7 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
             continue;
         }
 
-        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .path = RESOLVE_PATH.value(), .id = ++m_maxId});
+        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .path = RESOLVE_PATH.value()});
     }
 
     return result;

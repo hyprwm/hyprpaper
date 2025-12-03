@@ -1,6 +1,7 @@
 #include "UI.hpp"
 #include "../helpers/Logger.hpp"
 #include "../ipc/HyprlandSocket.hpp"
+#include "../ipc/IPC.hpp"
 #include "../config/WallpaperMatcher.hpp"
 
 #include <hyprtoolkit/core/Output.hpp>
@@ -79,6 +80,8 @@ bool CUI::run() {
 
     if (!m_backend)
         return false;
+
+    IPC::g_IPCSocket = makeUnique<IPC::CSocket>();
 
     const auto MONITORS = m_backend->getOutputs();
 

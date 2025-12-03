@@ -23,6 +23,7 @@ class CWallpaperMatcher {
 
     void                                              registerOutput(const std::string_view&);
     void                                              unregisterOutput(const std::string_view&);
+    bool                                              outputExists(const std::string_view&);
 
     std::optional<rw<const CConfigManager::SSetting>> getSetting(const std::string_view& monName);
 
@@ -43,6 +44,8 @@ class CWallpaperMatcher {
 
     std::vector<std::string>   m_monitorNames;
     std::vector<SMonitorState> m_monitorStates;
+
+    uint32_t                   m_maxId = 0;
 
     SMonitorState&             getState(const std::string_view& monName);
 };

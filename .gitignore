@@ -22,6 +22,9 @@ result
 protocols/*.hpp
 protocols/*.cpp
 
+hw-protocols/*.hpp
+hw-protocols/*.cpp
+
 .cache/
 
 hyprctl/hyprctl
