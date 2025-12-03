@@ -5,6 +5,14 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     systems.url = "github:nix-systems/default-linux";
 
+    aquamarine = {
+      url = "github:hyprwm/aquamarine";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
+      inputs.hyprutils.follows = "hyprutils";
+      inputs.hyprwayland-scanner.follows = "hyprwayland-scanner";
+    };
+
     hyprgraphics = {
       url = "github:hyprwm/hyprgraphics";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -35,12 +43,18 @@
       url = "github:hyprwm/hyprwire";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.systems.follows = "systems";
+      inputs.hyprutils.follows = "hyprutils";
     };
 
     hyprtoolkit = {
       url = "github:hyprwm/hyprtoolkit";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.systems.follows = "systems";
+      inputs.aquamarine.follows = "aquamarine";
+      inputs.hyprutils.follows = "hyprutils";
+      inputs.hyprlang.follows = "hyprlang";
+      inputs.hyprgraphics.follows = "hyprgraphics";
+      inputs.hyprwayland-scanner.follows = "hyprwayland-scanner";
     };
   };
 
@@ -68,6 +82,7 @@
     overlays = {
       default = self.overlays.hyprpaper;
       hyprpaper = lib.composeManyExtensions [
+        inputs.aquamarine.overlays.default
         inputs.hyprgraphics.overlays.default
         inputs.hyprlang.overlays.default
         inputs.hyprutils.overlays.default
