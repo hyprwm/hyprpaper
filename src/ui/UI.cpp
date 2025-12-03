@@ -69,8 +69,10 @@ CWallpaperTarget::CWallpaperTarget(SP<Hyprtoolkit::IOutput> output, const std::s
 
 void CUI::registerOutput(const SP<Hyprtoolkit::IOutput>& mon) {
     g_matcher->registerOutput(mon->port());
+    IPC::g_IPCSocket->onNewDisplay(mon->port());
     mon->m_events.removed.listenStatic([this, m = WP<Hyprtoolkit::IOutput>{mon}] {
         g_matcher->unregisterOutput(m->port());
+        IPC::g_IPCSocket->onRemovedDisplay(m->port());
         std::erase_if(m_targets, [&m](const auto& e) { return e->m_monitorName == m->port(); });
     });
 }

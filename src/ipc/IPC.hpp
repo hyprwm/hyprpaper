@@ -28,6 +28,9 @@ namespace IPC {
         CSocket();
         ~CSocket() = default;
 
+        void onNewDisplay(const std::string& sv);
+        void onRemovedDisplay(const std::string& sv);
+
       private:
         SP<Hyprwire::IServerSocket>                  m_socket;
 

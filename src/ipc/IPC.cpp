@@ -133,3 +133,15 @@ CSocket::CSocket() {
 
     g_ui->backend()->addFd(m_socket->extractLoopFD(), [this]() { m_socket->dispatchEvents(); });
 }
+
+void CSocket::onNewDisplay(const std::string& sv) {
+    for (const auto& m : m_managers) {
+        m->sendAddMonitor(sv.c_str());
+    }
+}
+
+void CSocket::onRemovedDisplay(const std::string& sv) {
+    for (const auto& m : m_managers) {
+        m->sendRemoveMonitor(sv.c_str());
+    }
+}
