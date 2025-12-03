@@ -24,6 +24,7 @@ void CConfigManager::init() {
     m_config.addConfigValue("splash", Hyprlang::INT{1});
     m_config.addConfigValue("splash_offset", Hyprlang::INT{20});
     m_config.addConfigValue("splash_opacity", Hyprlang::FLOAT{0.8});
+    m_config.addConfigValue("ipc", Hyprlang::INT{1});
 
     m_config.addSpecialCategory("wallpaper", Hyprlang::SSpecialCategoryOptions{.key = "monitor"});
     m_config.addSpecialConfigValue("wallpaper", "monitor", Hyprlang::STRING{""});

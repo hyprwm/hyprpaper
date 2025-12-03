@@ -76,12 +76,15 @@ void CUI::registerOutput(const SP<Hyprtoolkit::IOutput>& mon) {
 }
 
 bool CUI::run() {
+    static const auto PENABLEIPC = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(g_config->hyprlang(), "ipc");
+
     m_backend = Hyprtoolkit::IBackend::create();
 
     if (!m_backend)
         return false;
 
-    IPC::g_IPCSocket = makeUnique<IPC::CSocket>();
+    if (*PENABLEIPC)
+        IPC::g_IPCSocket = makeUnique<IPC::CSocket>();
 
     const auto MONITORS = m_backend->getOutputs();
 
