@@ -30,6 +30,18 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.systems.follows = "systems";
     };
+
+    hyprwire = {
+      url = "github:hyprwm/hyprwire";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
+    };
+
+    hyprtoolkit = {
+      url = "github:hyprwm/hyprtoolkit";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.systems.follows = "systems";
+    };
   };
 
   outputs = {
@@ -60,6 +72,8 @@
         inputs.hyprlang.overlays.default
         inputs.hyprutils.overlays.default
         inputs.hyprwayland-scanner.overlays.default
+        inputs.hyprtoolkit.overlays.default
+        inputs.hyprwire.overlays.default
         (final: prev: rec {
           hyprpaper = final.callPackage ./nix/default.nix {
             stdenv = final.gcc15Stdenv;

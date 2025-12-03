@@ -10,6 +10,8 @@
   hyprgraphics,
   hyprlang,
   hyprutils,
+  hyprtoolkit,
+  hyprwire,
   hyprwayland-scanner,
   libdatrie,
   libGL,
@@ -54,6 +56,7 @@ stdenv.mkDerivation {
   nativeBuildInputs = [
     cmake
     hyprwayland-scanner
+    hyprwire-scanner
     pkg-config
     wayland-scanner
   ];
@@ -66,6 +69,8 @@ stdenv.mkDerivation {
     hyprgraphics
     hyprlang
     hyprutils
+    hyprtoolkit
+    hyprwire
     libdatrie
     libGL
     libjpeg
