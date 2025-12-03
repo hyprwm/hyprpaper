@@ -58,7 +58,7 @@ pkg_check_modules(
   hyprlang>=0.6.0
   hyprutils>=0.2.4
   wayland-client
-  hyprtoolkit>=0.4.0
+  hyprtoolkit>=0.4.1
   hyprwire
   pixman-1
   libdrm)
