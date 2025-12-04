@@ -82,7 +82,11 @@ void CUI::registerOutput(const SP<Hyprtoolkit::IOutput>& mon) {
 bool CUI::run() {
     static const auto PENABLEIPC = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(g_config->hyprlang(), "ipc");
 
-    m_backend = Hyprtoolkit::IBackend::create();
+    auto data = Hyprtoolkit::IBackend::SBackendCreationData();
+    data.pLogConnection = makeShared<Hyprutils::CLI::CLoggerConnection>(*g_logger.get());
+    data.pLogConnection->setName("hyprtoolkit");
+    data.pLogConnection->setLogLevel(LOG_DEBUG);
+    m_backend = Hyprtoolkit::IBackend::createWithData(data);
 
     if (!m_backend)
         return false;
