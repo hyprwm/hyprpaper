@@ -3,6 +3,7 @@
   stdenv,
   pkg-config,
   cmake,
+  aquamarine,
   cairo,
   expat,
   file,
@@ -10,9 +11,12 @@
   hyprgraphics,
   hyprlang,
   hyprutils,
+  hyprtoolkit,
+  hyprwire,
   hyprwayland-scanner,
-  libdatrie,
   libGL,
+  libdatrie,
+  libdrm,
   libjpeg,
   libjxl,
   libselinux,
@@ -54,11 +58,13 @@ stdenv.mkDerivation {
   nativeBuildInputs = [
     cmake
     hyprwayland-scanner
+    hyprwire
     pkg-config
     wayland-scanner
   ];
 
   buildInputs = [
+    aquamarine
     cairo
     expat
     file
@@ -66,8 +72,11 @@ stdenv.mkDerivation {
     hyprgraphics
     hyprlang
     hyprutils
-    libdatrie
+    hyprtoolkit
+    hyprwire
     libGL
+    libdatrie
+    libdrm
     libjpeg
     libjxl
     libselinux

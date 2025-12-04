@@ -1,24 +1,34 @@
 #pragma once
-#include "../defines.hpp"
-#include <hyprlang.hpp>
 
-class CIPCSocket;
+#include "../helpers/Memory.hpp"
+#include <hyprlang.hpp>
+#include <vector>
 
 class CConfigManager {
   public:
-    // gets all the data from the config
-    CConfigManager();
-    void                               parse();
+    CConfigManager(const std::string& configPath);
+    ~CConfigManager() = default;
 
-    std::deque<std::string>            m_dRequestedPreloads;
-    std::string                        getMainConfigPath();
-    std::string                        trimPath(std::string path);
-    std::string                        absolutePath(const std::string& path);
+    CConfigManager(const CConfigManager&) = delete;
+    CConfigManager(CConfigManager&)       = delete;
+    CConfigManager(CConfigManager&&)      = delete;
 
-    std::unique_ptr<Hyprlang::CConfig> config;
+    struct SSetting {
+        std::string monitor, fitMode, path;
+        uint32_t    id = 0;
+    };
+
+    constexpr static const uint32_t SETTING_INVALID = 0;
+
+    void                            init();
+    Hyprlang::CConfig*              hyprlang();
+
+    std::vector<SSetting>           getSettings();
 
   private:
-    friend class CIPCSocket;
+    Hyprlang::CConfig m_config;
+
+    std::string       m_currentConfigPath;
 };
 
-inline std::unique_ptr<CConfigManager> g_pConfigManager;
+inline UP<CConfigManager> g_config;

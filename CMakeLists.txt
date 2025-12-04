@@ -8,6 +8,8 @@ project(
   DESCRIPTION "A blazing fast wayland wallpaper utility"
   VERSION ${VERSION})
 
+add_compile_definitions(HYPRPAPER_VERSION="${VERSION}")
+
 set(CMAKE_MESSAGE_LOG_LEVEL "STATUS")
 
 message(STATUS "Configuring hyprpaper!")
@@ -39,7 +41,7 @@ execute_process(
   OUTPUT_VARIABLE GIT_DIRTY
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-include_directories(.)
+include_directories(. hw-protocols protocols)
 set(CMAKE_CXX_STANDARD 23)
 add_compile_options(-DWLR_USE_UNSTABLE)
 add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-unused-value
@@ -53,18 +55,19 @@ pkg_check_modules(
   deps
   REQUIRED
   IMPORTED_TARGET
-  wayland-client
-  wayland-protocols>=1.35
-  cairo
-  pango
-  pangocairo
   hyprlang>=0.6.0
   hyprutils>=0.2.4
-  hyprgraphics)
+  wayland-client
+  hyprtoolkit>=0.4.1
+  hyprwire
+  pixman-1
+  libdrm)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
 
 add_executable(hyprpaper ${SRCFILES})
+
+# Wayland
 
 pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
 message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
@@ -106,6 +109,25 @@ protocolnew("stable/viewporter" "viewporter" false)
 protocolnew("stable/xdg-shell" "xdg-shell" false)
 protocolnew("staging/cursor-shape" "cursor-shape-v1" false)
 protocolnew("stable/tablet" "tablet-v2" false)
+
+# Hyprwire
+
+function(hyprprotocolServer protoPath protoName)
+  set(path ${CMAKE_SOURCE_DIR}/${protoPath})
+  add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/hw-protocols/${protoName}-server.cpp
+           ${CMAKE_SOURCE_DIR}/hw-protocols/${protoName}-server.hpp
+    COMMAND hyprwire-scanner ${path}/${protoName}.xml
+            ${CMAKE_SOURCE_DIR}/hw-protocols/
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  target_sources(hyprpaper PRIVATE hw-protocols/${protoName}-server.cpp
+                                   hw-protocols/${protoName}-server.hpp
+                                   )
+endfunction()
+
+hyprprotocolServer(hw-protocols hyprpaper_core)
+
+# 
 
 string(REPLACE "\"" " " GIT_COMMIT_MESSAGE_ESCAPED "${GIT_COMMIT_MESSAGE}")
 target_compile_definitions(hyprpaper
