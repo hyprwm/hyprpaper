@@ -26,6 +26,7 @@ CWallpaperTarget::CWallpaperTarget(SP<Hyprtoolkit::IOutput> output, const std::s
                    ->layer(0)
                    ->preferredSize({0, 0})
                    ->exclusiveZone(-1)
+                   ->appClass("hyprpaper")
                    ->commence();
 
     m_bg = Hyprtoolkit::CRectangleBuilder::begin()
