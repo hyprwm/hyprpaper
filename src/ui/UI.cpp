@@ -2,6 +2,7 @@
 #include "../helpers/Logger.hpp"
 #include "../ipc/HyprlandSocket.hpp"
 #include "../ipc/IPC.hpp"
+#include "../ipc/Tavern.hpp"
 #include "../config/WallpaperMatcher.hpp"
 
 #include <hyprtoolkit/core/Output.hpp>
@@ -70,12 +71,20 @@ CWallpaperTarget::CWallpaperTarget(SP<Hyprtoolkit::IOutput> output, const std::s
 
 void CUI::registerOutput(const SP<Hyprtoolkit::IOutput>& mon) {
     g_matcher->registerOutput(mon->port());
+
     if (IPC::g_IPCSocket)
         IPC::g_IPCSocket->onNewDisplay(mon->port());
+    if (IPC::g_tavernConnection)
+        IPC::g_tavernConnection->onNewDisplay(mon->port());
+
     mon->m_events.removed.listenStatic([this, m = WP<Hyprtoolkit::IOutput>{mon}] {
         g_matcher->unregisterOutput(m->port());
+
         if (IPC::g_IPCSocket)
             IPC::g_IPCSocket->onRemovedDisplay(m->port());
+        if (IPC::g_tavernConnection)
+            IPC::g_tavernConnection->onRemovedDisplay(m->port());
+
         std::erase_if(m_targets, [&m](const auto& e) { return e->m_monitorName == m->port(); });
     });
 }
@@ -88,8 +97,12 @@ bool CUI::run() {
     if (!m_backend)
         return false;
 
-    if (*PENABLEIPC)
-        IPC::g_IPCSocket = makeUnique<IPC::CSocket>();
+    if (*PENABLEIPC) {
+        IPC::g_IPCSocket                = makeUnique<IPC::CSocket>();
+        IPC::g_tavernConnection         = makeUnique<IPC::CTavernConnection>();
+        IPC::g_tavernConnection->m_self = IPC::g_tavernConnection;
+        IPC::g_tavernConnection->init();
+    }
 
     const auto MONITORS = m_backend->getOutputs();
 

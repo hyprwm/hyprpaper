@@ -57,7 +57,6 @@ pkg_check_modules(
   IMPORTED_TARGET
   hyprlang>=0.6.0
   hyprutils>=0.2.4
-  wayland-client
   hyprtoolkit>=0.4.1
   hyprwire
   pixman-1
@@ -67,50 +66,10 @@ file(GLOB_RECURSE SRCFILES "src/*.cpp")
 
 add_executable(hyprpaper ${SRCFILES})
 
-# Wayland
-
-pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
-message(STATUS "Found wayland-protocols at ${WAYLAND_PROTOCOLS_DIR}")
-pkg_get_variable(WAYLAND_SCANNER_PKGDATA_DIR wayland-scanner pkgdatadir)
-message(
-  STATUS "Found wayland-scanner pkgdatadir at ${WAYLAND_SCANNER_PKGDATA_DIR}")
-
-function(protocolnew protoPath protoName external)
-  if(external)
-    set(path ${CMAKE_SOURCE_DIR}/${protoPath})
-  else()
-    set(path ${WAYLAND_PROTOCOLS_DIR}/${protoPath})
-  endif()
-  add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/protocols/${protoName}.cpp
-           ${CMAKE_SOURCE_DIR}/protocols/${protoName}.hpp
-    COMMAND hyprwayland-scanner --client ${path}/${protoName}.xml
-            ${CMAKE_SOURCE_DIR}/protocols/
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-  target_sources(hyprpaper PRIVATE protocols/${protoName}.cpp
-                                   protocols/${protoName}.hpp)
-endfunction()
-function(protocolWayland)
-  add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/protocols/wayland.cpp
-           ${CMAKE_SOURCE_DIR}/protocols/wayland.hpp
-    COMMAND hyprwayland-scanner --wayland-enums --client
-            ${WAYLAND_SCANNER_PKGDATA_DIR}/wayland.xml ${CMAKE_SOURCE_DIR}/protocols/
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-  target_sources(hyprpaper PRIVATE protocols/wayland.cpp protocols/wayland.hpp)
-endfunction()
-
-protocolwayland()
-
-protocolnew("protocols" "wlr-layer-shell-unstable-v1" true)
-protocolnew("stable/linux-dmabuf" "linux-dmabuf-v1" false)
-protocolnew("staging/fractional-scale" "fractional-scale-v1" false)
-protocolnew("stable/viewporter" "viewporter" false)
-protocolnew("stable/xdg-shell" "xdg-shell" false)
-protocolnew("staging/cursor-shape" "cursor-shape-v1" false)
-protocolnew("stable/tablet" "tablet-v2" false)
-
 # Hyprwire
+
+pkg_get_variable(HYPRWIRE_PROTOCOLS_DIR hyprwire-protocols pkgdatadir)
+message(STATUS "Found hyprwire-protocols at ${HYPRWIRE_PROTOCOLS_DIR}")
 
 function(hyprprotocolServer protoPath protoName)
   set(path ${CMAKE_SOURCE_DIR}/${protoPath})
@@ -125,7 +84,26 @@ function(hyprprotocolServer protoPath protoName)
                                    )
 endfunction()
 
+function(hyprprotocol protoPath protoName external)
+  if(external)
+    set(path ${protoPath})
+  else()
+    set(path ${HYPRWIRE_PROTOCOLS_DIR}/${protoPath})
+  endif()
+  add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/hw-protocols/${protoName}-client.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/hw-protocols/${protoName}-client.hpp
+    COMMAND hyprwire-scanner --client ${path}/${protoName}.xml
+            ${CMAKE_CURRENT_SOURCE_DIR}/hw-protocols/
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  target_sources(hyprpaper PRIVATE hw-protocols/${protoName}-client.cpp
+                                   hw-protocols/${protoName}-client.hpp
+                                   )
+endfunction()
+
 hyprprotocolServer(hw-protocols hyprpaper_core)
+
+hyprprotocol(hyprtavern hp_hyprtavern_core_v1 false)
 
 # 
 
