@@ -10,28 +10,6 @@ namespace IPC {
     class CWallpaperObject;
     class CTavernConnection;
 
-    class CTavernPeer {
-      public:
-        CTavernPeer(SP<Hyprwire::IServerSocket> sock, WP<CTavernConnection> conn);
-        ~CTavernPeer();
-
-        int  extractFD();
-
-        void onNewDisplay(const std::string& sv);
-        void onRemovedDisplay(const std::string& sv);
-
-        void dispatch();
-
-      private:
-        SP<Hyprwire::IServerSocket>                  m_socket;
-        int                                          m_fd = -1;
-        SP<CHyprpaperCoreImpl>                       m_impl;
-        WP<CTavernConnection>                        m_connection;
-
-        std::vector<SP<CHyprpaperCoreManagerObject>> m_managers;
-        std::vector<SP<CWallpaperObject>>            m_wallpaperObjects;
-    };
-
     class CTavernConnection {
       public:
         CTavernConnection();
@@ -42,17 +20,23 @@ namespace IPC {
         WP<CTavernConnection> m_self;
 
         bool                  connected();
-        void                  dropPeer(CTavernPeer* peer);
 
         void                  onNewDisplay(const std::string& sv);
         void                  onRemovedDisplay(const std::string& sv);
 
       private:
-        SP<Hyprwire::IClientSocket>           m_socket;
-        SP<CCHpHyprtavernCoreManagerV1Object> m_manager;
-        SP<CCHpHyprtavernBusObjectV1Object>   m_busObject;
+        struct {
+            SP<Hyprwire::IClientSocket>           socket;
+            SP<CCHpHyprtavernCoreManagerV1Object> manager;
+            SP<CCHpHyprtavernBusObjectV1Object>   busObject;
+        } m_tavern;
 
-        std::vector<SP<CTavernPeer>>          m_peers;
+        struct {
+            SP<Hyprwire::IServerSocket>                  socket;
+
+            std::vector<SP<CHyprpaperCoreManagerObject>> managers;
+            std::vector<SP<CWallpaperObject>>            wallpaperObjects;
+        } m_object;
     };
 
     inline UP<CTavernConnection> g_tavernConnection;
