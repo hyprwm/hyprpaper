@@ -1,4 +1,5 @@
 #include "UI.hpp"
+#include "../defines.hpp"
 #include "../helpers/Logger.hpp"
 #include "../ipc/HyprlandSocket.hpp"
 #include "../ipc/IPC.hpp"
@@ -12,12 +13,33 @@ CUI::~CUI() {
     m_targets.clear();
 }
 
-CWallpaperTarget::CWallpaperTarget(SP<Hyprtoolkit::IOutput> output, const std::string_view& path, Hyprtoolkit::eImageFitMode fitMode) : m_monitorName(output->port()) {
+class CWallpaperTarget::CImagesData {
+  public:
+    CImagesData(Hyprtoolkit::eImageFitMode fitMode, const std::vector<std::string>& images, const int timeout = 0) :
+        fitMode(fitMode), images(images), timeout(timeout > 0 ? timeout : 30) {}
+
+    const Hyprtoolkit::eImageFitMode fitMode;
+    const std::vector<std::string>   images;
+    const int                        timeout;
+
+    std::string                      nextImage() {
+        current = (current + 1) % images.size();
+        return images[current];
+    }
+
+  private:
+    size_t current = 0;
+};
+
+CWallpaperTarget::CWallpaperTarget(SP<Hyprtoolkit::IBackend> backend, SP<Hyprtoolkit::IOutput> output, const std::vector<std::string>& path, Hyprtoolkit::eImageFitMode fitMode,
+                                   const int timeout) : m_monitorName(output->port()), m_backend(backend) {
     static const auto SPLASH_REPLY = HyprlandSocket::getFromSocket("/splash");
 
     static const auto PENABLESPLASH = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(g_config->hyprlang(), "splash");
     static const auto PSPLASHOFFSET = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(g_config->hyprlang(), "splash_offset");
     static const auto PSPLASHALPHA  = Hyprlang::CSimpleConfigValue<Hyprlang::FLOAT>(g_config->hyprlang(), "splash_opacity");
+
+    ASSERT(path.size() > 0);
 
     m_window = Hyprtoolkit::CWindowBuilder::begin()
                    ->type(Hyprtoolkit::HT_WINDOW_LAYER)
@@ -33,9 +55,10 @@ CWallpaperTarget::CWallpaperTarget(SP<Hyprtoolkit::IOutput> output, const std::s
                ->size({Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, {1, 1}})
                ->color([] { return Hyprtoolkit::CHyprColor{0xFF000000}; })
                ->commence();
-    m_null  = Hyprtoolkit::CNullBuilder::begin()->size({Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->commence();
+    m_null = Hyprtoolkit::CNullBuilder::begin()->size({Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, {1, 1}})->commence();
+
     m_image = Hyprtoolkit::CImageBuilder::begin()
-                  ->path(std::string{path})
+                  ->path(std::string{path.front()})
                   ->size({Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
                   ->sync(true)
                   ->fitMode(fitMode)
@@ -43,6 +66,12 @@ CWallpaperTarget::CWallpaperTarget(SP<Hyprtoolkit::IOutput> output, const std::s
 
     m_image->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_ABSOLUTE);
     m_image->setPositionFlag(Hyprtoolkit::IElement::HT_POSITION_FLAG_CENTER, true);
+
+    if (path.size() > 1) {
+        m_imagesData = makeUnique<CImagesData>(fitMode, path, timeout);
+        m_timer =
+            m_backend->addTimer(std::chrono::milliseconds(std::chrono::seconds(m_imagesData->timeout)), [this](ASP<Hyprtoolkit::CTimer> self, void*) { onRepeatTimer(); }, nullptr);
+    }
 
     m_window->m_rootElement->addChild(m_bg);
     m_window->m_rootElement->addChild(m_null);
@@ -66,6 +95,26 @@ CWallpaperTarget::CWallpaperTarget(SP<Hyprtoolkit::IOutput> output, const std::s
     }
 
     m_window->open();
+}
+
+CWallpaperTarget::~CWallpaperTarget() {
+    if (m_timer && !m_timer->passed())
+        m_timer->cancel();
+}
+
+void CWallpaperTarget::onRepeatTimer() {
+
+    ASSERT(m_imagesData);
+
+    m_image->rebuild()
+        ->path(m_imagesData->nextImage())
+        ->size({Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
+        ->sync(true)
+        ->fitMode(m_imagesData->fitMode)
+        ->commence();
+
+    m_timer =
+        m_backend->addTimer(std::chrono::milliseconds(std::chrono::seconds(m_imagesData->timeout)), [this](ASP<Hyprtoolkit::CTimer> self, void*) { onRepeatTimer(); }, nullptr);
 }
 
 void CUI::registerOutput(const SP<Hyprtoolkit::IOutput>& mon) {
@@ -158,5 +207,5 @@ void CUI::targetChanged(const SP<Hyprtoolkit::IOutput>& mon) {
 
     std::erase_if(m_targets, [&mon](const auto& e) { return e->m_monitorName == mon->port(); });
 
-    m_targets.emplace_back(makeShared<CWallpaperTarget>(mon, TARGET->get().path, toFitMode(TARGET->get().fitMode)));
+    m_targets.emplace_back(makeShared<CWallpaperTarget>(m_backend, mon, TARGET->get().paths, toFitMode(TARGET->get().fitMode), TARGET->get().timeout));
 }
