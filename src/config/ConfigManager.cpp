@@ -29,7 +29,7 @@ void CConfigManager::init() {
     m_config.addSpecialCategory("wallpaper", Hyprlang::SSpecialCategoryOptions{.key = "monitor"});
     m_config.addSpecialConfigValue("wallpaper", "monitor", Hyprlang::STRING{""});
     m_config.addSpecialConfigValue("wallpaper", "path", Hyprlang::STRING{""});
-    m_config.addSpecialConfigValue("wallpaper", "fit_mode", Hyprlang::STRING{"contain"});
+    m_config.addSpecialConfigValue("wallpaper", "fit_mode", Hyprlang::STRING{"cover"});
 
     m_config.commence();
 
