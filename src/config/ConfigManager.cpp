@@ -1,6 +1,7 @@
 #include "ConfigManager.hpp"
 #include <algorithm>
 #include <filesystem>
+#include <glob.h>
 #include <hyprlang.hpp>
 #include <hyprutils/path/Path.hpp>
 #include <hyprutils/utils/ScopeGuard.hpp>
@@ -37,6 +38,9 @@ using namespace std::string_literals;
     return std::string(result).starts_with("image/");
 }
 
+// Forward declaration for the source handler
+static Hyprlang::CParseResult handleSource(const char* COMMAND, const char* VALUE);
+
 static std::string getMainConfigPath() {
     static const auto paths = Hyprutils::Path::findConfig("hyprpaper");
 
@@ -59,6 +63,8 @@ void CConfigManager::init() {
     m_config.addSpecialConfigValue("wallpaper", "path", Hyprlang::STRING{""});
     m_config.addSpecialConfigValue("wallpaper", "fit_mode", Hyprlang::STRING{"cover"});
     m_config.addSpecialConfigValue("wallpaper", "timeout", Hyprlang::INT{0});
+
+    m_config.registerHandler(&handleSource, "source", Hyprlang::SHandlerOptions{});
 
     m_config.commence();
 
@@ -166,5 +172,95 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
         result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .paths = RESOLVE_PATH.value(), .timeout = timeout});
     }
 
+    return result;
+}
+
+static std::string absolutePath(const std::string& rawpath, const std::string& currentConfigPath) {
+    if (rawpath.empty())
+        return "";
+
+    std::filesystem::path path(rawpath);
+
+    // Handle tilde expansion
+    if (!rawpath.empty() && rawpath[0] == '~') {
+        static auto HOME = getenv("HOME");
+        if (HOME && HOME[0] != '\0')
+            path = std::string{HOME} + rawpath.substr(1);
+    }
+
+    // Make relative paths relative to the current config file's directory
+    if (!path.is_absolute() && !currentConfigPath.empty()) {
+        auto configDir = std::filesystem::path(currentConfigPath).parent_path();
+        path = configDir / path;
+    }
+
+    return std::filesystem::absolute(path).string();
+}
+
+static Hyprlang::CParseResult handleSource(const char* COMMAND, const char* VALUE) {
+    Hyprlang::CParseResult result;
+
+    std::string            value = VALUE;
+
+    // Trim whitespace
+    while (!value.empty() && std::isspace(value.front()))
+        value.erase(value.begin());
+    while (!value.empty() && std::isspace(value.back()))
+        value.pop_back();
+
+    if (value.empty()) {
+        result.setError("source= requires a file path");
+        return result;
+    }
+
+    const auto PATH = absolutePath(value, g_config->getCurrentConfigPath());
+
+    if (PATH.empty()) {
+        result.setError("source= path is empty");
+        return result;
+    }
+
+    // Support glob patterns
+    glob_t globResult;
+    int    globStatus = glob(PATH.c_str(), GLOB_TILDE | GLOB_NOSORT, nullptr, &globResult);
+
+    if (globStatus == GLOB_NOMATCH) {
+        globfree(&globResult);
+        // No glob match - try as a literal path
+        if (!std::filesystem::exists(PATH)) {
+            result.setError(std::format("source file '{}' not found", PATH).c_str());
+            return result;
+        }
+
+        // Parse the single file
+        auto parseResult = g_config->hyprlang()->parseFile(PATH.c_str());
+        if (parseResult.error) {
+            result.setError(std::format("error parsing '{}': {}", PATH, parseResult.getError()).c_str());
+        }
+        return result;
+    }
+
+    if (globStatus != 0) {
+        globfree(&globResult);
+        result.setError(std::format("glob error for pattern '{}'", PATH).c_str());
+        return result;
+    }
+
+    // Process all matched files
+    for (size_t i = 0; i < globResult.gl_pathc; i++) {
+        const std::string matchedPath = globResult.gl_pathv[i];
+
+        if (!std::filesystem::is_regular_file(matchedPath)) {
+            g_logger->log(LOG_WARN, "source: skipping non-regular file '{}'", matchedPath);
+            continue;
+        }
+
+        auto parseResult = g_config->hyprlang()->parseFile(matchedPath.c_str());
+        if (parseResult.error) {
+            g_logger->log(LOG_ERR, "error parsing '{}': {}", matchedPath, parseResult.getError());
+        }
+    }
+
+    globfree(&globResult);
     return result;
 }
