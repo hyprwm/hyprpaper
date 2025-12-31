@@ -220,6 +220,8 @@ static Hyprlang::CParseResult handleSource(const char* COMMAND, const char* VALU
         return result;
     }
 
+    g_logger->log(LOG_DEBUG, "source: including '{}'", PATH);
+
     // Support glob patterns
     glob_t globResult;
     int    globStatus = glob(PATH.c_str(), GLOB_TILDE | GLOB_NOSORT, nullptr, &globResult);
@@ -233,6 +235,7 @@ static Hyprlang::CParseResult handleSource(const char* COMMAND, const char* VALU
         }
 
         // Parse the single file
+        g_logger->log(LOG_DEBUG, "source: parsing file '{}'", PATH);
         auto parseResult = g_config->hyprlang()->parseFile(PATH.c_str());
         if (parseResult.error) {
             result.setError(std::format("error parsing '{}': {}", PATH, parseResult.getError()).c_str());
@@ -247,6 +250,7 @@ static Hyprlang::CParseResult handleSource(const char* COMMAND, const char* VALU
     }
 
     // Process all matched files
+    g_logger->log(LOG_DEBUG, "source: glob matched {} file(s)", globResult.gl_pathc);
     for (size_t i = 0; i < globResult.gl_pathc; i++) {
         const std::string matchedPath = globResult.gl_pathv[i];
 
@@ -255,6 +259,7 @@ static Hyprlang::CParseResult handleSource(const char* COMMAND, const char* VALU
             continue;
         }
 
+        g_logger->log(LOG_DEBUG, "source: parsing file '{}'", matchedPath);
         auto parseResult = g_config->hyprlang()->parseFile(matchedPath.c_str());
         if (parseResult.error) {
             g_logger->log(LOG_ERR, "error parsing '{}': {}", matchedPath, parseResult.getError());
