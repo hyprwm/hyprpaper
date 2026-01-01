@@ -4,9 +4,9 @@
 #include <glob.h>
 #include <hyprlang.hpp>
 #include <hyprutils/path/Path.hpp>
+#include <hyprutils/string/String.hpp>
 #include <hyprutils/utils/ScopeGuard.hpp>
 #include <string>
-#include <sys/ucontext.h>
 #include "../helpers/Logger.hpp"
 #include "WallpaperMatcher.hpp"
 
@@ -90,16 +90,22 @@ static std::expected<std::string, std::string> resolvePath(const std::string_vie
     return CAN;
 }
 
-static std::expected<std::string, std::string> getPath(const std::string_view& path) {
-    if (path.empty())
+static std::expected<std::string, std::string> getPath(const std::string_view& sv, const std::string& basePath = "") {
+    if (sv.empty())
         return std::unexpected("empty path");
 
-    if (path[0] == '~') {
+    std::string path{sv};
+
+    if (sv[0] == '~') {
         static auto HOME = getenv("HOME");
         if (!HOME || HOME[0] == '\0')
             return std::unexpected("home path but no $HOME");
 
-        return resolvePath(std::string{HOME} + "/"s + std::string{path.substr(1)});
+        path = std::string{HOME} + "/"s + std::string{sv.substr(1)};
+    } else if (!std::filesystem::path(sv).is_absolute() && !basePath.empty()) {
+        // Make relative paths relative to the base path's directory
+        auto baseDir = std::filesystem::path(basePath).parent_path();
+        path = (baseDir / sv).string();
     }
 
     return resolvePath(path);
@@ -123,10 +129,10 @@ static std::expected<std::vector<std::string>, std::string> getFullPath(const st
 
     if (std::filesystem::is_directory(resolvedPath))
         for (const auto& entry : std::filesystem::directory_iterator(resolvedPath, std::filesystem::directory_options::skip_permission_denied)) {
-            if (entry.is_regular_file() && isImage(entry.path())) 
+            if (entry.is_regular_file() && isImage(entry.path()))
                 result.push_back(entry.path());
 
-            if (result.size() >= maxImagesCount) 
+            if (result.size() >= maxImagesCount)
                 break;
         }
     else if (isImage(resolvedPath))
@@ -175,59 +181,34 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
     return result;
 }
 
-static std::string absolutePath(const std::string& rawpath, const std::string& currentConfigPath) {
-    if (rawpath.empty())
-        return "";
-
-    std::filesystem::path path(rawpath);
-
-    // Handle tilde expansion
-    if (!rawpath.empty() && rawpath[0] == '~') {
-        static auto HOME = getenv("HOME");
-        if (HOME && HOME[0] != '\0')
-            path = std::string{HOME} + rawpath.substr(1);
-    }
-
-    // Make relative paths relative to the current config file's directory
-    if (!path.is_absolute() && !currentConfigPath.empty()) {
-        auto configDir = std::filesystem::path(currentConfigPath).parent_path();
-        path = configDir / path;
-    }
-
-    return std::filesystem::absolute(path).string();
-}
-
 static Hyprlang::CParseResult handleSource(const char* COMMAND, const char* VALUE) {
     Hyprlang::CParseResult result;
 
-    std::string            value = VALUE;
-
-    // Trim whitespace
-    while (!value.empty() && std::isspace(value.front()))
-        value.erase(value.begin());
-    while (!value.empty() && std::isspace(value.back()))
-        value.pop_back();
+    const auto value = Hyprutils::String::trim(VALUE);
 
     if (value.empty()) {
         result.setError("source= requires a file path");
         return result;
     }
 
-    const auto PATH = absolutePath(value, g_config->getCurrentConfigPath());
+    const auto RESOLVED_PATH = getPath(value, g_config->getCurrentConfigPath());
 
-    if (PATH.empty()) {
-        result.setError("source= path is empty");
+    if (!RESOLVED_PATH) {
+        result.setError(std::format("source= path error: {}", RESOLVED_PATH.error()).c_str());
         return result;
     }
+
+    const auto& PATH = RESOLVED_PATH.value();
 
     g_logger->log(LOG_DEBUG, "source: including '{}'", PATH);
 
     // Support glob patterns
     glob_t globResult;
-    int    globStatus = glob(PATH.c_str(), GLOB_TILDE | GLOB_NOSORT, nullptr, &globResult);
+    Hyprutils::Utils::CScopeGuard scopeGuard([&globResult]() { globfree(&globResult); });
+
+    int globStatus = glob(PATH.c_str(), GLOB_TILDE | GLOB_NOSORT, nullptr, &globResult);
 
     if (globStatus == GLOB_NOMATCH) {
-        globfree(&globResult);
         // No glob match - try as a literal path
         if (!std::filesystem::exists(PATH)) {
             result.setError(std::format("source file '{}' not found", PATH).c_str());
@@ -237,14 +218,12 @@ static Hyprlang::CParseResult handleSource(const char* COMMAND, const char* VALU
         // Parse the single file
         g_logger->log(LOG_DEBUG, "source: parsing file '{}'", PATH);
         auto parseResult = g_config->hyprlang()->parseFile(PATH.c_str());
-        if (parseResult.error) {
+        if (parseResult.error)
             result.setError(std::format("error parsing '{}': {}", PATH, parseResult.getError()).c_str());
-        }
         return result;
     }
 
     if (globStatus != 0) {
-        globfree(&globResult);
         result.setError(std::format("glob error for pattern '{}'", PATH).c_str());
         return result;
     }
@@ -261,11 +240,9 @@ static Hyprlang::CParseResult handleSource(const char* COMMAND, const char* VALU
 
         g_logger->log(LOG_DEBUG, "source: parsing file '{}'", matchedPath);
         auto parseResult = g_config->hyprlang()->parseFile(matchedPath.c_str());
-        if (parseResult.error) {
+        if (parseResult.error)
             g_logger->log(LOG_ERR, "error parsing '{}': {}", matchedPath, parseResult.getError());
-        }
     }
 
-    globfree(&globResult);
     return result;
 }
