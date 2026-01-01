@@ -1,13 +1,41 @@
 #include "ConfigManager.hpp"
+#include <algorithm>
 #include <filesystem>
 #include <hyprlang.hpp>
 #include <hyprutils/path/Path.hpp>
+#include <hyprutils/utils/ScopeGuard.hpp>
 #include <string>
 #include <sys/ucontext.h>
 #include "../helpers/Logger.hpp"
 #include "WallpaperMatcher.hpp"
 
+#include <magic.h>
+
 using namespace std::string_literals;
+
+[[nodiscard]] static bool isImage(const std::filesystem::path& path) {
+    static constexpr std::array exts{".jpg", ".jpeg", ".png", ".bmp", ".webp", ".svg"};
+
+    auto                        ext = path.extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+    if (std::ranges::any_of(exts, [&ext](const auto& e) { return ext == e; }))
+        return true;
+
+    magic_t magic = magic_open(MAGIC_MIME_TYPE);
+    if (magic == nullptr)
+        return false;
+
+    Hyprutils::Utils::CScopeGuard guard{[&magic] { magic_close(magic); }};
+
+    if (magic_load(magic, nullptr) != 0)
+        return false;
+
+    const auto* result = magic_file(magic, path.string().c_str());
+    if (result == nullptr)
+        return false;
+
+    return std::string(result).starts_with("image/");
+}
 
 static std::string getMainConfigPath() {
     static const auto paths = Hyprutils::Path::findConfig("hyprpaper");
@@ -30,6 +58,7 @@ void CConfigManager::init() {
     m_config.addSpecialConfigValue("wallpaper", "monitor", Hyprlang::STRING{""});
     m_config.addSpecialConfigValue("wallpaper", "path", Hyprlang::STRING{""});
     m_config.addSpecialConfigValue("wallpaper", "fit_mode", Hyprlang::STRING{"cover"});
+    m_config.addSpecialConfigValue("wallpaper", "timeout", Hyprlang::INT{0});
 
     m_config.commence();
 
@@ -55,19 +84,51 @@ static std::expected<std::string, std::string> resolvePath(const std::string_vie
     return CAN;
 }
 
-static std::expected<std::string, std::string> getFullPath(const std::string_view& sv) {
-    if (sv.empty())
+static std::expected<std::string, std::string> getPath(const std::string_view& path) {
+    if (path.empty())
         return std::unexpected("empty path");
 
-    if (sv[0] == '~') {
+    if (path[0] == '~') {
         static auto HOME = getenv("HOME");
         if (!HOME || HOME[0] == '\0')
             return std::unexpected("home path but no $HOME");
 
-        return resolvePath(std::string{HOME} + "/"s + std::string{sv.substr(1)});
+        return resolvePath(std::string{HOME} + "/"s + std::string{path.substr(1)});
     }
 
-    return resolvePath(sv);
+    return resolvePath(path);
+}
+
+static std::expected<std::vector<std::string>, std::string> getFullPath(const std::string& sv) {
+    if (sv.empty())
+        return std::unexpected("empty path");
+
+    static constexpr const size_t maxImagesCount{1024};
+
+    std::vector<std::string>      result;
+
+    const auto                    resolved = getPath(sv);
+    if (!resolved)
+        return std::unexpected(resolved.error());
+
+    const auto resolvedPath = resolved.value();
+    if (!std::filesystem::exists(resolvedPath))
+        return std::unexpected(std::format("File '{}' does not exist", resolvedPath));
+
+    if (std::filesystem::is_directory(resolvedPath))
+        for (const auto& entry : std::filesystem::directory_iterator(resolvedPath, std::filesystem::directory_options::skip_permission_denied)) {
+            if (entry.is_regular_file() && isImage(entry.path())) 
+                result.push_back(entry.path());
+
+            if (result.size() >= maxImagesCount) 
+                break;
+        }
+    else if (isImage(resolvedPath))
+        result.push_back(resolvedPath);
+    else
+        return std::unexpected(std::format("File '{}' is neither an image nor a directory", resolvedPath));
+
+    return result;
 }
 
 std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
@@ -78,11 +139,13 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
 
     for (auto& key : keys) {
         std::string monitor, fitMode, path;
+        int         timeout;
 
         try {
             monitor = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "monitor", key.c_str()));
             fitMode = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "fit_mode", key.c_str()));
             path    = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "path", key.c_str()));
+            timeout = std::any_cast<Hyprlang::INT>(m_config.getSpecialConfigValue("wallpaper", "timeout", key.c_str()));
         } catch (...) {
             g_logger->log(LOG_ERR, "Failed parsing wallpaper for key {}", key);
             continue;
@@ -95,7 +158,12 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
             continue;
         }
 
-        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .path = RESOLVE_PATH.value()});
+        if (RESOLVE_PATH.value().empty()) {
+            g_logger->log(LOG_ERR, "Provided path(s) '{}' does not contain a valid image", path);
+            continue;
+        }
+
+        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .paths = RESOLVE_PATH.value(), .timeout = timeout});
     }
 
     return result;

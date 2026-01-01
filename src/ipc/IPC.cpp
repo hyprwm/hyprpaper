@@ -85,7 +85,7 @@ void CWallpaperObject::apply() {
     g_matcher->addState(CConfigManager::SSetting{
         .monitor = std::move(m_monitor),
         .fitMode = fitModeToStr(m_fitMode),
-        .path    = std::move(m_path),
+        .paths   = std::vector{std::move(m_path)},
     });
 
     m_object->sendSuccess();

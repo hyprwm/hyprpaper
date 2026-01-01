@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <hyprtoolkit/core/Backend.hpp>
+#include <hyprtoolkit/core/Timer.hpp>
 #include <hyprtoolkit/window/Window.hpp>
 #include <hyprtoolkit/element/Text.hpp>
 #include <hyprtoolkit/element/Null.hpp>
@@ -15,8 +16,9 @@
 
 class CWallpaperTarget {
   public:
-    CWallpaperTarget(SP<Hyprtoolkit::IOutput> output, const std::string_view& path, Hyprtoolkit::eImageFitMode fitMode = Hyprtoolkit::IMAGE_FIT_MODE_COVER);
-    ~CWallpaperTarget() = default;
+    CWallpaperTarget(SP<Hyprtoolkit::IBackend> backend, SP<Hyprtoolkit::IOutput> output, const std::vector<std::string>& path,
+                     Hyprtoolkit::eImageFitMode fitMode = Hyprtoolkit::IMAGE_FIT_MODE_COVER, const int timeout = 0);
+    ~CWallpaperTarget();
 
     CWallpaperTarget(const CWallpaperTarget&) = delete;
     CWallpaperTarget(CWallpaperTarget&)       = delete;
@@ -25,6 +27,13 @@ class CWallpaperTarget {
     std::string m_monitorName;
 
   private:
+    void onRepeatTimer();
+
+    class CImagesData;
+
+    UP<CImagesData>                    m_imagesData;
+    ASP<Hyprtoolkit::CTimer>           m_timer;
+    SP<Hyprtoolkit::IBackend>          m_backend;
     SP<Hyprtoolkit::IWindow>           m_window;
     SP<Hyprtoolkit::CNullElement>      m_null;
     SP<Hyprtoolkit::CRectangleElement> m_bg;
