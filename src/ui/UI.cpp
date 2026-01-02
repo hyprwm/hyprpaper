@@ -1,6 +1,7 @@
 #include "UI.hpp"
 #include "../defines.hpp"
 #include "../helpers/Logger.hpp"
+#include "../helpers/GlobalState.hpp"
 #include "../ipc/HyprlandSocket.hpp"
 #include "../ipc/IPC.hpp"
 #include "../config/WallpaperMatcher.hpp"
@@ -132,7 +133,13 @@ void CUI::registerOutput(const SP<Hyprtoolkit::IOutput>& mon) {
 bool CUI::run() {
     static const auto PENABLEIPC = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(g_config->hyprlang(), "ipc");
 
-    m_backend = Hyprtoolkit::IBackend::create();
+    //
+    Hyprtoolkit::IBackend::SBackendCreationData data;
+    data.pLogConnection = makeShared<Hyprutils::CLI::CLoggerConnection>(*g_logger);
+    data.pLogConnection->setName("hyprtoolkit");
+    data.pLogConnection->setLogLevel(g_state->verbose ? LOG_TRACE : LOG_ERR);
+
+    m_backend = Hyprtoolkit::IBackend::createWithData(data);
 
     if (!m_backend)
         return false;

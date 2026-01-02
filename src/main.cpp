@@ -1,5 +1,6 @@
 #include "defines.hpp"
 #include "helpers/Logger.hpp"
+#include "helpers/GlobalState.hpp"
 #include "ui/UI.hpp"
 #include "config/ConfigManager.hpp"
 
@@ -25,8 +26,10 @@ int main(int argc, const char** argv, const char** envp) {
         return 0;
     }
 
-    if (parser.getBool("verbose").value_or(false))
+    if (parser.getBool("verbose").value_or(false)) {
         g_logger->setLogLevel(LOG_TRACE);
+        g_state->verbose = true;
+    }
 
     g_logger->log(LOG_DEBUG, "Welcome to hyprpaper!\nbuilt from commit {} ({})", GIT_COMMIT_HASH, GIT_COMMIT_MESSAGE);
 
