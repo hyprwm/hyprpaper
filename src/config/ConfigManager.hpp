@@ -27,6 +27,8 @@ class CConfigManager {
 
     std::vector<SSetting>           getSettings();
 
+    const std::string&              getCurrentConfigPath() const;
+
   private:
     Hyprlang::CConfig m_config;
 
