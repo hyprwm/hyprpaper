@@ -31,7 +31,8 @@ int main(int argc, const char** argv, const char** envp) {
     g_logger->log(LOG_DEBUG, "Welcome to hyprpaper!\nbuilt from commit {} ({})", GIT_COMMIT_HASH, GIT_COMMIT_MESSAGE);
 
     g_config = makeUnique<CConfigManager>(std::string{parser.getString("config").value_or("")});
-    g_config->init();
+    if (!g_config->init())
+        return 1;
 
     g_ui = makeUnique<CUI>();
     g_ui->run();

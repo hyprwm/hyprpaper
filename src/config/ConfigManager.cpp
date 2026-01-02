@@ -48,7 +48,7 @@ CConfigManager::CConfigManager(const std::string& configPath) :
     m_currentConfigPath = configPath.empty() ? getMainConfigPath() : configPath;
 }
 
-void CConfigManager::init() {
+bool CConfigManager::init() {
     m_config.addConfigValue("splash", Hyprlang::INT{1});
     m_config.addConfigValue("splash_offset", Hyprlang::INT{20});
     m_config.addConfigValue("splash_opacity", Hyprlang::FLOAT{0.8});
@@ -64,10 +64,13 @@ void CConfigManager::init() {
 
     auto result = m_config.parse();
 
-    if (result.error)
-        g_logger->log(LOG_ERR, "Config has errors:\n{}\nProceeding ignoring faulty entries", result.getError());
+    if (result.error) {
+        g_logger->log(LOG_ERR, "Config has errors:\n{}", result.getError());
+        return false;
+    }
 
     g_matcher->addStates(getSettings());
+    return true;
 }
 
 Hyprlang::CConfig* CConfigManager::hyprlang() {
@@ -117,10 +120,10 @@ static std::expected<std::vector<std::string>, std::string> getFullPath(const st
 
     if (std::filesystem::is_directory(resolvedPath))
         for (const auto& entry : std::filesystem::directory_iterator(resolvedPath, std::filesystem::directory_options::skip_permission_denied)) {
-            if (entry.is_regular_file() && isImage(entry.path())) 
+            if (entry.is_regular_file() && isImage(entry.path()))
                 result.push_back(entry.path());
 
-            if (result.size() >= maxImagesCount) 
+            if (result.size() >= maxImagesCount)
                 break;
         }
     else if (isImage(resolvedPath))

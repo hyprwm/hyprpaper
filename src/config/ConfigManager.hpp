@@ -22,7 +22,7 @@ class CConfigManager {
 
     constexpr static const uint32_t SETTING_INVALID = 0;
 
-    void                            init();
+    bool                            init();
     Hyprlang::CConfig*              hyprlang();
 
     std::vector<SSetting>           getSettings();
