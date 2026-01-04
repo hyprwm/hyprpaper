@@ -14,6 +14,7 @@ int main(int argc, const char** argv, const char** envp) {
 
     ASSERT(parser.registerStringOption("config", "c", "Set a custom config path"));
     ASSERT(parser.registerBoolOption("verbose", "", "Enable more logging"));
+    ASSERT(parser.registerBoolOption("version", "v", "Show hyprpaper's version"));
     ASSERT(parser.registerBoolOption("help", "h", "Show the help menu"));
 
     if (const auto ret = parser.parse(); !ret) {
@@ -23,6 +24,11 @@ int main(int argc, const char** argv, const char** envp) {
 
     if (parser.getBool("help").value_or(false)) {
         std::println("{}", parser.getDescription(std::format("hyprpaper v{}", HYPRPAPER_VERSION)));
+        return 0;
+    }
+
+    if (parser.getBool("version").value_or(false)) {
+        std::println("hyprpaper v{}", HYPRPAPER_VERSION);
         return 0;
     }
 
