@@ -2,6 +2,14 @@
 
 #include <algorithm>
 
+// Check if a monitor string represents a wildcard (matches all monitors)
+// Empty string or "*" are both treated as wildcards.
+// "*" is preferred since hyprlang's special category system doesn't properly
+// return entries with empty string keys from listKeysForSpecialCategory().
+static bool isWildcard(const std::string& monitor) {
+    return monitor.empty() || monitor == "*";
+}
+
 void CWallpaperMatcher::addState(CConfigManager::SSetting&& s) {
     s.id = ++m_maxId;
 
@@ -57,13 +65,12 @@ std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperM
     for (const auto& s : m_settings) {
         if (s.monitor != monName)
             continue;
-
         return s;
     }
 
-    // match wildcard
+    // match wildcard (empty string or "*")
     for (const auto& s : m_settings) {
-        if (s.monitor.empty())
+        if (isWildcard(s.monitor))
             return s;
     }
 
