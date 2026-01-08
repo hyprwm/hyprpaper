@@ -8,10 +8,18 @@
 
 #include <hyprtoolkit/core/Output.hpp>
 
+#include <hyprutils/string/String.hpp>
+
 CUI::CUI() = default;
 
 CUI::~CUI() {
     m_targets.clear();
+}
+
+static std::string_view pruneDesc(const std::string_view& sv) {
+    if (sv.contains('('))
+        return Hyprutils::String::trim(sv.substr(0, sv.find_last_of('(')));
+    return sv;
 }
 
 class CWallpaperTarget::CImagesData {
@@ -119,7 +127,7 @@ void CWallpaperTarget::onRepeatTimer() {
 }
 
 void CUI::registerOutput(const SP<Hyprtoolkit::IOutput>& mon) {
-    g_matcher->registerOutput(mon->port());
+    g_matcher->registerOutput(mon->port(), pruneDesc(mon->desc()));
     if (IPC::g_IPCSocket)
         IPC::g_IPCSocket->onNewDisplay(mon->port());
     mon->m_events.removed.listenStatic([this, m = WP<Hyprtoolkit::IOutput>{mon}] {
@@ -205,7 +213,7 @@ void CUI::targetChanged(const std::string_view& monName) {
 }
 
 void CUI::targetChanged(const SP<Hyprtoolkit::IOutput>& mon) {
-    const auto TARGET = g_matcher->getSetting(mon->port());
+    const auto TARGET = g_matcher->getSetting(mon->port(), pruneDesc(mon->desc()));
 
     if (!TARGET) {
         g_logger->log(LOG_DEBUG, "Monitor {} has no target: no wp will be created", mon->port());

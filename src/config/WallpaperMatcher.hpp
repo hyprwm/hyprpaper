@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <tuple>
 
 #include "ConfigManager.hpp"
 
@@ -21,11 +22,11 @@ class CWallpaperMatcher {
     void                                              addState(CConfigManager::SSetting&&);
     void                                              addStates(std::vector<CConfigManager::SSetting>&&);
 
-    void                                              registerOutput(const std::string_view&);
+    void                                              registerOutput(const std::string_view&, const std::string_view&);
     void                                              unregisterOutput(const std::string_view&);
     bool                                              outputExists(const std::string_view&);
 
-    std::optional<rw<const CConfigManager::SSetting>> getSetting(const std::string_view& monName);
+    std::optional<rw<const CConfigManager::SSetting>> getSetting(const std::string_view& monName, const std::string_view& monDesc);
 
     struct {
         Hyprutils::Signal::CSignalT<const std::string_view&> monitorConfigChanged;
@@ -33,21 +34,21 @@ class CWallpaperMatcher {
 
   private:
     void                                              recalcStates();
-    std::optional<rw<const CConfigManager::SSetting>> matchSetting(const std::string_view& monName);
+    std::optional<rw<const CConfigManager::SSetting>> matchSetting(const std::string_view& monName, const std::string_view& monDesc);
 
     std::vector<CConfigManager::SSetting>             m_settings;
 
     struct SMonitorState {
-        std::string name;
+        std::string name, desc;
         uint32_t    currentID = CConfigManager::SETTING_INVALID;
     };
 
-    std::vector<std::string>   m_monitorNames;
-    std::vector<SMonitorState> m_monitorStates;
+    std::vector<std::pair<std::string, std::string>> m_monitorNames;
+    std::vector<SMonitorState>                       m_monitorStates;
 
-    uint32_t                   m_maxId = 0;
+    uint32_t                                         m_maxId = 0;
 
-    SMonitorState&             getState(const std::string_view& monName);
+    SMonitorState&                                   getState(const std::string_view& monName, const std::string_view& monDesc);
 };
 
 inline UP<CWallpaperMatcher> g_matcher = makeUnique<CWallpaperMatcher>();

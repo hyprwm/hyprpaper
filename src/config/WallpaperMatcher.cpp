@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+using namespace std::string_literals;
+
 // Check if a monitor string represents a wildcard (matches all monitors)
 // Empty string or "*" are both treated as wildcards.
 // "*" is preferred since hyprlang's special category system doesn't properly
@@ -28,24 +30,24 @@ void CWallpaperMatcher::addStates(std::vector<CConfigManager::SSetting>&& s) {
     recalcStates();
 }
 
-void CWallpaperMatcher::registerOutput(const std::string_view& s) {
-    m_monitorNames.emplace_back(s);
+void CWallpaperMatcher::registerOutput(const std::string_view& s, const std::string_view& desc) {
+    m_monitorNames.emplace_back(std::make_pair<>(s, desc));
     recalcStates();
 }
 
 void CWallpaperMatcher::unregisterOutput(const std::string_view& s) {
-    std::erase(m_monitorNames, s);
+    std::erase_if(m_monitorNames, [&s](const auto& e) { return e.first == s; });
     std::erase_if(m_monitorStates, [&s](const auto& e) { return e.name == s; });
     recalcStates();
 }
 
 bool CWallpaperMatcher::outputExists(const std::string_view& s) {
-    return std::ranges::contains(m_monitorNames, s);
+    return std::ranges::any_of(m_monitorNames, [&s](const auto& e) { return e.first == s || "desc:" + e.second == s; });
 }
 
-std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperMatcher::getSetting(const std::string_view& monName) {
+std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperMatcher::getSetting(const std::string_view& monName, const std::string_view& monDesc) {
     for (const auto& m : m_monitorStates) {
-        if (m.name != monName)
+        if (m.name != monName && monDesc != m.name)
             continue;
 
         for (const auto& s : m_settings) {
@@ -60,10 +62,10 @@ std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperM
     return std::nullopt;
 }
 
-std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperMatcher::matchSetting(const std::string_view& monName) {
+std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperMatcher::matchSetting(const std::string_view& monName, const std::string_view& monDesc) {
     // match explicit
     for (const auto& s : m_settings) {
-        if (s.monitor != monName)
+        if (s.monitor != monName && s.monitor != "desc:"s + std::string{monDesc})
             continue;
         return s;
     }
@@ -77,9 +79,9 @@ std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperM
     return std::nullopt;
 }
 
-CWallpaperMatcher::SMonitorState& CWallpaperMatcher::getState(const std::string_view& monName) {
+CWallpaperMatcher::SMonitorState& CWallpaperMatcher::getState(const std::string_view& monName, const std::string_view& monDesc) {
     for (auto& s : m_monitorStates) {
-        if (s.name == monName)
+        if (s.name == monName || s.desc == monDesc)
             return s;
     }
 
@@ -89,14 +91,15 @@ CWallpaperMatcher::SMonitorState& CWallpaperMatcher::getState(const std::string_
 void CWallpaperMatcher::recalcStates() {
     std::vector<std::string_view> namesChanged;
 
-    for (const auto& name : m_monitorNames) {
-        const auto STATE       = matchSetting(name);
-        auto&      activeState = getState(name);
+    for (const auto& [name, desc] : m_monitorNames) {
+        const auto STATE       = matchSetting(name, desc);
+        auto&      activeState = getState(name, desc);
 
         if (!STATE)
-            activeState = {.name = name};
+            activeState = {.name = name, .desc = desc};
         else {
             activeState.name = name;
+            activeState.desc = desc;
             if (activeState.currentID != STATE->get().id) {
                 activeState.currentID = STATE->get().id;
                 namesChanged.emplace_back(name);
