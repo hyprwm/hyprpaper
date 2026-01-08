@@ -30,6 +30,7 @@ namespace IPC {
 
         void onNewDisplay(const std::string& sv);
         void onRemovedDisplay(const std::string& sv);
+        void onWallpaperChanged(const std::string& mon, const std::string& path);
 
       private:
         SP<Hyprwire::IServerSocket>                  m_socket;
@@ -38,6 +39,7 @@ namespace IPC {
 
         std::vector<SP<CHyprpaperCoreManagerObject>> m_managers;
         std::vector<SP<CWallpaperObject>>            m_wallpaperObjects;
+        std::vector<SP<CHyprpaperStatusObject>>      m_statusObjects;
 
         friend class CWallpaperObject;
     };

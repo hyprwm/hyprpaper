@@ -24,7 +24,7 @@ class CWallpaperTarget {
     CWallpaperTarget(CWallpaperTarget&)       = delete;
     CWallpaperTarget(CWallpaperTarget&&)      = delete;
 
-    std::string m_monitorName;
+    std::string m_monitorName, m_lastPath;
 
   private:
     void onRepeatTimer();
@@ -46,8 +46,9 @@ class CUI {
     CUI();
     ~CUI();
 
-    bool                      run();
-    SP<Hyprtoolkit::IBackend> backend();
+    bool                                     run();
+    SP<Hyprtoolkit::IBackend>                backend();
+    const std::vector<SP<CWallpaperTarget>>& targets();
 
   private:
     void                              targetChanged(const SP<Hyprtoolkit::IOutput>& mon);
