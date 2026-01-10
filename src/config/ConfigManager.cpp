@@ -1,25 +1,14 @@
 #include "ConfigManager.hpp"
 #include "../Hyprpaper.hpp"
+#include "../helpers/ImagePicker.hpp"
 #include <hyprutils/path/Path.hpp>
 #include <filesystem>
-#include "../helpers/RandomGenerator.hpp"
-#include "../helpers/ImagePicker.hpp"
-
-// Utility function to safely expand a tilde at the beginning of a path.
-static std::string expandTilde(const std::string& path) {
-    if (!path.empty() && path[0] == '~') {
-        if (const char* home = getenv("HOME"))
-            return std::string(home) + path.substr(1);
-    }
-    return path;
-}
 
 static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
-    const std::string COMMAND = C;
-    const std::string VALUE   = V;
+    const std::string      COMMAND = C;
+    const std::string      VALUE   = V;
     Hyprlang::CParseResult result;
 
-    // Cache the position of the comma delimiter.
     auto delimPos = VALUE.find_first_of(',');
     if (delimPos == std::string::npos) {
         result.setError("wallpaper failed (syntax)");
@@ -30,59 +19,55 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
     auto WALLPAPER = g_pConfigManager->trimPath(VALUE.substr(delimPos + 1));
 
     bool contain = false;
+
     if (WALLPAPER.find("contain:") == 0) {
         WALLPAPER = WALLPAPER.substr(8);
         contain   = true;
     }
 
     bool tile = false;
+
     if (WALLPAPER.find("tile:") == 0) {
         WALLPAPER = WALLPAPER.substr(5);
         tile      = true;
     }
 
-    // Use the helper to expand '~'
-    WALLPAPER = expandTilde(WALLPAPER);
+    if (WALLPAPER[0] == '~') {
+        static const char* const ENVHOME = getenv("HOME");
+        WALLPAPER                        = std::string(ENVHOME) + WALLPAPER.substr(1);
+    }
 
     std::error_code ec;
+
     if (!std::filesystem::exists(WALLPAPER, ec)) {
-        result.setError(((ec ? ec.message() : std::string{"no such file"}) + std::string{": "} + WALLPAPER).c_str());
+        const auto errorMsg = ec ? ec.message() : std::string{"no such file"};
+        result.setError((std::string{"wallpaper failed ("} + errorMsg + std::string{": "} + WALLPAPER + std::string{")")).c_str());
         return result;
     }
 
-    // If it's a directory, always force a reload
+    // Handle directory wallpaper selection
     if (std::filesystem::is_directory(WALLPAPER)) {
         std::string currentWallpaper;
-        // First get the current wallpaper if it exists
-        for (auto& [loadedPath, target] : g_pHyprpaper->m_mWallpaperTargets) {
-            if (std::filesystem::path(loadedPath).parent_path() == std::filesystem::path(WALLPAPER)) {
-                currentWallpaper = loadedPath;
-                g_pHyprpaper->unloadWallpaper(loadedPath);
-                break;
-            }
+        if (g_pHyprpaper->m_mMonitorActiveWallpapers.contains(MONITOR)) {
+            currentWallpaper = g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR];
         }
-
-        // Use our helper with an exclusion to avoid reselecting the same image.
+        
         std::string randomImage = getRandomImageFromDirectory(WALLPAPER, currentWallpaper);
         if (randomImage.empty()) {
-            result.setError("No valid images in directory");
+            result.setError("wallpaper failed (no valid images in directory)");
             return result;
         }
         WALLPAPER = randomImage;
     }
 
-    if (!g_pHyprpaper->isPreloaded(WALLPAPER)) {
-        if (std::any_cast<Hyprlang::INT>(g_pConfigManager->config->getConfigValue("defer_preload"))) {
-            g_pHyprpaper->m_mWallpaperTargets[WALLPAPER] = CWallpaperTarget();
-            g_pHyprpaper->m_mWallpaperTargets[WALLPAPER].create(WALLPAPER);
-        } else {
-            result.setError("wallpaper failed (not preloaded)");
-            return result;
-        }
+    if (std::find(g_pConfigManager->m_dRequestedPreloads.begin(), g_pConfigManager->m_dRequestedPreloads.end(), WALLPAPER) == g_pConfigManager->m_dRequestedPreloads.end() &&
+        !g_pHyprpaper->isPreloaded(WALLPAPER)) {
+        result.setError("wallpaper failed (not preloaded)");
+        return result;
     }
 
     g_pHyprpaper->clearWallpaperFromMonitor(MONITOR);
-    g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR] = WALLPAPER;
+    g_pHyprpaper->m_mMonitorActiveWallpapers[MONITOR]            = WALLPAPER;
     g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].contain = contain;
     g_pHyprpaper->m_mMonitorWallpaperRenderData[MONITOR].tile    = tile;
 
@@ -90,7 +75,7 @@ static Hyprlang::CParseResult handleWallpaper(const char* C, const char* V) {
         for (auto& m : g_pHyprpaper->m_vMonitors) {
             if (!m->hasATarget || m->wildcard) {
                 g_pHyprpaper->clearWallpaperFromMonitor(m->name);
-                g_pHyprpaper->m_mMonitorActiveWallpapers[m->name] = WALLPAPER;
+                g_pHyprpaper->m_mMonitorActiveWallpapers[m->name]            = WALLPAPER;
                 g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].contain = contain;
                 g_pHyprpaper->m_mMonitorWallpaperRenderData[m->name].tile    = tile;
             }
@@ -109,10 +94,13 @@ static Hyprlang::CParseResult handlePreload(const char* C, const char* V) {
     const std::string VALUE     = V;
     auto              WALLPAPER = VALUE;
 
-    // Use the helper function for tilde expansion.
-    WALLPAPER = expandTilde(WALLPAPER);
+    if (WALLPAPER[0] == '~') {
+        static const char* const ENVHOME = getenv("HOME");
+        WALLPAPER                        = std::string(ENVHOME) + WALLPAPER.substr(1);
+    }
 
     std::error_code ec;
+
     if (!std::filesystem::exists(WALLPAPER, ec)) {
         Hyprlang::CParseResult result;
         result.setError(((ec ? ec.message() : std::string{"no such file"}) + std::string{": "} + WALLPAPER).c_str());
@@ -160,8 +148,10 @@ static Hyprlang::CParseResult handleUnload(const char* C, const char* V) {
     if (VALUE == "all" || VALUE == "unused")
         return handleUnloadAll(C, V);
 
-    // Use the helper function for tilde expansion.
-    WALLPAPER = expandTilde(WALLPAPER);
+    if (WALLPAPER[0] == '~') {
+        static const char* const ENVHOME = getenv("HOME");
+        WALLPAPER                        = std::string(ENVHOME) + WALLPAPER.substr(1);
+    }
 
     g_pHyprpaper->unloadWallpaper(WALLPAPER);
 
@@ -233,7 +223,6 @@ CConfigManager::CConfigManager() {
     config->addConfigValue("splash", Hyprlang::INT{0L});
     config->addConfigValue("splash_offset", Hyprlang::FLOAT{2.F});
     config->addConfigValue("splash_color", Hyprlang::INT{0x55ffffff});
-    config->addConfigValue("defer_preload", Hyprlang::INT{0L});
 
     config->registerHandler(&handleWallpaper, "wallpaper", {.allowFlags = false});
     config->registerHandler(&handleUnload, "unload", {.allowFlags = false});
