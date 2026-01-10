@@ -11,12 +11,8 @@ std::string getRandomImageFromDirectory(const std::string& dirPath, const std::s
         if (!entry.is_regular_file() || (!ignore.empty() && entry.path().string() == ignore))
             continue;
 
-        try {
-            Hyprgraphics::CImage test(entry.path().string());
+        if (Hyprgraphics::CImage::isImageFile(entry.path().string()))
             images.push_back(entry.path());
-        } catch (...) {
-            // Skip files that can't be loaded as images
-        }
     }
 
     if (images.empty())
