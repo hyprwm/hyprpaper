@@ -47,7 +47,7 @@ bool CWallpaperMatcher::outputExists(const std::string_view& s) {
 
 std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperMatcher::getSetting(const std::string_view& monName, const std::string_view& monDesc) {
     for (const auto& m : m_monitorStates) {
-        if (m.name != monName && monDesc != m.name)
+        if (m.name != monName && !m.desc.starts_with(monDesc))
             continue;
 
         for (const auto& s : m_settings) {
@@ -65,7 +65,7 @@ std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperM
 std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperMatcher::matchSetting(const std::string_view& monName, const std::string_view& monDesc) {
     // match explicit
     for (const auto& s : m_settings) {
-        if (s.monitor != monName && s.monitor != "desc:"s + std::string{monDesc})
+        if (s.monitor != monName && !("desc:"s + std::string{monDesc}).starts_with(s.monitor))
             continue;
         return s;
     }
@@ -79,9 +79,9 @@ std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperM
     return std::nullopt;
 }
 
-CWallpaperMatcher::SMonitorState& CWallpaperMatcher::getState(const std::string_view& monName, const std::string_view& monDesc) {
+CWallpaperMatcher::SMonitorState& CWallpaperMatcher::getState(const std::string_view& monName) {
     for (auto& s : m_monitorStates) {
-        if (s.name == monName || s.desc == monDesc)
+        if (s.name == monName)
             return s;
     }
 
@@ -93,7 +93,7 @@ void CWallpaperMatcher::recalcStates() {
 
     for (const auto& [name, desc] : m_monitorNames) {
         const auto STATE       = matchSetting(name, desc);
-        auto&      activeState = getState(name, desc);
+        auto&      activeState = getState(name);
 
         if (!STATE)
             activeState = {.name = name, .desc = desc};

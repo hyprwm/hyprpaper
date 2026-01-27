@@ -48,7 +48,7 @@ class CWallpaperMatcher {
 
     uint32_t                                         m_maxId = 0;
 
-    SMonitorState&                                   getState(const std::string_view& monName, const std::string_view& monDesc);
+    SMonitorState&                                   getState(const std::string_view& monName);
 };
 
 inline UP<CWallpaperMatcher> g_matcher = makeUnique<CWallpaperMatcher>();
