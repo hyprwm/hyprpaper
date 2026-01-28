@@ -8,7 +8,8 @@
 using namespace IPC;
 using namespace std::string_literals;
 
-constexpr const char*         SOCKET_NAME = ".hyprpaper.sock";
+constexpr const char*         SOCKET_NAME      = ".hyprpaper.sock";
+constexpr const size_t        HP_PROTO_VERSION = 2;
 
 static SP<CHyprpaperCoreImpl> g_coreImpl;
 
@@ -114,7 +115,7 @@ CSocket::CSocket() {
     if (!m_socket)
         return;
 
-    g_coreImpl = makeShared<CHyprpaperCoreImpl>(1, [this](SP<Hyprwire::IObject> obj) {
+    g_coreImpl = makeShared<CHyprpaperCoreImpl>(HP_PROTO_VERSION, [this](SP<Hyprwire::IObject> obj) {
         auto manager = m_managers.emplace_back(makeShared<CHyprpaperCoreManagerObject>(std::move(obj)));
 
         manager->setDestroy([this, weak = WP<CHyprpaperCoreManagerObject>{manager}] { std::erase(m_managers, weak); });
@@ -126,6 +127,18 @@ CSocket::CSocket() {
 
             m_wallpaperObjects.emplace_back(makeShared<CWallpaperObject>(
                 makeShared<CHyprpaperWallpaperObject>(m_socket->createObject(weak->getObject()->client(), weak->getObject(), "hyprpaper_wallpaper", id))));
+        });
+
+        manager->setGetStatusObject([this, weak = WP<CHyprpaperCoreManagerObject>{manager}](uint32_t id) {
+            if (!weak)
+                return;
+
+            auto x =
+                m_statusObjects.emplace_back(makeShared<CHyprpaperStatusObject>(m_socket->createObject(weak->getObject()->client(), weak->getObject(), "hyprpaper_status", id)));
+
+            for (const auto& m : g_ui->targets()) {
+                x->sendActiveWallpaper(m->m_monitorName.c_str(), m->m_lastPath.c_str());
+            }
         });
     });
 
@@ -143,5 +156,11 @@ void CSocket::onNewDisplay(const std::string& sv) {
 void CSocket::onRemovedDisplay(const std::string& sv) {
     for (const auto& m : m_managers) {
         m->sendRemoveMonitor(sv.c_str());
+    }
+}
+
+void CSocket::onWallpaperChanged(const std::string& mon, const std::string& path) {
+    for (const auto& so : m_statusObjects) {
+        so->sendActiveWallpaper(mon.c_str(), path.c_str());
     }
 }
