@@ -47,7 +47,7 @@ bool CWallpaperMatcher::outputExists(const std::string_view& s) {
 
 std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperMatcher::getSetting(const std::string_view& monName, const std::string_view& monDesc) {
     for (const auto& m : m_monitorStates) {
-        if (m.name != monName && (monDesc.empty() || !m.desc.starts_with(monDesc)))
+        if (m.name != monName)
             continue;
 
         for (const auto& s : m_settings) {
