@@ -96,7 +96,7 @@ void CWallpaperMatcher::recalcStates() {
         auto&      activeState = getState(name);
 
         if (!STATE)
-            activeState = {.name = name, .desc = desc};
+            activeState = {.name = name, .desc = desc, .currentID = CConfigManager::SETTING_INVALID};
         else {
             activeState.name = name;
             activeState.desc = desc;
