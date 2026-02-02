@@ -65,6 +65,8 @@ std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperM
 std::optional<CWallpaperMatcher::rw<const CConfigManager::SSetting>> CWallpaperMatcher::matchSetting(const std::string_view& monName, const std::string_view& monDesc) {
     // match explicit
     for (const auto& s : m_settings) {
+        if (isWildcard(s.monitor))
+            continue;
         if (s.monitor != monName && !("desc:"s + std::string{monDesc}).starts_with(s.monitor))
             continue;
         return s;
@@ -96,7 +98,7 @@ void CWallpaperMatcher::recalcStates() {
         auto&      activeState = getState(name);
 
         if (!STATE)
-            activeState = {.name = name, .desc = desc};
+            activeState = {.name = name, .desc = desc, .currentID = CConfigManager::SETTING_INVALID};
         else {
             activeState.name = name;
             activeState.desc = desc;
