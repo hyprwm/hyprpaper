@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <glob.h>
+#include <random>
 #include <hyprlang.hpp>
 #include <hyprutils/path/Path.hpp>
 #include <hyprutils/string/String.hpp>
@@ -63,6 +64,7 @@ bool CConfigManager::init() {
     m_config.addSpecialConfigValue("wallpaper", "path", Hyprlang::STRING{""});
     m_config.addSpecialConfigValue("wallpaper", "fit_mode", Hyprlang::STRING{"cover"});
     m_config.addSpecialConfigValue("wallpaper", "timeout", Hyprlang::INT{0});
+    m_config.addSpecialConfigValue("wallpaper", "order", Hyprlang::STRING{"default"});
 
     m_config.registerHandler(&handleSource, "source", Hyprlang::SHandlerOptions{});
 
@@ -157,7 +159,7 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
     result.reserve(keys.size());
 
     for (auto& key : keys) {
-        std::string monitor, fitMode, path;
+        std::string monitor, fitMode, path, order;
         int         timeout;
 
         try {
@@ -165,6 +167,7 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
             fitMode = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "fit_mode", key.c_str()));
             path    = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "path", key.c_str()));
             timeout = std::any_cast<Hyprlang::INT>(m_config.getSpecialConfigValue("wallpaper", "timeout", key.c_str()));
+            order   = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "order", key.c_str()));
         } catch (...) {
             g_logger->log(LOG_ERR, "Failed parsing wallpaper for key {}", key);
             continue;
@@ -182,7 +185,22 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
             continue;
         }
 
-        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .paths = RESOLVE_PATH.value(), .timeout = timeout});
+        auto resolvedPaths = RESOLVE_PATH.value();
+
+        if (resolvedPaths.size() > 1) {
+            if (order != "default" && order != "random") {
+                g_logger->log(LOG_WARN, "Invalid order value '{}', falling back to default", order);
+                order = "default";
+            }
+
+            if (order == "random") {
+                std::random_device rd;
+                std::mt19937       g(rd());
+                std::shuffle(resolvedPaths.begin(), resolvedPaths.end(), g);
+            }
+        }
+
+        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .paths = std::move(resolvedPaths), .timeout = timeout, .order = order});
     }
 
     return result;

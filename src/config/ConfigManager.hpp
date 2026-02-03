@@ -18,6 +18,7 @@ class CConfigManager {
         std::vector<std::string> paths;
         int                      timeout = 0;
         uint32_t                 id      = 0;
+        std::string              order;
     };
 
     constexpr static const uint32_t SETTING_INVALID = 0;
