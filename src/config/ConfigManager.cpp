@@ -200,7 +200,7 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
             }
         }
 
-        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .paths = std::move(resolvedPaths), .timeout = timeout, .order = order});
+        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .paths = std::move(resolvedPaths), .timeout = timeout});
     }
 
     return result;
