@@ -73,6 +73,8 @@ CWallpaperTarget::CWallpaperTarget(SP<Hyprtoolkit::IBackend> backend, SP<Hyprtoo
                   ->fitMode(fitMode)
                   ->commence();
 
+    m_lastPath = path.front();
+
     m_image->setPositionMode(Hyprtoolkit::IElement::HT_POSITION_ABSOLUTE);
     m_image->setPositionFlag(Hyprtoolkit::IElement::HT_POSITION_FLAG_CENTER, true);
 
@@ -115,8 +117,10 @@ void CWallpaperTarget::onRepeatTimer() {
 
     ASSERT(m_imagesData);
 
+    m_lastPath = m_imagesData->nextImage();
+
     m_image->rebuild()
-        ->path(m_imagesData->nextImage())
+        ->path(std::string{m_lastPath})
         ->size({Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
         ->sync(true)
         ->fitMode(m_imagesData->fitMode)
@@ -124,6 +128,8 @@ void CWallpaperTarget::onRepeatTimer() {
 
     m_timer =
         m_backend->addTimer(std::chrono::milliseconds(std::chrono::seconds(m_imagesData->timeout)), [this](ASP<Hyprtoolkit::CTimer> self, void*) { onRepeatTimer(); }, nullptr);
+
+    IPC::g_IPCSocket->onWallpaperChanged(m_monitorName, m_lastPath);
 }
 
 void CUI::registerOutput(const SP<Hyprtoolkit::IOutput>& mon) {
@@ -223,4 +229,8 @@ void CUI::targetChanged(const SP<Hyprtoolkit::IOutput>& mon) {
     std::erase_if(m_targets, [&mon](const auto& e) { return e->m_monitorName == mon->port(); });
 
     m_targets.emplace_back(makeShared<CWallpaperTarget>(m_backend, mon, TARGET->get().paths, toFitMode(TARGET->get().fitMode), TARGET->get().timeout));
+}
+
+const std::vector<SP<CWallpaperTarget>>& CUI::targets() {
+    return m_targets;
 }
