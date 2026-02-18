@@ -1,11 +1,13 @@
 #include "ConfigManager.hpp"
 #include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <glob.h>
 #include <hyprlang.hpp>
 #include <hyprutils/path/Path.hpp>
 #include <hyprutils/string/String.hpp>
 #include <hyprutils/utils/ScopeGuard.hpp>
+#include <optional>
 #include <string>
 #include "../helpers/Logger.hpp"
 #include "WallpaperMatcher.hpp"
@@ -63,6 +65,7 @@ bool CConfigManager::init() {
     m_config.addSpecialConfigValue("wallpaper", "path", Hyprlang::STRING{""});
     m_config.addSpecialConfigValue("wallpaper", "fit_mode", Hyprlang::STRING{"cover"});
     m_config.addSpecialConfigValue("wallpaper", "timeout", Hyprlang::INT{0});
+    m_config.addSpecialConfigValue("wallpaper", "triggers", Hyprlang::STRING{""});
 
     m_config.registerHandler(&handleSource, "source", Hyprlang::SHandlerOptions{});
 
@@ -118,19 +121,11 @@ static std::expected<std::string, std::string> getPath(const std::string_view& s
     return resolvePath(path);
 }
 
-static std::expected<std::vector<std::string>, std::string> getFullPath(const std::string& sv) {
-    if (sv.empty())
-        return std::unexpected("empty path");
-
+static std::expected<std::vector<std::string>, std::string> getFullPathResolved(const std::string& resolvedPath) {
     static constexpr const size_t maxImagesCount{1024};
 
     std::vector<std::string>      result;
 
-    const auto                    resolved = getPath(sv);
-    if (!resolved)
-        return std::unexpected(resolved.error());
-
-    const auto resolvedPath = resolved.value();
     if (!std::filesystem::exists(resolvedPath))
         return std::unexpected(std::format("File '{}' does not exist", resolvedPath));
 
@@ -150,6 +145,106 @@ static std::expected<std::vector<std::string>, std::string> getFullPath(const st
     return result;
 }
 
+struct SParsedTriggers {
+    uint32_t flags                = 0;
+    int      fileChangeDebounceMs = 0;
+    bool     hasTimeout           = false;
+    int      timeout              = 0;
+    bool     hasValidEntry        = false;
+};
+
+static std::optional<int> parsePositiveInt(const std::string_view& sv) {
+    if (sv.empty())
+        return std::nullopt;
+
+    try {
+        size_t idx = 0;
+        int    val = std::stoi(std::string{sv}, &idx);
+        if (idx != sv.size() || val <= 0)
+            return std::nullopt;
+        return val;
+    } catch (...) {
+        return std::nullopt;
+    }
+}
+
+static std::optional<int> parseNonNegativeInt(const std::string_view& sv) {
+    if (sv.empty())
+        return std::nullopt;
+
+    try {
+        size_t idx = 0;
+        int    val = std::stoi(std::string{sv}, &idx);
+        if (idx != sv.size() || val < 0)
+            return std::nullopt;
+        return val;
+    } catch (...) {
+        return std::nullopt;
+    }
+}
+
+static SParsedTriggers parseTriggers(const std::string_view& triggerSpec, const std::string_view& keyName) {
+    SParsedTriggers out;
+
+    size_t          pos = 0;
+    while (pos <= triggerSpec.size()) {
+        const auto nextComma = triggerSpec.find(',', pos);
+        const auto token =
+            Hyprutils::String::trim(nextComma == std::string::npos ? triggerSpec.substr(pos) : triggerSpec.substr(pos, nextComma - pos));
+
+        if (!token.empty()) {
+            std::string lowerToken{token};
+            std::transform(lowerToken.begin(), lowerToken.end(), lowerToken.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+            if (lowerToken == "sighup") {
+                out.flags |= CConfigManager::SSetting::TRIGGER_SIGHUP;
+                out.hasValidEntry = true;
+            } else if (lowerToken == "sigusr1") {
+                out.flags |= CConfigManager::SSetting::TRIGGER_SIGUSR1;
+                out.hasValidEntry = true;
+            } else if (lowerToken == "sigusr2") {
+                out.flags |= CConfigManager::SSetting::TRIGGER_SIGUSR2;
+                out.hasValidEntry = true;
+            } else if (lowerToken.starts_with("timeout")) {
+                auto arg = Hyprutils::String::trim(token.substr(std::string_view{"timeout"}.size()));
+                if (!arg.empty() && arg.front() == '=')
+                    arg = Hyprutils::String::trim(arg.substr(1));
+
+                const auto parsedTimeout = parsePositiveInt(arg);
+                if (!parsedTimeout)
+                    g_logger->log(LOG_WARN, "Invalid timeout trigger '{}' for wallpaper key {}, expected: timeout <seconds>", token, keyName);
+                else {
+                    out.hasTimeout = true;
+                    out.timeout    = *parsedTimeout;
+                    out.hasValidEntry = true;
+                }
+            } else if (lowerToken.starts_with("file_change")) {
+                out.flags |= CConfigManager::SSetting::TRIGGER_FILE_CHANGE;
+                out.hasValidEntry = true;
+
+                auto arg = Hyprutils::String::trim(token.substr(std::string_view{"file_change"}.size()));
+                if (!arg.empty() && arg.front() == '=')
+                    arg = Hyprutils::String::trim(arg.substr(1));
+
+                if (!arg.empty()) {
+                    const auto parsedDebounce = parseNonNegativeInt(arg);
+                    if (!parsedDebounce)
+                        g_logger->log(LOG_WARN, "Invalid file_change trigger '{}' for wallpaper key {}, expected: file_change [milliseconds]", token, keyName);
+                    else
+                        out.fileChangeDebounceMs = *parsedDebounce;
+                }
+            } else
+                g_logger->log(LOG_WARN, "Unknown trigger '{}' for wallpaper key {}", token, keyName);
+        }
+
+        if (nextComma == std::string::npos)
+            break;
+        pos = nextComma + 1;
+    }
+
+    return out;
+}
+
 std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
     std::vector<CConfigManager::SSetting> result;
 
@@ -157,20 +252,28 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
     result.reserve(keys.size());
 
     for (auto& key : keys) {
-        std::string monitor, fitMode, path;
-        int         timeout;
+        std::string monitor, fitMode, path, triggers;
+        int         timeout, fileChangeDebounceMs = 0;
+        uint32_t    triggerFlags = 0;
 
         try {
             monitor = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "monitor", key.c_str()));
             fitMode = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "fit_mode", key.c_str()));
             path    = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "path", key.c_str()));
             timeout = std::any_cast<Hyprlang::INT>(m_config.getSpecialConfigValue("wallpaper", "timeout", key.c_str()));
+            triggers = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "triggers", key.c_str()));
         } catch (...) {
             g_logger->log(LOG_ERR, "Failed parsing wallpaper for key {}", key);
             continue;
         }
 
-        const auto RESOLVE_PATH = getFullPath(path);
+        const auto RESOLVED_INPUT_PATH = getPath(path);
+        if (!RESOLVED_INPUT_PATH) {
+            g_logger->log(LOG_ERR, "Failed to resolve path {}: {}", path, RESOLVED_INPUT_PATH.error());
+            continue;
+        }
+
+        const auto RESOLVE_PATH = getFullPathResolved(RESOLVED_INPUT_PATH.value());
 
         if (!RESOLVE_PATH) {
             g_logger->log(LOG_ERR, "Failed to resolve path {}: {}", path, RESOLVE_PATH.error());
@@ -182,7 +285,24 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
             continue;
         }
 
-        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .paths = RESOLVE_PATH.value(), .timeout = timeout});
+        const auto PARSED_TRIGGERS = parseTriggers(triggers, key);
+        triggerFlags               = PARSED_TRIGGERS.flags;
+        fileChangeDebounceMs       = PARSED_TRIGGERS.fileChangeDebounceMs;
+
+        if (PARSED_TRIGGERS.hasTimeout)
+            timeout = PARSED_TRIGGERS.timeout;
+        else if (PARSED_TRIGGERS.hasValidEntry && timeout <= 0)
+            timeout = -1;
+
+        result.emplace_back(SSetting{
+            .monitor              = std::move(monitor),
+            .fitMode              = std::move(fitMode),
+            .paths                = RESOLVE_PATH.value(),
+            .timeout              = timeout,
+            .triggers             = triggerFlags,
+            .fileChangeDebounceMs = fileChangeDebounceMs,
+            .sourcePath           = RESOLVED_INPUT_PATH.value(),
+        });
     }
 
     return result;
