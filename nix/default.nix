@@ -22,6 +22,7 @@
   libselinux,
   libsepol,
   libthai,
+  libXdmcp,
   libwebp,
   pango,
   pcre,
@@ -30,7 +31,6 @@
   wayland,
   wayland-protocols,
   wayland-scanner,
-  xorg,
   commit,
   debug ? false,
   version ? "git",
@@ -50,10 +50,7 @@ stdenv.mkDerivation {
     pkg-config
   ];
 
-  cmakeBuildType =
-    if debug
-    then "Debug"
-    else "Release";
+  cmakeBuildType = if debug then "Debug" else "Release";
 
   nativeBuildInputs = [
     cmake
@@ -83,12 +80,12 @@ stdenv.mkDerivation {
     libsepol
     libthai
     libwebp
+    libXdmcp
     pango
     pcre
     pcre2
     wayland
     wayland-protocols
-    xorg.libXdmcp
     util-linux
   ];
 
