@@ -73,44 +73,12 @@
         system:
         import nixpkgs {
           localSystem.system = system;
-          overlays = with self.overlays; [ hyprpaper ];
+          overlays = with self.overlays; [ hyprpaper-with-deps ];
         }
       );
-      mkDate =
-        longDate:
-        (lib.concatStringsSep "-" [
-          (builtins.substring 0 4 longDate)
-          (builtins.substring 4 2 longDate)
-          (builtins.substring 6 2 longDate)
-        ]);
-      version = lib.removeSuffix "\n" (builtins.readFile ./VERSION);
     in
     {
-      overlays = {
-        default = self.overlays.hyprpaper;
-        hyprpaper = lib.composeManyExtensions [
-          inputs.aquamarine.overlays.default
-          inputs.hyprgraphics.overlays.default
-          inputs.hyprlang.overlays.default
-          inputs.hyprutils.overlays.default
-          inputs.hyprwayland-scanner.overlays.default
-          inputs.hyprtoolkit.overlays.default
-          inputs.hyprwire.overlays.default
-          (final: prev: rec {
-            hyprpaper = final.callPackage ./nix/default.nix {
-              stdenv = final.gcc15Stdenv;
-              version =
-                version
-                + "+date="
-                + (mkDate (self.lastModifiedDate or "19700101"))
-                + "_"
-                + (self.shortRev or "dirty");
-              commit = self.rev or "";
-            };
-            hyprpaper-debug = hyprpaper.override { debug = true; };
-          })
-        ];
-      };
+      overlays = import ./nix/overlays.nix { inherit inputs lib self; };
 
       packages = eachSystem (system: {
         default = self.packages.${system}.hyprpaper;
