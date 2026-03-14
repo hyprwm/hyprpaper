@@ -6,6 +6,8 @@
 #include "../ipc/IPC.hpp"
 #include "../config/WallpaperMatcher.hpp"
 
+#include <algorithm>
+#include <random>
 #include <hyprtoolkit/core/Output.hpp>
 
 #include <hyprutils/string/String.hpp>
@@ -24,14 +26,23 @@ static std::string_view pruneDesc(const std::string_view& sv) {
 
 class CWallpaperTarget::CImagesData {
   public:
-    CImagesData(Hyprtoolkit::eImageFitMode fitMode, const std::vector<std::string>& images, const int timeout = 0) :
-        fitMode(fitMode), images(images), timeout(timeout > 0 ? timeout : 30) {}
+    CImagesData(Hyprtoolkit::eImageFitMode fitMode, std::vector<std::string> images, const int timeout = 0, std::string order = "default") :
+        fitMode(fitMode), images(std::move(images)), order(std::move(order)), timeout(timeout > 0 ? timeout : 30) {}
 
     const Hyprtoolkit::eImageFitMode fitMode;
-    const std::vector<std::string>   images;
+    std::vector<std::string>         images;
+    const std::string                order;
     const int                        timeout;
 
     std::string                      nextImage() {
+        if (order == "random-shuffle" && current + 1 >= images.size()) {
+            std::random_device rd;
+            std::mt19937       g(rd());
+            std::shuffle(images.begin(), images.end(), g);
+            current = 0;
+            return images[current];
+        }
+
         current = (current + 1) % images.size();
         return images[current];
     }
@@ -41,7 +52,7 @@ class CWallpaperTarget::CImagesData {
 };
 
 CWallpaperTarget::CWallpaperTarget(SP<Hyprtoolkit::IBackend> backend, SP<Hyprtoolkit::IOutput> output, const std::vector<std::string>& path, Hyprtoolkit::eImageFitMode fitMode,
-                                   const int timeout) : m_monitorName(output->port()), m_backend(backend) {
+                                   const int timeout, const std::string& order) : m_monitorName(output->port()), m_backend(backend) {
     static const auto SPLASH_REPLY = HyprlandSocket::getFromSocket("/splash");
 
     static const auto PENABLESPLASH = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(g_config->hyprlang(), "splash");
@@ -79,7 +90,7 @@ CWallpaperTarget::CWallpaperTarget(SP<Hyprtoolkit::IBackend> backend, SP<Hyprtoo
     m_image->setPositionFlag(Hyprtoolkit::IElement::HT_POSITION_FLAG_CENTER, true);
 
     if (path.size() > 1) {
-        m_imagesData = makeUnique<CImagesData>(fitMode, path, timeout);
+        m_imagesData = makeUnique<CImagesData>(fitMode, std::vector<std::string>(path), timeout, order);
         m_timer =
             m_backend->addTimer(std::chrono::milliseconds(std::chrono::seconds(m_imagesData->timeout)), [this](ASP<Hyprtoolkit::CTimer> self, void*) { onRepeatTimer(); }, nullptr);
     }
@@ -228,7 +239,7 @@ void CUI::targetChanged(const SP<Hyprtoolkit::IOutput>& mon) {
 
     std::erase_if(m_targets, [&mon](const auto& e) { return e->m_monitorName == mon->port(); });
 
-    m_targets.emplace_back(makeShared<CWallpaperTarget>(m_backend, mon, TARGET->get().paths, toFitMode(TARGET->get().fitMode), TARGET->get().timeout));
+    m_targets.emplace_back(makeShared<CWallpaperTarget>(m_backend, mon, TARGET->get().paths, toFitMode(TARGET->get().fitMode), TARGET->get().timeout, TARGET->get().order));
 }
 
 const std::vector<SP<CWallpaperTarget>>& CUI::targets() {
