@@ -16,6 +16,7 @@ class CConfigManager {
     struct SSetting {
         std::string              monitor, fitMode;
         std::vector<std::string> paths;
+        std::string              order   = "default";
         int                      timeout = 0;
         uint32_t                 id      = 0;
     };
