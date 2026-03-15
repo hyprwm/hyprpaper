@@ -65,6 +65,7 @@ bool CConfigManager::init() {
     m_config.addSpecialConfigValue("wallpaper", "fit_mode", Hyprlang::STRING{"cover"});
     m_config.addSpecialConfigValue("wallpaper", "timeout", Hyprlang::INT{0});
     m_config.addSpecialConfigValue("wallpaper", "order", Hyprlang::STRING{"default"});
+    m_config.addSpecialConfigValue("wallpaper", "recursive", Hyprlang::INT{0});
 
     m_config.registerHandler(&handleSource, "source", Hyprlang::SHandlerOptions{});
 
@@ -120,7 +121,7 @@ static std::expected<std::string, std::string> getPath(const std::string_view& s
     return resolvePath(path);
 }
 
-static std::expected<std::vector<std::string>, std::string> getFullPath(const std::string& sv) {
+static std::expected<std::vector<std::string>, std::string> getFullPath(const std::string& sv, const bool recursive) {
     if (sv.empty())
         return std::unexpected("empty path");
 
@@ -136,14 +137,27 @@ static std::expected<std::vector<std::string>, std::string> getFullPath(const st
     if (!std::filesystem::exists(resolvedPath))
         return std::unexpected(std::format("File '{}' does not exist", resolvedPath));
 
-    if (std::filesystem::is_directory(resolvedPath))
-        for (const auto& entry : std::filesystem::directory_iterator(resolvedPath, std::filesystem::directory_options::skip_permission_denied)) {
+    if (std::filesystem::is_directory(resolvedPath)) {
+        auto processEntry = [&result](const auto& entry) {
             if (entry.is_regular_file() && isImage(entry.path()))
                 result.push_back(entry.path());
+        };
 
-            if (result.size() >= maxImagesCount)
-                break;
+        if (recursive) {
+            for (const auto& entry :
+                 std::filesystem::recursive_directory_iterator(resolvedPath, std::filesystem::directory_options::skip_permission_denied)) {
+                processEntry(entry);
+                if (result.size() >= maxImagesCount)
+                    break;
+            }
+        } else {
+            for (const auto& entry : std::filesystem::directory_iterator(resolvedPath, std::filesystem::directory_options::skip_permission_denied)) {
+                processEntry(entry);
+                if (result.size() >= maxImagesCount)
+                    break;
+            }
         }
+    }
     else if (isImage(resolvedPath))
         result.push_back(resolvedPath);
     else
@@ -160,20 +174,21 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
 
     for (auto& key : keys) {
         std::string monitor, fitMode, path, order;
-        int         timeout;
+        int         timeout, recursive;
 
         try {
             monitor = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "monitor", key.c_str()));
             fitMode = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "fit_mode", key.c_str()));
             path    = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "path", key.c_str()));
             timeout = std::any_cast<Hyprlang::INT>(m_config.getSpecialConfigValue("wallpaper", "timeout", key.c_str()));
-            order   = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "order", key.c_str()));
+            order     = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "order", key.c_str()));
+            recursive = std::any_cast<Hyprlang::INT>(m_config.getSpecialConfigValue("wallpaper", "recursive", key.c_str()));
         } catch (...) {
             g_logger->log(LOG_ERR, "Failed parsing wallpaper for key {}", key);
             continue;
         }
 
-        const auto RESOLVE_PATH = getFullPath(path);
+        const auto RESOLVE_PATH = getFullPath(path, recursive != 0);
 
         if (!RESOLVE_PATH) {
             g_logger->log(LOG_ERR, "Failed to resolve path {}: {}", path, RESOLVE_PATH.error());
