@@ -203,19 +203,19 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
         auto resolvedPaths = RESOLVE_PATH.value();
 
         if (resolvedPaths.size() > 1) {
-            if (order != "default" && order != "random") {
+            if (order != "default" && order != "random" && order != "random-shuffle") {
                 g_logger->log(LOG_WARN, "Invalid order value '{}', falling back to default", order);
                 order = "default";
             }
 
-            if (order == "random") {
+            if (order == "random" || order == "random-shuffle") {
                 std::random_device rd;
                 std::mt19937       g(rd());
                 std::shuffle(resolvedPaths.begin(), resolvedPaths.end(), g);
             }
         }
 
-        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .paths = std::move(resolvedPaths), .timeout = timeout});
+        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .paths = std::move(resolvedPaths), .order = std::move(order), .timeout = timeout});
     }
 
     return result;
