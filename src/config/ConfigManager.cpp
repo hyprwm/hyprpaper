@@ -62,6 +62,7 @@ bool CConfigManager::init() {
     m_config.addSpecialCategory("wallpaper", Hyprlang::SSpecialCategoryOptions{.key = "monitor"});
     m_config.addSpecialConfigValue("wallpaper", "monitor", Hyprlang::STRING{""});
     m_config.addSpecialConfigValue("wallpaper", "path", Hyprlang::STRING{""});
+    m_config.addSpecialConfigValue("wallpaper", "paths", Hyprlang::STRING{""});
     m_config.addSpecialConfigValue("wallpaper", "fit_mode", Hyprlang::STRING{"cover"});
     m_config.addSpecialConfigValue("wallpaper", "timeout", Hyprlang::INT{0});
     m_config.addSpecialConfigValue("wallpaper", "order", Hyprlang::STRING{"default"});
@@ -166,6 +167,32 @@ static std::expected<std::vector<std::string>, std::string> getFullPath(const st
     return result;
 }
 
+static std::expected<std::vector<std::string>, std::string> getFullPaths(const std::string& sv, const bool recursive) {
+    std::vector<std::string> result;
+    size_t                   pos = 0;
+
+    while (pos < sv.size()) {
+        const auto next = sv.find(',', pos);
+        const auto path = Hyprutils::String::trim(std::string_view{sv}.substr(pos, next == std::string::npos ? sv.size() - pos : next - pos));
+
+        if (path.empty())
+            return std::unexpected("empty path in paths");
+
+        const auto RESOLVED_PATH = getFullPath(std::string{path}, recursive);
+        if (!RESOLVED_PATH)
+            return std::unexpected(RESOLVED_PATH.error());
+
+        result.append_range(RESOLVED_PATH.value());
+
+        if (next == std::string::npos)
+            break;
+
+        pos = next + 1;
+    }
+
+    return result;
+}
+
 std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
     std::vector<CConfigManager::SSetting> result;
 
@@ -173,13 +200,14 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
     result.reserve(keys.size());
 
     for (auto& key : keys) {
-        std::string monitor, fitMode, path, order;
+        std::string monitor, fitMode, path, paths, order;
         int         timeout, recursive;
 
         try {
             monitor = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "monitor", key.c_str()));
             fitMode = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "fit_mode", key.c_str()));
             path    = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "path", key.c_str()));
+            paths   = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "paths", key.c_str()));
             timeout = std::any_cast<Hyprlang::INT>(m_config.getSpecialConfigValue("wallpaper", "timeout", key.c_str()));
             order     = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "order", key.c_str()));
             recursive = std::any_cast<Hyprlang::INT>(m_config.getSpecialConfigValue("wallpaper", "recursive", key.c_str()));
@@ -188,30 +216,52 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
             continue;
         }
 
-        const auto RESOLVE_PATH = getFullPath(path, recursive != 0);
-
-        if (!RESOLVE_PATH) {
-            g_logger->log(LOG_ERR, "Failed to resolve path {}: {}", path, RESOLVE_PATH.error());
+        if (!path.empty() && !paths.empty()) {
+            g_logger->log(LOG_ERR, "Wallpaper {} has both path and paths set", key);
             continue;
         }
 
-        if (RESOLVE_PATH.value().empty()) {
-            g_logger->log(LOG_ERR, "Provided path(s) '{}' does not contain a valid image", path);
+        const bool  USING_PATHS      = !paths.empty();
+        const auto& PATHS_TO_RESOLVE = USING_PATHS ? paths : path;
+        const auto  RESOLVE_PATHS    = USING_PATHS ? getFullPaths(paths, recursive != 0) : getFullPath(path, recursive != 0);
+
+        if (!RESOLVE_PATHS) {
+            g_logger->log(LOG_ERR, "Failed to resolve path {}: {}", PATHS_TO_RESOLVE, RESOLVE_PATHS.error());
             continue;
         }
 
-        auto resolvedPaths = RESOLVE_PATH.value();
+        if (RESOLVE_PATHS.value().empty()) {
+            g_logger->log(LOG_ERR, "Provided path(s) '{}' does not contain a valid image", PATHS_TO_RESOLVE);
+            continue;
+        }
+
+        auto resolvedPaths = RESOLVE_PATHS.value();
 
         if (resolvedPaths.size() > 1) {
-            if (order != "default" && order != "random" && order != "random-shuffle") {
-                g_logger->log(LOG_WARN, "Invalid order value '{}', falling back to default", order);
-                order = "default";
-            }
+            if (USING_PATHS) {
+                if (order != "default" && order != "random") {
+                    g_logger->log(LOG_WARN, "Invalid order value '{}' for paths, falling back to default", order);
+                    order = "default";
+                }
 
-            if (order == "random" || order == "random-shuffle") {
-                std::random_device rd;
-                std::mt19937       g(rd());
-                std::shuffle(resolvedPaths.begin(), resolvedPaths.end(), g);
+                if (order == "random") {
+                    std::random_device rd;
+                    std::mt19937       g(rd());
+                    std::shuffle(resolvedPaths.begin(), resolvedPaths.end(), g);
+                }
+
+                resolvedPaths.resize(1);
+            } else {
+                if (order != "default" && order != "random" && order != "random-shuffle") {
+                    g_logger->log(LOG_WARN, "Invalid order value '{}', falling back to default", order);
+                    order = "default";
+                }
+
+                if (order == "random" || order == "random-shuffle") {
+                    std::random_device rd;
+                    std::mt19937       g(rd());
+                    std::shuffle(resolvedPaths.begin(), resolvedPaths.end(), g);
+                }
             }
         }
 
