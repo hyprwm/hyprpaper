@@ -16,9 +16,10 @@ class CConfigManager {
     struct SSetting {
         std::string              monitor, fitMode;
         std::vector<std::string> paths;
-        std::string              order   = "default";
-        int                      timeout = 0;
-        uint32_t                 id      = 0;
+        std::string              order     = "default";
+        int                      timeout   = 0;
+        uint32_t                 id        = 0;
+        bool                     recursive = false;
     };
 
     constexpr static const uint32_t SETTING_INVALID = 0;
