@@ -174,7 +174,8 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
 
     for (auto& key : keys) {
         std::string monitor, fitMode, path, order;
-        int         timeout, recursive;
+        int         timeout;
+        bool        recursive;
 
         try {
             monitor = std::any_cast<Hyprlang::STRING>(m_config.getSpecialConfigValue("wallpaper", "monitor", key.c_str()));
@@ -188,7 +189,7 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
             continue;
         }
 
-        const auto RESOLVE_PATH = getFullPath(path, recursive != 0);
+        const auto RESOLVE_PATH = getFullPath(path, recursive);
 
         if (!RESOLVE_PATH) {
             g_logger->log(LOG_ERR, "Failed to resolve path {}: {}", path, RESOLVE_PATH.error());
@@ -215,7 +216,14 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
             }
         }
 
-        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .paths = std::move(resolvedPaths), .order = std::move(order), .timeout = timeout});
+        result.emplace_back(SSetting{
+            .monitor = std::move(monitor),
+            .fitMode = std::move(fitMode),
+            .paths = std::move(resolvedPaths),
+            .order = std::move(order),
+            .timeout = timeout,
+            .recursive = recursive,
+        });
     }
 
     return result;
