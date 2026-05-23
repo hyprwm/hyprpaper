@@ -140,7 +140,8 @@ void CWallpaperTarget::onRepeatTimer() {
     m_timer =
         m_backend->addTimer(std::chrono::milliseconds(std::chrono::seconds(m_imagesData->timeout)), [this](ASP<Hyprtoolkit::CTimer> self, void*) { onRepeatTimer(); }, nullptr);
 
-    IPC::g_IPCSocket->onWallpaperChanged(m_monitorName, m_lastPath);
+    if (IPC::g_IPCSocket)
+        IPC::g_IPCSocket->onWallpaperChanged(m_monitorName, m_lastPath);
 }
 
 void CUI::registerOutput(const SP<Hyprtoolkit::IOutput>& mon) {
