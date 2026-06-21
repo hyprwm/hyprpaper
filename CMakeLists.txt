@@ -61,6 +61,7 @@ pkg_check_modules(
   hyprtoolkit>=0.4.1
   hyprwire
   pixman-1
+  pango
   libdrm)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
