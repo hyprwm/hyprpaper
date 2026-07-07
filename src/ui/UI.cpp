@@ -7,6 +7,7 @@
 #include "../config/WallpaperMatcher.hpp"
 
 #include <algorithm>
+#include <fstream>
 #include <random>
 #include <hyprtoolkit/core/Output.hpp>
 
@@ -143,6 +144,37 @@ void CWallpaperTarget::onRepeatTimer() {
     IPC::g_IPCSocket->onWallpaperChanged(m_monitorName, m_lastPath);
 }
 
+void CWallpaperTarget::transitionTo(const std::string& path,
+                                     Hyprtoolkit::eImageFitMode fitMode,
+                                     float duration,
+                                     const std::string& shaderPath) {
+    m_lastPath = path;
+
+    std::string shaderSource;
+    if (!shaderPath.empty()) {
+        std::ifstream file(shaderPath);
+        if (file.is_open())
+            shaderSource = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        else
+            g_logger->log(LOG_ERR, "Could not open transition shader: {}", shaderPath);
+    }
+
+    m_image->transitionTo(path, fitMode, duration, shaderSource);
+}
+
+void CWallpaperTarget::replaceImmediate(const std::string& path,
+                                         Hyprtoolkit::eImageFitMode fitMode) {
+    m_lastPath = path;
+
+    m_image->rebuild()
+        ->path(std::string{path})
+        ->size({Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT,
+                Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
+        ->sync(true)
+        ->fitMode(fitMode)
+        ->commence();
+}
+
 void CUI::registerOutput(const SP<Hyprtoolkit::IOutput>& mon) {
     g_matcher->registerOutput(mon->port(), pruneDesc(mon->desc()));
     if (IPC::g_IPCSocket)
@@ -237,11 +269,37 @@ void CUI::targetChanged(const SP<Hyprtoolkit::IOutput>& mon) {
         return;
     }
 
-    std::erase_if(m_targets, [&mon](const auto& e) { return e->m_monitorName == mon->port(); });
+    auto existingTarget = findTarget(mon->port());
 
-    m_targets.emplace_back(makeShared<CWallpaperTarget>(m_backend, mon, TARGET->get().paths, toFitMode(TARGET->get().fitMode), TARGET->get().timeout, TARGET->get().order));
+    if (existingTarget) {
+        auto outConfig = g_config->getAnimationConfig("fadeLayersOut");
+        auto inConfig  = g_config->getAnimationConfig("fadeLayersIn");
+
+        if (inConfig.enabled || outConfig.enabled) {
+            existingTarget->transitionTo(
+                TARGET->get().paths.front(),
+                toFitMode(TARGET->get().fitMode),
+                std::max(outConfig.duration, inConfig.duration),
+                TARGET->get().shaderPath);
+        } else {
+            // Animations disabled, swap without a transition.
+            existingTarget->replaceImmediate(
+                TARGET->get().paths.front(),
+                toFitMode(TARGET->get().fitMode));
+        }
+    } else {
+        m_targets.emplace_back(makeShared<CWallpaperTarget>(m_backend, mon, TARGET->get().paths, toFitMode(TARGET->get().fitMode), TARGET->get().timeout, TARGET->get().order));
+    }
 }
 
 const std::vector<SP<CWallpaperTarget>>& CUI::targets() {
     return m_targets;
+}
+
+SP<CWallpaperTarget> CUI::findTarget(const std::string& monitorName) {
+    for (const auto& target : m_targets) {
+        if (target->m_monitorName == monitorName)
+            return target;
+    }
+    return nullptr;
 }
