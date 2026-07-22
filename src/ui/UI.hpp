@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
 
 #include <hyprtoolkit/core/Backend.hpp>
 #include <hyprtoolkit/core/Timer.hpp>
@@ -25,6 +26,12 @@ class CWallpaperTarget {
     CWallpaperTarget(CWallpaperTarget&&)      = delete;
 
     std::string m_monitorName, m_lastPath;
+
+    // Rebuilds the shown image in place (used by slideshow + span groups).
+    void        setImage(const std::string& path, Hyprtoolkit::eImageFitMode fitMode, bool sync = true);
+
+    // Detaches any standalone slideshow timer (used when a target is adopted into a span group).
+    void        stopSlideshow();
 
   private:
     void onRepeatTimer();
@@ -55,9 +62,31 @@ class CUI {
     void                              targetChanged(const std::string_view& monName);
     void                              registerOutput(const SP<Hyprtoolkit::IOutput>& mon);
 
+    // span support
+    struct SSpanGroup {
+        uint32_t                                     id      = 0;
+        std::string                                  subMode = "cover"; // cover | contain | stretch
+        std::vector<std::string>                     paths;
+        std::string                                  order   = "default";
+        int                                          timeout = 30;
+        size_t                                       current = 0;
+        uint64_t                                     seq     = 0;
+        ASP<Hyprtoolkit::CTimer>                     timer;
+        std::unordered_map<std::string, std::string> lastSlice; // monitor -> last slice file
+        std::string                                  lastSig;   // render signature; skip redundant rebuilds
+    };
+
+    CUI::SSpanGroup*                  spanGroupFor(uint32_t id);
+    void                              rebuildSpanGroup(uint32_t id);
+    void                              removeSpanGroup(uint32_t id);
+    void                              pruneSpanGroups();
+    void                              rebuildOtherSpanGroups(uint32_t except);
+    void                              onSpanTimer(uint32_t id);
+
     SP<Hyprtoolkit::IBackend>         m_backend;
 
     std::vector<SP<CWallpaperTarget>> m_targets;
+    std::vector<UP<SSpanGroup>>       m_spanGroups;
 
     struct {
         Hyprutils::Signal::CHyprSignalListener targetChanged;
