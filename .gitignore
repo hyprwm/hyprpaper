@@ -32,3 +32,6 @@ hyprctl/hyprctl
 gmon.out
 *.out
 *.tar.gz
+
+.envrc
+.direnv/
