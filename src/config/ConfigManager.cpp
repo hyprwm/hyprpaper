@@ -3,12 +3,14 @@
 #include <filesystem>
 #include <glob.h>
 #include <random>
+#include <sstream>
 #include <hyprlang.hpp>
 #include <hyprutils/path/Path.hpp>
 #include <hyprutils/string/String.hpp>
 #include <hyprutils/utils/ScopeGuard.hpp>
 #include <string>
 #include "../helpers/Logger.hpp"
+#include "../ipc/HyprlandSocket.hpp"
 #include "WallpaperMatcher.hpp"
 
 #include <magic.h>
@@ -289,4 +291,58 @@ static Hyprlang::CParseResult handleSource(const char* COMMAND, const char* VALU
     }
 
     return result;
+}
+
+CConfigManager::SAnimationConfig CConfigManager::getAnimationConfig(const std::string& name) {
+    if (m_animationCache.contains(name))
+        return m_animationCache[name];
+
+    SAnimationConfig config;
+
+    // Query hyprland's live animation config over its IPC socket — the same channel
+    // hyprctl uses — rather than parsing hyprland.conf (deprecated, and blind to
+    // runtime `keyword` overrides). The reply lists one block per animation:
+    //   name: fadeLayersIn
+    //       overriden: 0
+    //       bezier: almostLinear
+    //       enabled: 1
+    //       speed: 1.79
+    //       style: popin
+    const auto REPLY = HyprlandSocket::getFromSocket("animations");
+    if (!REPLY) {
+        g_logger->log(LOG_WARN, "Could not query hyprland animations over IPC: {}", REPLY.error());
+        m_animationCache[name] = config;
+        return config;
+    }
+
+    try {
+        std::istringstream stream(*REPLY);
+        std::string        line;
+        bool               inBlock = false;
+
+        while (std::getline(stream, line)) {
+            const auto TRIMMED = Hyprutils::String::trim(line);
+
+            if (TRIMMED.starts_with("beziers:"))
+                break;
+
+            if (TRIMMED.starts_with("name:")) {
+                inBlock = Hyprutils::String::trim(TRIMMED.substr(5)) == name;
+                continue;
+            }
+
+            if (!inBlock)
+                continue;
+
+            if (TRIMMED.starts_with("enabled:"))
+                config.enabled = std::stoi(Hyprutils::String::trim(TRIMMED.substr(8))) != 0;
+            else if (TRIMMED.starts_with("speed:"))
+                config.duration = std::stof(Hyprutils::String::trim(TRIMMED.substr(6)));
+        }
+    } catch (const std::exception& e) {
+        g_logger->log(LOG_ERR, "Error parsing hyprland animation config: {}", e.what());
+    }
+
+    m_animationCache[name] = config;
+    return config;
 }
