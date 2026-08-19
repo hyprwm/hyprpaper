@@ -27,7 +27,7 @@ static std::string_view pruneDesc(const std::string_view& sv) {
 class CWallpaperTarget::CImagesData {
   public:
     CImagesData(Hyprtoolkit::eImageFitMode fitMode, std::vector<std::string> images, const int timeout = 0, std::string order = "default") :
-        fitMode(fitMode), images(std::move(images)), order(std::move(order)), timeout(timeout > 0 ? timeout : 30) {}
+        fitMode(fitMode), images(std::move(images)), order(std::move(order)), timeout(timeout) {}
 
     const Hyprtoolkit::eImageFitMode fitMode;
     std::vector<std::string>         images;
@@ -91,8 +91,10 @@ CWallpaperTarget::CWallpaperTarget(SP<Hyprtoolkit::IBackend> backend, SP<Hyprtoo
 
     if (path.size() > 1) {
         m_imagesData = makeUnique<CImagesData>(fitMode, std::vector<std::string>(path), timeout, order);
-        m_timer =
-            m_backend->addTimer(std::chrono::milliseconds(std::chrono::seconds(m_imagesData->timeout)), [this](ASP<Hyprtoolkit::CTimer> self, void*) { onRepeatTimer(); }, nullptr);
+        if (m_imagesData->timeout > 0) {
+            m_timer =
+                m_backend->addTimer(std::chrono::milliseconds(std::chrono::seconds(m_imagesData->timeout)), [this](ASP<Hyprtoolkit::CTimer> self, void*) { onRepeatTimer(); }, nullptr);
+        }
     }
 
     m_window->m_rootElement->addChild(m_bg);
