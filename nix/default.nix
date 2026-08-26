@@ -15,10 +15,12 @@
   hyprwire,
   hyprwayland-scanner,
   libGL,
+  jsoncpp,
   libdatrie,
   libdrm,
   libjpeg,
   libjxl,
+  libpng,
   libselinux,
   libsepol,
   libthai,
@@ -76,6 +78,8 @@ stdenv.mkDerivation {
     libdrm
     libjpeg
     libjxl
+    libpng
+    jsoncpp
     libselinux
     libsepol
     libthai
