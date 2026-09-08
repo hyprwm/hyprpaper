@@ -26,6 +26,14 @@ class CWallpaperTarget {
 
     std::string m_monitorName, m_lastPath;
 
+    void transitionTo(const std::string& path,
+                      Hyprtoolkit::eImageFitMode fitMode,
+                      float duration,
+                      const std::string& shaderPath = "");
+
+    void replaceImmediate(const std::string& path,
+                          Hyprtoolkit::eImageFitMode fitMode);
+
   private:
     void onRepeatTimer();
 
@@ -54,6 +62,7 @@ class CUI {
     void                              targetChanged(const SP<Hyprtoolkit::IOutput>& mon);
     void                              targetChanged(const std::string_view& monName);
     void                              registerOutput(const SP<Hyprtoolkit::IOutput>& mon);
+    SP<CWallpaperTarget>              findTarget(const std::string& monitorName);
 
     SP<Hyprtoolkit::IBackend>         m_backend;
 

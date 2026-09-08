@@ -46,6 +46,13 @@ CWallpaperObject::CWallpaperObject(SP<CHyprpaperWallpaperObject>&& obj) : m_obje
 
         apply();
     });
+
+    m_object->setShaderPath([this](const char* s) {
+        if (m_inert)
+            m_object->error(HYPRPAPER_CORE_WALLPAPER_ERRORS_INERT_WALLPAPER_OBJECT, "Object is inert");
+
+        m_shaderPath = s;
+    });
 }
 
 static std::string fitModeToStr(hyprpaperCoreWallpaperFitMode m) {
@@ -87,6 +94,7 @@ void CWallpaperObject::apply() {
         .monitor = std::move(m_monitor),
         .fitMode = fitModeToStr(m_fitMode),
         .paths   = std::vector{std::move(m_path)},
+        .shaderPath = std::move(m_shaderPath),
     });
 
     m_object->sendSuccess();
