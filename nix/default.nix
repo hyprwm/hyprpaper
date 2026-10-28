@@ -25,8 +25,6 @@
   libXdmcp,
   libwebp,
   pango,
-  pcre,
-  pcre2,
   util-linux,
   wayland,
   wayland-protocols,
@@ -82,8 +80,6 @@ stdenv.mkDerivation {
     libwebp
     libXdmcp
     pango
-    pcre
-    pcre2
     wayland
     wayland-protocols
     util-linux
