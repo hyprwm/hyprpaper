@@ -63,7 +63,7 @@ bool CConfigManager::init() {
     m_config.addSpecialConfigValue("wallpaper", "monitor", Hyprlang::STRING{""});
     m_config.addSpecialConfigValue("wallpaper", "path", Hyprlang::STRING{""});
     m_config.addSpecialConfigValue("wallpaper", "fit_mode", Hyprlang::STRING{"cover"});
-    m_config.addSpecialConfigValue("wallpaper", "timeout", Hyprlang::INT{0});
+    m_config.addSpecialConfigValue("wallpaper", "timeout", Hyprlang::INT{-1});
     m_config.addSpecialConfigValue("wallpaper", "order", Hyprlang::STRING{"default"});
     m_config.addSpecialConfigValue("wallpaper", "recursive", Hyprlang::INT{0});
 
@@ -213,8 +213,14 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
                 std::mt19937       g(rd());
                 std::shuffle(resolvedPaths.begin(), resolvedPaths.end(), g);
             }
+
+            // If timeout is -1 (not defined in config), set it to 30
+            if (timeout == -1) {
+                timeout = 30;
+            }
         }
 
+        g_logger->log(LOG_DEBUG, "Loaded wallpaper with monitor: '{}', fitMode: '{}', paths: '{}', order: '{}', timeout: '{}'", monitor, fitMode, resolvedPaths, order, timeout);
         result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .paths = std::move(resolvedPaths), .order = std::move(order), .timeout = timeout});
     }
 
