@@ -59,8 +59,12 @@ pkg_check_modules(
   hyprutils>=0.2.4
   wayland-client
   hyprtoolkit>=0.4.1
+  hyprgraphics
   hyprwire
   pixman-1
+  cairo
+  libpng
+  jsoncpp
   libdrm)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")

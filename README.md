@@ -4,9 +4,16 @@ Hyprpaper is a simple and fast wallpaper utility for Hyprland with the ability t
 
 # Features
  - Per-output wallpapers
- - fill, tile, cover or contain modes
+ - fill, tile, cover, contain or span modes
  - fractional scaling support
  - IPC for fast wallpaper switches
+
+# Fit modes
+`fit_mode` controls how each wallpaper is placed on its output: `cover` (default), `contain`, `fill` (stretch), `tile`.
+
+`span` splits a single image across every output it is assigned to, so the picture appears continuous across the physical monitor arrangement. Outputs sharing the same `wallpaper {}` entry form one span group; the image is mapped onto the group's bounding box (in Hyprland's logical layout coordinates) and each output shows the sub-region its layout rectangle covers. Placement within that canvas is chosen with an optional sub-mode: `span` / `span:cover` (default), `span:contain`, `span:stretch`.
+
+Span requires Hyprland's IPC for the monitor layout; when it is unavailable (or an output's geometry can't be resolved) each output falls back to `cover`. A group of one output is equivalent to the matching plain mode.
 
 # Installation
 
