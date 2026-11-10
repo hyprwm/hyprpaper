@@ -3,20 +3,14 @@
   stdenv,
   pkg-config,
   cmake,
-  aquamarine,
-  cairo,
   expat,
   file,
   fribidi,
-  hyprgraphics,
   hyprlang,
-  hyprutils,
   hyprtoolkit,
   hyprwire,
   hyprwayland-scanner,
-  libGL,
   libdatrie,
-  libdrm,
   libjpeg,
   libjxl,
   libselinux,
@@ -24,9 +18,7 @@
   libthai,
   libXdmcp,
   libwebp,
-  pango,
   util-linux,
-  wayland,
   wayland-protocols,
   wayland-scanner,
   commit,
@@ -59,19 +51,13 @@ stdenv.mkDerivation {
   ];
 
   buildInputs = [
-    aquamarine
-    cairo
     expat
     file
     fribidi
-    hyprgraphics
     hyprlang
-    hyprutils
     hyprtoolkit
     hyprwire
-    libGL
     libdatrie
-    libdrm
     libjpeg
     libjxl
     libselinux
@@ -79,8 +65,6 @@ stdenv.mkDerivation {
     libthai
     libwebp
     libXdmcp
-    pango
-    wayland
     wayland-protocols
     util-linux
   ];
