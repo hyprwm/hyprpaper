@@ -9,7 +9,7 @@ using namespace IPC;
 using namespace std::string_literals;
 
 constexpr const char*         SOCKET_NAME      = ".hyprpaper.sock";
-constexpr const size_t        HP_PROTO_VERSION = 2;
+constexpr const size_t        HP_PROTO_VERSION = 3;
 
 static SP<CHyprpaperCoreImpl> g_coreImpl;
 
@@ -45,6 +45,13 @@ CWallpaperObject::CWallpaperObject(SP<CHyprpaperWallpaperObject>&& obj) : m_obje
             m_object->error(HYPRPAPER_CORE_WALLPAPER_ERRORS_INERT_WALLPAPER_OBJECT, "Object is inert");
 
         apply();
+    });
+
+    m_object->setShaderPath([this](const char* s) {
+        if (m_inert)
+            m_object->error(HYPRPAPER_CORE_WALLPAPER_ERRORS_INERT_WALLPAPER_OBJECT, "Object is inert");
+
+        m_shaderPath = s;
     });
 }
 
@@ -84,9 +91,11 @@ void CWallpaperObject::apply() {
     }
 
     g_matcher->addState(CConfigManager::SSetting{
-        .monitor = std::move(m_monitor),
-        .fitMode = fitModeToStr(m_fitMode),
-        .paths   = std::vector{std::move(m_path)},
+        .monitor            = std::move(m_monitor),
+        .fitMode            = fitModeToStr(m_fitMode),
+        .paths              = std::vector{std::move(m_path)},
+        .shaderPath         = m_shaderPath.empty() ? g_config->getDefaultTransitionShader() : std::move(m_shaderPath),
+        .transitionDuration = g_config->getDefaultTransitionDuration(),
     });
 
     m_object->sendSuccess();

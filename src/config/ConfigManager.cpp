@@ -58,6 +58,8 @@ bool CConfigManager::init() {
     m_config.addConfigValue("splash_offset", Hyprlang::INT{20});
     m_config.addConfigValue("splash_opacity", Hyprlang::FLOAT{0.8});
     m_config.addConfigValue("ipc", Hyprlang::INT{1});
+    m_config.addConfigValue("transition_duration", Hyprlang::INT{0});
+    m_config.addConfigValue("transition_shader", Hyprlang::STRING{""});
 
     m_config.addSpecialCategory("wallpaper", Hyprlang::SSpecialCategoryOptions{.key = "monitor"});
     m_config.addSpecialConfigValue("wallpaper", "monitor", Hyprlang::STRING{""});
@@ -66,6 +68,8 @@ bool CConfigManager::init() {
     m_config.addSpecialConfigValue("wallpaper", "timeout", Hyprlang::INT{0});
     m_config.addSpecialConfigValue("wallpaper", "order", Hyprlang::STRING{"default"});
     m_config.addSpecialConfigValue("wallpaper", "recursive", Hyprlang::INT{0});
+    m_config.addSpecialConfigValue("wallpaper", "transition_duration", Hyprlang::INT{0});
+    m_config.addSpecialConfigValue("wallpaper", "transition_shader", Hyprlang::STRING{""});
 
     m_config.registerHandler(&handleSource, "source", Hyprlang::SHandlerOptions{});
 
@@ -166,6 +170,27 @@ static std::expected<std::vector<std::string>, std::string> getFullPath(const st
     return result;
 }
 
+static std::string resolveShaderPath(const std::string& path, const std::string& configPath) {
+    if (path.empty())
+        return "";
+
+    const auto RESOLVED = getPath(path, configPath);
+    if (!RESOLVED) {
+        g_logger->log(LOG_ERR, "Failed to resolve transition shader {}: {}", path, RESOLVED.error());
+        return ""; // built-in crossfade; never drop the wallpaper over a bad shader
+    }
+    return *RESOLVED;
+}
+
+std::chrono::milliseconds CConfigManager::getDefaultTransitionDuration() {
+    const auto VALUE = std::any_cast<Hyprlang::INT>(m_config.getConfigValue("transition_duration"));
+    return std::chrono::milliseconds{std::max<Hyprlang::INT>(0, VALUE)};
+}
+
+std::string CConfigManager::getDefaultTransitionShader() {
+    return resolveShaderPath(std::any_cast<Hyprlang::STRING>(m_config.getConfigValue("transition_shader")), m_currentConfigPath);
+}
+
 std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
     std::vector<CConfigManager::SSetting> result;
 
@@ -215,7 +240,19 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
             }
         }
 
-        result.emplace_back(SSetting{.monitor = std::move(monitor), .fitMode = std::move(fitMode), .paths = std::move(resolvedPaths), .order = std::move(order), .timeout = timeout});
+        const auto DURATION = m_config.getSpecialConfigValuePtr("wallpaper", "transition_duration", key.c_str());
+        const auto SHADER   = m_config.getSpecialConfigValuePtr("wallpaper", "transition_shader", key.c_str());
+        const auto TRANSITIONDURATION =
+            DURATION->m_bSetByUser ? std::chrono::milliseconds{std::max<Hyprlang::INT>(0, std::any_cast<Hyprlang::INT>(DURATION->getValue()))} : getDefaultTransitionDuration();
+        auto shaderPath = SHADER->m_bSetByUser ? resolveShaderPath(std::any_cast<Hyprlang::STRING>(SHADER->getValue()), m_currentConfigPath) : getDefaultTransitionShader();
+
+        result.emplace_back(SSetting{.monitor            = std::move(monitor),
+                                     .fitMode            = std::move(fitMode),
+                                     .paths              = std::move(resolvedPaths),
+                                     .order              = std::move(order),
+                                     .timeout            = timeout,
+                                     .shaderPath         = std::move(shaderPath),
+                                     .transitionDuration = TRANSITIONDURATION});
     }
 
     return result;

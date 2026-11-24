@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <random>
 #include <hyprtoolkit/core/Output.hpp>
+#include <hyprutils/os/File.hpp>
 
 #include <hyprutils/string/String.hpp>
 
@@ -52,7 +53,8 @@ class CWallpaperTarget::CImagesData {
 };
 
 CWallpaperTarget::CWallpaperTarget(SP<Hyprtoolkit::IBackend> backend, SP<Hyprtoolkit::IOutput> output, const std::vector<std::string>& path, Hyprtoolkit::eImageFitMode fitMode,
-                                   const int timeout, const std::string& order) : m_monitorName(output->port()), m_backend(backend) {
+                                   const int timeout, const std::string& order, const std::string& shaderPath, const std::chrono::milliseconds transitionDuration) :
+    m_monitorName(output->port()), m_backend(backend), m_shaderPath(shaderPath), m_transitionDuration(transitionDuration) {
     static const auto SPLASH_REPLY = HyprlandSocket::getFromSocket("/splash");
 
     static const auto PENABLESPLASH = Hyprlang::CSimpleConfigValue<Hyprlang::INT>(g_config->hyprlang(), "splash");
@@ -128,20 +130,52 @@ void CWallpaperTarget::onRepeatTimer() {
 
     ASSERT(m_imagesData);
 
-    m_lastPath = m_imagesData->nextImage();
-
-    m_image->rebuild()
-        ->path(std::string{m_lastPath})
-        ->size({Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
-        ->sync(true)
-        ->fitMode(m_imagesData->fitMode)
-        ->commence();
+    applyImage(m_imagesData->nextImage(), m_imagesData->fitMode);
 
     m_timer =
         m_backend->addTimer(std::chrono::milliseconds(std::chrono::seconds(m_imagesData->timeout)), [this](ASP<Hyprtoolkit::CTimer> self, void*) { onRepeatTimer(); }, nullptr);
 
     if (IPC::g_IPCSocket)
         IPC::g_IPCSocket->onWallpaperChanged(m_monitorName, m_lastPath);
+}
+
+void CWallpaperTarget::update(std::vector<std::string> paths, Hyprtoolkit::eImageFitMode fitMode, const int timeout, std::string order, std::string shaderPath,
+                              const std::chrono::milliseconds transitionDuration) {
+    m_shaderPath         = std::move(shaderPath);
+    m_transitionDuration = transitionDuration;
+
+    if (m_timer && !m_timer->passed())
+        m_timer->cancel(); // the backend owns its timers: without this, an old slideshow chain keeps firing
+
+    if (paths.size() > 1) {
+        m_imagesData = makeUnique<CImagesData>(fitMode, std::vector<std::string>(paths), timeout, std::move(order));
+        m_timer =
+            m_backend->addTimer(std::chrono::milliseconds(std::chrono::seconds(m_imagesData->timeout)), [this](ASP<Hyprtoolkit::CTimer> self, void*) { onRepeatTimer(); }, nullptr);
+    } else
+        m_imagesData.reset();
+
+    applyImage(paths.front(), fitMode);
+}
+
+void CWallpaperTarget::applyImage(const std::string& path, Hyprtoolkit::eImageFitMode fitMode) {
+    m_lastPath = path;
+
+    std::string shader;
+    if (!m_shaderPath.empty()) {
+        const auto SOURCE = Hyprutils::File::readFileAsString(m_shaderPath);
+        if (SOURCE)
+            shader = std::move(*SOURCE);
+        else
+            g_logger->log(LOG_ERR, "Could not read transition shader {}: {}", m_shaderPath, SOURCE.error());
+    }
+
+    m_image->rebuild()
+        ->path(std::string{path})
+        ->size({Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, Hyprtoolkit::CDynamicSize::HT_SIZE_PERCENT, {1.F, 1.F}})
+        ->sync(true)
+        ->fitMode(fitMode)
+        ->transition({m_transitionDuration, std::move(shader)})
+        ->commence();
 }
 
 void CUI::registerOutput(const SP<Hyprtoolkit::IOutput>& mon) {
@@ -238,11 +272,20 @@ void CUI::targetChanged(const SP<Hyprtoolkit::IOutput>& mon) {
         return;
     }
 
-    std::erase_if(m_targets, [&mon](const auto& e) { return e->m_monitorName == mon->port(); });
+    const auto& SETTING = TARGET->get();
 
-    m_targets.emplace_back(makeShared<CWallpaperTarget>(m_backend, mon, TARGET->get().paths, toFitMode(TARGET->get().fitMode), TARGET->get().timeout, TARGET->get().order));
+    if (const auto EXISTING = findTarget(mon->port()); EXISTING)
+        EXISTING->update(SETTING.paths, toFitMode(SETTING.fitMode), SETTING.timeout, SETTING.order, SETTING.shaderPath, SETTING.transitionDuration);
+    else
+        m_targets.emplace_back(makeShared<CWallpaperTarget>(m_backend, mon, SETTING.paths, toFitMode(SETTING.fitMode), SETTING.timeout, SETTING.order, SETTING.shaderPath,
+                                                            SETTING.transitionDuration));
 }
 
 const std::vector<SP<CWallpaperTarget>>& CUI::targets() {
     return m_targets;
+}
+
+SP<CWallpaperTarget> CUI::findTarget(const std::string& monitorName) {
+    const auto IT = std::ranges::find_if(m_targets, [&monitorName](const auto& t) { return t->m_monitorName == monitorName; });
+    return IT == m_targets.end() ? nullptr : *IT;
 }
