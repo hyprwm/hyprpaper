@@ -12,12 +12,15 @@
 
 #include <hyprutils/signal/Listener.hpp>
 
+#include <chrono>
+
 #include "../helpers/Memory.hpp"
 
 class CWallpaperTarget {
   public:
     CWallpaperTarget(SP<Hyprtoolkit::IBackend> backend, SP<Hyprtoolkit::IOutput> output, const std::vector<std::string>& path,
-                     Hyprtoolkit::eImageFitMode fitMode = Hyprtoolkit::IMAGE_FIT_MODE_COVER, const int timeout = 0, const std::string& order = "default");
+                     Hyprtoolkit::eImageFitMode fitMode = Hyprtoolkit::IMAGE_FIT_MODE_COVER, const int timeout = 0, const std::string& order = "default",
+                     const std::string& shaderPath = "", const std::chrono::milliseconds transitionDuration = std::chrono::milliseconds{0});
     ~CWallpaperTarget();
 
     CWallpaperTarget(const CWallpaperTarget&) = delete;
@@ -26,8 +29,12 @@ class CWallpaperTarget {
 
     std::string m_monitorName, m_lastPath;
 
+    void        update(std::vector<std::string> paths, Hyprtoolkit::eImageFitMode fitMode, const int timeout, std::string order, std::string shaderPath,
+                       const std::chrono::milliseconds transitionDuration);
+
   private:
     void onRepeatTimer();
+    void applyImage(const std::string& path, Hyprtoolkit::eImageFitMode fitMode);
 
     class CImagesData;
 
@@ -39,6 +46,8 @@ class CWallpaperTarget {
     SP<Hyprtoolkit::CRectangleElement> m_bg;
     SP<Hyprtoolkit::CImageElement>     m_image;
     SP<Hyprtoolkit::CTextElement>      m_splash;
+    std::string                        m_shaderPath;
+    std::chrono::milliseconds          m_transitionDuration{0};
 };
 
 class CUI {
@@ -54,6 +63,7 @@ class CUI {
     void                              targetChanged(const SP<Hyprtoolkit::IOutput>& mon);
     void                              targetChanged(const std::string_view& monName);
     void                              registerOutput(const SP<Hyprtoolkit::IOutput>& mon);
+    SP<CWallpaperTarget>              findTarget(const std::string& monitorName);
 
     SP<Hyprtoolkit::IBackend>         m_backend;
 

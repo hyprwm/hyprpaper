@@ -2,6 +2,7 @@
 
 #include "../helpers/Memory.hpp"
 #include <hyprlang.hpp>
+#include <chrono>
 #include <vector>
 
 class CConfigManager {
@@ -14,11 +15,13 @@ class CConfigManager {
     CConfigManager(CConfigManager&&)      = delete;
 
     struct SSetting {
-        std::string              monitor, fitMode;
-        std::vector<std::string> paths;
-        std::string              order   = "default";
-        int                      timeout = 0;
-        uint32_t                 id      = 0;
+        std::string               monitor, fitMode;
+        std::vector<std::string>  paths;
+        std::string               order   = "default";
+        int                       timeout = 0;
+        uint32_t                  id      = 0;
+        std::string               shaderPath;
+        std::chrono::milliseconds transitionDuration{0};
     };
 
     constexpr static const uint32_t SETTING_INVALID = 0;
@@ -29,6 +32,10 @@ class CConfigManager {
     std::vector<SSetting>           getSettings();
 
     const std::string&              getCurrentConfigPath() const;
+
+    // top-level transition_duration / transition_shader, for settings that don't override them
+    std::chrono::milliseconds getDefaultTransitionDuration();
+    std::string               getDefaultTransitionShader(); // resolved path, empty = built-in crossfade
 
   private:
     Hyprlang::CConfig m_config;

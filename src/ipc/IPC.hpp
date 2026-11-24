@@ -19,6 +19,7 @@ namespace IPC {
         std::string                   m_path;
         hyprpaperCoreWallpaperFitMode m_fitMode = HYPRPAPER_CORE_WALLPAPER_FIT_MODE_COVER;
         std::string                   m_monitor;
+        std::string                   m_shaderPath;
 
         bool                          m_inert = false;
     };
