@@ -8,12 +8,25 @@
 #include <hyprutils/string/String.hpp>
 #include <hyprutils/utils/ScopeGuard.hpp>
 #include <string>
+#include <array>
+#include <optional>
+#include <cctype>
 #include "../helpers/Logger.hpp"
 #include "WallpaperMatcher.hpp"
 
 #include <magic.h>
 
 using namespace std::string_literals;
+
+enum class eWallpaperOrder : uint8_t {
+    ORDER_DEFAULT,
+    ORDER_RANDOM,
+    ORDER_RANDOM_SHUFFLE,
+    ORDER_ASCENDING,
+    ORDER_DESCENDING,
+    ORDER_NEWEST,
+    ORDER_OLDEST,
+};
 
 [[nodiscard]] static bool isImage(const std::filesystem::path& path) {
     static constexpr std::array exts{".jpg", ".jpeg", ".png", ".bmp", ".webp", ".svg"};
@@ -166,6 +179,63 @@ static std::expected<std::vector<std::string>, std::string> getFullPath(const st
     return result;
 }
 
+static std::optional<eWallpaperOrder> parseOrder(std::string_view sv) {
+    static constexpr std::array<std::pair<std::string_view, eWallpaperOrder>, 7> map = {{
+        {"default", eWallpaperOrder::ORDER_DEFAULT},
+        {"random", eWallpaperOrder::ORDER_RANDOM},
+        {"random-shuffle", eWallpaperOrder::ORDER_RANDOM_SHUFFLE},
+        {"ascending", eWallpaperOrder::ORDER_ASCENDING},
+        {"descending", eWallpaperOrder::ORDER_DESCENDING},
+        {"newest", eWallpaperOrder::ORDER_NEWEST},
+        {"oldest", eWallpaperOrder::ORDER_OLDEST},
+    }};
+
+    for (const auto& [name, val] : map) {
+        if (name == sv)
+            return val;
+    }
+
+    return std::nullopt;
+}
+
+static bool iless(std::string_view a, std::string_view b) {
+    const size_t len = std::min(a.size(), b.size());
+
+    for (size_t i = 0; i < len; i++) {
+        const auto ca = std::tolower(static_cast<unsigned char>(a[i]));
+        const auto cb = std::tolower(static_cast<unsigned char>(b[i]));
+        if (ca != cb)
+            return ca < cb;
+    }
+    if (a.size() != b.size())
+        return a.size() < b.size();
+
+    return a < b;
+}
+
+static void sortByMtime(std::vector<std::string>& paths, const bool newest) {
+    std::vector<std::pair<std::filesystem::file_time_type, std::string>> mtimes;
+    mtimes.reserve(paths.size());
+
+    const auto fallback = newest ? std::filesystem::file_time_type::min() : std::filesystem::file_time_type::max();
+
+    for (auto& p : paths) {
+        std::error_code ec;
+        const auto      t = std::filesystem::last_write_time(p, ec);
+        mtimes.emplace_back(ec ? fallback : t, std::move(p));
+    }
+
+    std::ranges::sort(mtimes, [newest](const auto& a, const auto& b) {
+        if (a.first != b.first)
+            return newest ? a.first > b.first : a.first < b.first;
+        return iless(a.second, b.second);
+    });
+
+    paths.clear();
+    for (auto& entry : mtimes)
+        paths.push_back(std::move(entry.second));
+}
+
 std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
     std::vector<CConfigManager::SSetting> result;
 
@@ -203,15 +273,26 @@ std::vector<CConfigManager::SSetting> CConfigManager::getSettings() {
         auto resolvedPaths = RESOLVE_PATH.value();
 
         if (resolvedPaths.size() > 1) {
-            if (order != "default" && order != "random" && order != "random-shuffle") {
+            auto parsedOrder = parseOrder(order);
+            if (!parsedOrder) {
                 g_logger->log(LOG_WARN, "Invalid order value '{}', falling back to default", order);
-                order = "default";
+                order       = "default";
+                parsedOrder = eWallpaperOrder::ORDER_DEFAULT;
             }
 
-            if (order == "random" || order == "random-shuffle") {
-                std::random_device rd;
-                std::mt19937       g(rd());
-                std::shuffle(resolvedPaths.begin(), resolvedPaths.end(), g);
+            switch (*parsedOrder) {
+                case eWallpaperOrder::ORDER_DEFAULT: break;
+                case eWallpaperOrder::ORDER_ASCENDING: std::ranges::sort(resolvedPaths, iless); break;
+                case eWallpaperOrder::ORDER_DESCENDING: std::ranges::sort(resolvedPaths, [](const std::string& a, const std::string& b) { return iless(b, a); }); break;
+                case eWallpaperOrder::ORDER_RANDOM:
+                case eWallpaperOrder::ORDER_RANDOM_SHUFFLE: {
+                    std::random_device rd;
+                    std::mt19937       g(rd());
+                    std::shuffle(resolvedPaths.begin(), resolvedPaths.end(), g);
+                    break;
+                }
+                case eWallpaperOrder::ORDER_NEWEST: sortByMtime(resolvedPaths, true); break;
+                case eWallpaperOrder::ORDER_OLDEST: sortByMtime(resolvedPaths, false); break;
             }
         }
 
